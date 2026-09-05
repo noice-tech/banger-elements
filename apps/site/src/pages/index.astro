@@ -1,0 +1,23 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import {elements} from '../data/elements';
+---
+<StarlightPage frontmatter={{title: 'Audio, made visible.', description: 'Seven source-installable audio visualizers for Remotion.', tableOfContents: false}}>
+	<div class="intro">
+		<p class="eyebrow">THE ELEMENTS COLLECTION / 01—07</p>
+		<p class="lead">Give your sound a shape.</p>
+		<p>Seven audio-reactive Elements for Remotion. Preview a treatment, install it in Studio, and make the source your own. No account. No runtime library.</p>
+		<div class="actions"><a class="button primary" href="/getting-started.html">Get started <span aria-hidden="true">↗</span></a><a class="button" href="/examples.html">Explore examples</a></div>
+	</div>
+	<div class="collection-heading"><h2 id="collection">Find your frequency</h2><span>2 SVG · 5 WebGL2</span></div>
+	<div class="element-grid">
+		{elements.map((entry, index) => <a class="element-card" href={`/${entry.slug}.html`}>
+			<div class="card-art">
+				<video autoplay muted loop playsinline preload={index < 2 ? 'auto' : 'metadata'} aria-hidden="true"><source src={`/previews/${entry.slug}.webm`} type="video/webm" /></video>
+				<span class="card-number">0{index + 1}</span>
+			</div>
+			<div class="card-copy"><div class="card-title"><h3>{entry.title}</h3><span aria-hidden="true">↗</span></div><p>{entry.tagline}</p><div class="tags"><span>{entry.renderer}</span></div></div>
+		</a>)}
+	</div>
+	<div class="source-note"><h2 id="your-source">An Element. Not a dependency.</h2><p>Each download is a complete, typed TSX file. Edit audio, color, size and timing in Studio, or work directly with the source. SVG traces stay SVG; shader treatments stay WebGL2.</p><a href="/getting-started.html">How installation works →</a></div>
+</StarlightPage>

@@ -1,0 +1,51 @@
+export const catalog = [
+	{
+		slug: 'waveform',
+		name: 'Waveform',
+		width: 900,
+		height: 300,
+		description: 'Moving filled waveform. SVG.',
+	},
+	{
+		slug: 'spectre',
+		name: 'Spectre',
+		width: 1280,
+		height: 300,
+		description: 'Frequency bars and segments rendered by the original WebGL2 shaders.',
+	},
+	{
+		slug: 'oscilloscope',
+		name: 'Oscilloscope',
+		width: 1280,
+		height: 300,
+		description: 'Triggered PCM trace. SVG.',
+	},
+	{
+		slug: 'pulsar',
+		name: 'Pulsar',
+		width: 900,
+		height: 500,
+		description: 'Audio-deformed volume rendered by the original WebGL2 shader.',
+	},
+	{
+		slug: 'circle',
+		name: 'Circle',
+		width: 600,
+		height: 600,
+		description: 'Four reactive ring treatments using the original WebGL2 shaders.',
+	},
+	{
+		slug: 'halo',
+		name: 'Halo',
+		width: 720,
+		height: 720,
+		description: 'Layered audio-reactive trails and artwork. Experimental · WebGL2.',
+	},
+	{
+		slug: 'audio-particles',
+		name: 'AudioParticles',
+		width: 1280,
+		height: 720,
+		description: 'Independent bass-reactive particles. Experimental · WebGL2.',
+	},
+] as const;

@@ -1,0 +1,8 @@
+{
+	"useTabs": true,
+	"singleQuote": true,
+	"bracketSpacing": false,
+	"sortImports": false,
+	"sortPackageJson": false,
+	"embeddedLanguageFormatting": "off"
+}

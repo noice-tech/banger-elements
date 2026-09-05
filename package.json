@@ -1,0 +1,43 @@
+{
+	"name": "banger-elements",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"packageManager": "bun@1.3.8",
+	"engines": {
+		"node": "24.18.1",
+		"bun": "1.3.8"
+	},
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"build:elements": "node scripts/turbo.mjs run build --filter=@banger-elements/collection",
+		"build": "node scripts/turbo.mjs run build",
+		"dev": "node scripts/dev.mjs",
+		"site": "node scripts/turbo.mjs run build --filter=@banger-elements/site && node apps/site/scripts/serve.mjs",
+		"studio": "node scripts/studio.mjs",
+		"format": "oxfmt --ignore-path=.oxfmtignore .",
+		"format:check": "oxfmt --check --ignore-path=.oxfmtignore .",
+		"lint": "eslint .",
+		"typecheck": "node scripts/turbo.mjs run typecheck",
+		"test": "node scripts/turbo.mjs run test",
+		"check:workspaces": "node scripts/check-workspaces.mjs",
+		"check": "node scripts/check-workspaces.mjs && oxfmt --check --ignore-path=.oxfmtignore . && eslint . && node scripts/turbo.mjs run build && node scripts/turbo.mjs run typecheck && node scripts/turbo.mjs run test",
+		"smoke": "node scripts/turbo.mjs run build --filter=@banger-elements/collection && node apps/studio/scripts/smoke.mjs",
+		"render": "node scripts/turbo.mjs run build --filter=@banger-elements/collection && remotion render apps/studio/src/fixtures/render-root.tsx HaloAndParticles out/halo.mp4 --public-dir=public --gl=angle --concurrency=1",
+		"previews": "node scripts/turbo.mjs run build --filter=@banger-elements/collection && node apps/site/scripts/previews.mjs",
+		"clean": "node scripts/clean.mjs"
+	},
+	"devDependencies": {
+		"@remotion/cli": "4.0.520",
+		"@remotion/eslint-config-flat": "4.0.520",
+		"@types/node": "22.18.0",
+		"eslint": "9.39.1",
+		"globals": "16.5.0",
+		"oxfmt": "0.66.0",
+		"turbo": "2.10.12",
+		"typescript": "5.9.2"
+	}
+}

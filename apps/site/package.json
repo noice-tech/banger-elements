@@ -1,0 +1,37 @@
+{
+	"name": "@banger-elements/site",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "tsx scripts/build.ts",
+		"serve": "node scripts/serve.mjs",
+		"typecheck": "astro check && tsc --noEmit",
+		"posters": "node scripts/posters.mjs",
+		"previews": "node scripts/previews.mjs",
+		"test": "tsx --test tests/*.test.ts"
+	},
+	"dependencies": {
+		"@astrojs/mdx": "4.3.14",
+		"@astrojs/react": "4.4.2",
+		"@astrojs/starlight": "0.37.7",
+		"@remotion/media": "4.0.520",
+		"@remotion/media-utils": "4.0.520",
+		"@remotion/player": "4.0.520",
+		"@remotion/studio-protocol": "4.0.520",
+		"astro": "5.18.2",
+		"react": "19.1.1",
+		"react-dom": "19.1.1",
+		"remotion": "4.0.520"
+	},
+	"devDependencies": {
+		"@astrojs/check": "0.9.10",
+		"@banger-elements/collection": "workspace:*",
+		"@types/node": "22.18.0",
+		"@types/react": "19.1.10",
+		"@types/react-dom": "19.1.9",
+		"sharp": "0.34.5",
+		"tsx": "4.20.5",
+		"typescript": "5.9.2"
+	}
+}

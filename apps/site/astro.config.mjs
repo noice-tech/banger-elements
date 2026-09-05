@@ -1,0 +1,36 @@
+import {defineConfig} from 'astro/config';
+import starlight from '@astrojs/starlight';
+import react from '@astrojs/react';
+
+export default defineConfig({
+	output: 'static',
+	publicDir: './static',
+	build: {format: 'file'},
+	trailingSlash: 'never',
+	integrations: [
+		starlight({
+			title: 'banger-elements',
+			description: 'Source-installable audio visualizers for Remotion.',
+			customCss: ['./src/style.css'],
+			components: {Footer: './src/components/Footer.astro'},
+			sidebar: [
+				{label: 'Overview', link: '/'},
+				{label: 'Getting started', link: '/getting-started.html'},
+				{label: 'Examples', link: '/examples.html'},
+				{
+					label: 'Elements',
+					items: [
+						{label: 'Waveform', link: '/waveform.html'},
+						{label: 'Spectre', link: '/spectre.html'},
+						{label: 'Oscilloscope', link: '/oscilloscope.html'},
+						{label: 'Pulsar', link: '/pulsar.html'},
+						{label: 'Circle', link: '/circle.html'},
+						{label: 'Halo', link: '/halo.html'},
+						{label: 'Audio Particles', link: '/audio-particles.html'},
+					],
+				},
+			],
+		}),
+		react(),
+	],
+});

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+tmp/
+.turbo/
+.astro/
+out/
+# Local user media; never included in the static library build.
+public/
+*.log
+.DS_Store
+.remotion/

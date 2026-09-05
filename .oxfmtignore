@@ -1,0 +1,8 @@
+node_modules/
+tmp/
+.turbo/
+**/.turbo/
+**/.astro/
+**/dist/
+out/
+public/

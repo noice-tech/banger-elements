@@ -1,0 +1,24 @@
+{
+	"name": "@banger-elements/collection",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "tsx scripts/build.ts",
+		"typecheck": "tsc --noEmit",
+		"test": "tsx --test tests/*.test.ts"
+	},
+	"dependencies": {
+		"@remotion/media": "4.0.520",
+		"@remotion/media-utils": "4.0.520",
+		"react": "19.1.1",
+		"remotion": "4.0.520"
+	},
+	"devDependencies": {
+		"@remotion/studio-protocol": "4.0.520",
+		"@types/node": "22.18.0",
+		"@types/react": "19.1.10",
+		"tsx": "4.20.5",
+		"typescript": "5.9.2"
+	}
+}

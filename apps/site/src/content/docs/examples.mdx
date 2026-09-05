@@ -1,0 +1,55 @@
+---
+title: Examples
+description: Original shader variants and a simple Halo and Audio Particles composition.
+---
+
+import Preview from '../../components/Preview';
+
+## One collection, different treatments
+
+Switch between Spectre’s two treatments, Circle’s four ring variants, and a combined composition. Only one Player is mounted at a time. These are the original generated Elements, not alternate site renderers.
+
+<Preview slug="segmented" variants client:only="react" />
+
+## Spectre variants
+
+```tsx
+<Spectre spectreVariant="bars" />
+// Or:
+<Spectre spectreVariant="segmented" />
+```
+
+[Install Spectre or download its source →](/spectre.html)
+
+## Circle variants
+
+```tsx
+<Circle circleVariant="radial-bars" />
+// Or choose one of these treatments:
+<Circle circleVariant="glow-ring" />
+<Circle circleVariant="waveform-ring" />
+<Circle circleVariant="dotted-ring" count={48} lineWidth={1} />
+```
+
+These are alternatives, not a stacked composition. [Install Circle →](/circle.html)
+
+## Halo + Audio Particles
+
+Install or download [Halo](/halo.html) and [Audio Particles](/audio-particles.html) separately. This composition uses their defaults and enables just one audio track. Both are experimental WebGL2 treatments.
+
+```tsx
+import {AbsoluteFill} from 'remotion';
+import {Halo} from './halo.element';
+import {AudioParticles} from './audio-particles.element';
+
+export const HaloAndParticles = () => (
+  <AbsoluteFill style={{backgroundColor: '#080a10'}}>
+    <Halo />
+    <AudioParticles playAudio={false} maskHalo />
+  </AbsoluteFill>
+);
+```
+
+Use a 720 × 720 composition to match this preview. When changing the track, pass the same `audioSrc` and `audioOffsetInSeconds` to both Elements. Keep only one `playAudio` enabled. `maskHalo` is explicit, not automatic coupling between components; keep their radius and sizing aligned when adjusting the mask.
+
+The extra canvas and independent audio decoding cost GPU time and memory. Use the individual [Element previews](/) to check compatibility first. No artwork or user-provided media is bundled.

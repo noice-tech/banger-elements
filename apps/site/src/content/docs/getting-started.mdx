@@ -1,0 +1,71 @@
+---
+title: Getting started
+description: Install a source Element, connect your audio, and render in Remotion.
+---
+
+## From preview to composition
+
+Each Element is a complete TSX file, not an npm runtime. The site previews the same generated source that Studio installs. Tested with **Remotion 4.0.520**, React 19.1.1 and aligned `@remotion/*` versions.
+
+1. In this repository, run `bun install --frozen-lockfile`, then `bun run dev`.
+2. Open [Studio on port 3001](http://localhost:3001) and select a fixture composition.
+3. Choose an [Element](/), then **Install in Studio**, or drag **Drag to Studio** onto the Studio canvas.
+4. **Review and confirm in Studio.** “Awaiting confirmation” only means the request arrived. It does not mean installation completed.
+5. Select the installed Element to edit its audio, size, colors, transforms and timing.
+
+Studio discovery checks **ports 3000–3009**. Focus your intended Studio before sending a request. Use localhost or HTTPS, not `file://`. If no Studio is found, check its version, port and browser local-network permissions, then retry.
+
+## Add the collection to Studio
+
+Use **Add Library to Studio** at the bottom of a page. Confirm in Studio and restart it to load the collection in Browse Elements. Keep this import in `remotion.config.ts` so the protocol can append a working call:
+
+```ts
+import {Config} from '@remotion/cli/config';
+```
+
+The collection can be embedded in Studio. Do not add an `X-Frame-Options` header or a restrictive `frame-ancestors` policy that blocks it. Hosted HTTPS-to-local-Studio discovery still needs deployment testing; it is not claimed as supported yet.
+
+## Audio setup
+
+No props are required: `audioSrc` defaults to Remotion’s hosted example audio. Choose an asset with the Studio control, or supply an HTTPS URL that allows CORS. For an asset in your own Remotion project's `public/` directory:
+
+```tsx
+import {staticFile} from 'remotion';
+import {Waveform} from './waveform.element';
+
+export const MyComposition = () => (
+  <Waveform
+    audioSrc={staticFile('my-track.mp3')}
+    audioOffsetInSeconds={12}
+    width={900}
+    height={300}
+  />
+);
+```
+
+Use audio you have permission to use. No user-provided audio or artwork is distributed by this site.
+
+- `playAudio` defaults to `true`. Enable it on **only one Element** when stacking instances on the same track.
+- `inputGainDb` controls analysis gain, **not playback volume**.
+- Analysis uses the first channel; playback preserves the source channels.
+- `audioOffsetInSeconds` selects source time and is rounded to the nearest composition frame. Moving an Element does not change that offset; trimming advances local source time.
+- Analysis uses fixed 60 Hz timing and 20-second decode chunks. Elements wait for complete neighboring windows and decode independently. More instances cost more memory.
+- Silence follows the end of the source; procedural shader motion may continue.
+
+## Timing and sizing
+
+Every Element owns its Sequence. **Do not wrap it in another `<Sequence>`**: selecting the outer Sequence would show its controls instead of the Element schema. Use the Element’s Studio timing controls.
+
+Insertion starts at **480 frames**; its duration in seconds depends on the target FPS. Site previews are 960 frames at 60 FPS. Use `width` and `height` for drawing bounds and Studio transforms for positioning or scaling.
+
+## Download instead
+
+Download the TSX from an Element page into your Remotion source directory and import its named component. The file uses only external imports: React, Remotion, `@remotion/media` and `@remotion/media-utils`. Install those packages in your own project, keeping all `@remotion/*` versions aligned with your Remotion version. Studio payload dependency versions for `@remotion/*` remain `null` so Studio resolves its compatible versions.
+
+## Renderer and release limits
+
+Waveform and Oscilloscope use SVG. Spectre, Circle, Pulsar, Halo and Audio Particles require WebGL2 with graphics acceleration. Unsupported shaders report failure rather than switching to a different visual. Avoid running many WebGL previews at once.
+
+Halo and Audio Particles are experimental. Looping, playback-rate changes, effect support, full production-editor color parity and Ferrofluid are not included. Full production performance and cross-browser release testing remain separate work.
+
+Read the [source notices](/NOTICE.md). Local implementation approval is not publication permission or a blanket license. Remotion’s own license also applies.

@@ -1,0 +1,41 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import {Code} from '@astrojs/starlight/components';
+import Preview from '../components/Preview';
+import type {PreviewKind} from '../components/Preview';
+import StudioActions from '../components/StudioActions';
+import {elements} from '../data/elements';
+export function getStaticPaths() {
+	return elements.map(entry => ({params: {element: entry.slug}, props: {entry}}));
+}
+const {entry} = Astro.props;
+const usage = `import {${entry.name}} from './${entry.slug}.element';\n\n// Inside a Remotion composition. The Element owns its Sequence.\nexport const MyComposition = () => (\n  <${entry.name} width={${entry.width}} height={${entry.height}} />\n);`;
+---
+<StarlightPage frontmatter={{title: entry.title, description: entry.description, tableOfContents: false}}>
+	<div class="element-page">
+	<div class="tags"><span>{entry.renderer}</span><span>Source-installable</span></div>
+	<p class="lead">{entry.tagline}</p><p>{entry.description}</p>
+	<div class="element-workbench">
+		<div class="element-preview">
+			<Preview slug={entry.slug as PreviewKind} editable controlsTargetId={`${entry.slug}-preview-controls`} client:only="react"><img slot="fallback" class="fallback-poster" src={`/posters/${entry.slug}.webp`} alt={`${entry.title} preview`} width={entry.width} height={entry.height} /></Preview>
+		</div>
+		<aside class="element-config" aria-label={`${entry.title} actions and preview settings`}>
+			<section class="element-actions">
+				<div><strong>Add to your project</strong><span>Install the editable source or download it directly.</span></div>
+				<StudioActions slug={entry.slug} client:only="react" />
+				<a class="source-download button" href={`/elements/${entry.slug}.tsx`} download={`${entry.slug}.element.tsx`}>↓ Download TSX</a>
+				<p class="muted">Open a composition in Studio first. Install and drag both require confirmation. On touch devices, use Install in Studio.</p>
+			</section>
+			<div id={`${entry.slug}-preview-controls`} class="controls-slot"></div>
+		</aside>
+	</div>
+	<h2 id="usage">Basic usage</h2><Code code={usage} lang="tsx" />
+	<p>No props are required. The preview and default component reference Remotion’s hosted example audio; no audio is bundled here. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track.</p>
+	<h2 id="controls">Key controls</h2><ul>{entry.controls.map(control => <li>{control}</li>)}</ul>
+	<p>All Elements expose <code>audioSrc</code>, <code>audioOffsetInSeconds</code>, <code>playAudio</code>, <code>inputGainDb</code>, <code>width</code> and <code>height</code>. Select the Element itself in Studio to see its Interactive controls.</p>
+	<h2 id="limitations">Before you render</h2><aside class="limitation">{entry.limitation}</aside>
+	<p>Playback is enabled by default. Stacking visualizers? Enable only one audio track. Analysis gain affects visuals, not playback volume. Each instance decodes its own fixed audio windows, so stacked instances use more memory.</p>
+	<p>Looping, playback-rate changes, full production-editor color parity and effect support are not included. Keep the <a href="/NOTICE.md">inherited attribution and publication caveats</a> with the source.</p>
+	<p><a href="/examples.html">Explore variants & a combined composition →</a></p>
+	</div>
+</StarlightPage>
