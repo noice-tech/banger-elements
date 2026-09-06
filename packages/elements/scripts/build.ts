@@ -68,4 +68,4 @@ if (errors.length) {
 	);
 }
 
-console.log('Built seven standalone Elements and validated Studio payloads.');
+console.log(`Built ${catalog.length} standalone Elements and validated Studio payloads.`);

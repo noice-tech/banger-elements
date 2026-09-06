@@ -10,6 +10,7 @@ import {
 	Circle,
 	Halo,
 	AudioParticles,
+	Ferrofluid,
 } from '../../../../packages/elements/dist/components';
 
 const DEFAULT_AUDIO = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3';
@@ -102,6 +103,62 @@ const HaloAndParticles = (props: Props) => {
 	);
 };
 const examples = {
+	ferrofluid: {
+		component: Ferrofluid,
+		width: 720,
+		height: 720,
+		props: {
+			inputGainDb: 10,
+			intensity: 2,
+			pattern: 2,
+			fluidity: 0.15,
+			color: '#161923',
+			shineColor: '#ffbc8e',
+			shineX: -0.3,
+			shineY: -1,
+			shineZ: -0.5,
+			shineIntensity: 2.6,
+			shineSize: 1,
+			roughness: 0.15,
+			iridescence: 0.3,
+			envMapIntensity: 1,
+			audioLights: true,
+			quality: 'medium',
+			mappingMode: 'uniform',
+			autoRotate: true,
+			rotationSpeed: 1,
+		},
+		controls: [
+			color('color', 'Metal tint'),
+			color('shineColor', 'Shine color'),
+			range('shineX', 'Shine X', -3, 3, 0.1),
+			range('shineY', 'Shine Y', -3, 3, 0.1),
+			range('shineZ', 'Shine Z', -3, 3, 0.1),
+			range('shineIntensity', 'Shine intensity', 0, 10, 0.1),
+			range('shineSize', 'Shine size', 0.1, 3, 0.1),
+			gain,
+			range('intensity', 'Intensity', 0.1, 12, 0.1),
+			range('pattern', 'Spike density', 1, 20, 0.1),
+			range('fluidity', 'Fluidity', 0, 1, 0.01),
+			range('roughness', 'Roughness', 0, 1, 0.01),
+			range('iridescence', 'Iridescence', 0, 1, 0.01),
+			range('envMapIntensity', 'Studio reflections', 0, 2, 0.01),
+			select('quality', 'Quality', [
+				{value: 'low', label: 'Low'},
+				{value: 'medium', label: 'Medium'},
+				{value: 'high', label: 'High'},
+			]),
+			select('mappingMode', 'Frequency mapping', [
+				{value: 'uniform', label: 'Uniform'},
+				{value: 'latitude', label: 'Latitude'},
+				{value: 'radial', label: 'Radial'},
+				{value: 'voronoi', label: 'Voronoi'},
+			]),
+			bool('audioLights', 'Audio-reactive lights'),
+			bool('autoRotate', 'Auto rotate'),
+			range('rotationSpeed', 'Rotation speed', -3, 3, 0.1),
+		],
+	},
 	waveform: {
 		component: Waveform,
 		width: 900,
@@ -348,7 +405,7 @@ const examples = {
 } as const;
 export type PreviewKind = keyof typeof examples;
 const defaultAudioFor = (kind: PreviewKind) => {
-	if (kind === 'halo') return HALO_AUDIO;
+	if (kind === 'halo' || kind === 'ferrofluid') return HALO_AUDIO;
 	if (kind === 'audio-particles' || kind === 'combined') return AUDIO_PARTICLES_AUDIO;
 	return DEFAULT_AUDIO;
 };

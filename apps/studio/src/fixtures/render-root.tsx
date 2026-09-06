@@ -1,6 +1,7 @@
 import {AbsoluteFill, Composition, registerRoot} from 'remotion';
 import {
 	AudioParticles,
+	Ferrofluid,
 	Circle,
 	Oscilloscope,
 	Pulsar,
@@ -9,6 +10,8 @@ import {
 	Waveform,
 } from '../../../../packages/elements/dist/components';
 
+const FerrofluidExample = () => <Ferrofluid />;
+const FerrofluidFluid = () => <Ferrofluid fluidity={0.8} mappingMode="voronoi" quality="high" />;
 const WaveformExample = () => <Waveform />;
 const SpectreExample = () => <Spectre />;
 const SpectreSegmented = () => <Spectre spectreVariant="segmented" />;
@@ -28,6 +31,8 @@ const HaloAndParticles = () => (
 );
 
 const compositions = [
+	['Ferrofluid', FerrofluidExample, 720, 720],
+	['FerrofluidFluid', FerrofluidFluid, 720, 720],
 	['Waveform', WaveformExample, 900, 300],
 	['Spectre', SpectreExample, 1280, 300],
 	['SpectreSegmented', SpectreSegmented, 1280, 300],

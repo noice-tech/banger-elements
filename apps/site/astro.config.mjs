@@ -26,6 +26,7 @@ export default defineConfig({
 						{label: 'Pulsar', link: '/pulsar.html'},
 						{label: 'Circle', link: '/circle.html'},
 						{label: 'Halo', link: '/halo.html'},
+						{label: 'Ferrofluid', link: '/ferrofluid.html'},
 						{label: 'Audio Particles', link: '/audio-particles.html'},
 					],
 				},

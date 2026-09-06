@@ -1,4 +1,4 @@
-// Prerender the seven lightweight, silent loops used by the overview cards.
+// Prerender the lightweight, silent loops used by the overview cards.
 // The checked-in WebP posters remain the loading, error and reduced-motion fallback.
 import {spawnSync} from 'node:child_process';
 import {mkdirSync} from 'node:fs';
@@ -16,6 +16,7 @@ const cli = path.join(
 );
 const previews = path.join(workspace, 'static/previews');
 const compositions = {
+	ferrofluid: 'Ferrofluid',
 	waveform: 'Waveform',
 	spectre: 'Spectre',
 	oscilloscope: 'Oscilloscope',
@@ -27,6 +28,7 @@ const compositions = {
 
 mkdirSync(previews, {recursive: true});
 for (const [slug, composition] of Object.entries(compositions)) {
+	if (process.argv[2] && process.argv[2] !== slug) continue;
 	console.log(`Rendering overview preview: ${composition}`);
 	const result = spawnSync(
 		process.execPath,

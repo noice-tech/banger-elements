@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import sharp from 'sharp';
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const names = {
+	ferrofluid: 'Ferrofluid',
 	waveform: 'Waveform',
 	spectre: 'Spectre',
 	segmented: 'SpectreSegmented',
@@ -21,6 +22,7 @@ const names = {
 };
 await mkdir(path.join(workspace, 'static/posters'), {recursive: true});
 for (const [slug, name] of Object.entries(names)) {
+	if (process.argv[2] && process.argv[2] !== slug) continue;
 	await sharp(path.resolve(workspace, `../../out/${name}.png`))
 		.resize({width: 900, withoutEnlargement: true})
 		.webp({quality: 85})

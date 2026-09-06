@@ -1,5 +1,13 @@
 export const catalog = [
 	{
+		slug: 'ferrofluid',
+		name: 'Ferrofluid',
+		width: 720,
+		height: 720,
+		description:
+			'Liquid metal with audio-reactive spikes, flowing shapes and colorful reflections.',
+	},
+	{
 		slug: 'waveform',
 		name: 'Waveform',
 		width: 900,

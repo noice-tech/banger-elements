@@ -34,6 +34,7 @@ function loadHelpers(element: string, names: string[]) {
 }
 
 for (const element of [
+	'ferrofluid',
 	'waveform',
 	'spectre',
 	'oscilloscope',

@@ -26,7 +26,7 @@ test('site stages producer-owned artifacts byte-for-byte', async () => {
 	);
 });
 
-test('all seven detail pages contain static docs, downloads and real posters', async () => {
+test('all catalog detail pages contain static docs, downloads and real posters', async () => {
 	for (const {slug} of catalog) {
 		const html = await readFile(path.join(workspace, `dist/${slug}.html`), 'utf8');
 		for (const text of [
@@ -45,8 +45,8 @@ test('all seven detail pages contain static docs, downloads and real posters', a
 		assert.equal(poster.toString('ascii', 8, 12), 'WEBP');
 	}
 	const overview = await readFile(path.join(workspace, 'dist/index.html'), 'utf8');
-	assert.equal((overview.match(/class="element-card"/g) ?? []).length, 7);
-	assert.equal((overview.match(/<video /g) ?? []).length, 7);
+	assert.equal((overview.match(/class="element-card"/g) ?? []).length, catalog.length);
+	assert.equal((overview.match(/<video /g) ?? []).length, catalog.length);
 	assert.ok(overview.includes('Halo'));
 	assert.ok(!overview.includes('Spectrum Halo'));
 	assert.ok(!/component-url="[^"]*\/Preview\./.test(overview), 'Gallery must not mount Players');

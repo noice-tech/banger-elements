@@ -15,6 +15,8 @@ const output = path.join(repository, 'out');
 mkdirSync(output, {recursive: true});
 
 const compositions = [
+	'Ferrofluid',
+	'FerrofluidFluid',
 	'Waveform',
 	'Spectre',
 	'SpectreSegmented',

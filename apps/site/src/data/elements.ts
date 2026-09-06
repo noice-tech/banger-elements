@@ -1,6 +1,24 @@
 import catalog from '../../../../packages/elements/dist/catalog.json';
 
 const details = {
+	ferrofluid: {
+		title: 'Ferrofluid',
+		renderer: 'WebGL2',
+		tagline: 'Liquid metal, moved by sound.',
+		description:
+			'A liquid-metal sphere that pulses, flows and forms spikes with your music. Shape its surface and add colorful reflections for a glossy, otherworldly look.',
+		controls: [
+			'intensity / pattern / fluidity — spikes and deformation',
+			'color / roughness / iridescence — metallic finish',
+			'shineColor — color of the warm reflection',
+			'shineX / shineY / shineZ — reflection direction (not canvas coordinates; zero restores the default direction)',
+			'shineIntensity / shineSize — reflection brightness and spread',
+			'mappingMode — uniform, latitude, radial or voronoi frequency mapping',
+			'quality — low, medium or high mesh detail',
+		],
+		limitation:
+			'Experimental. Requires WebGL2. High quality is GPU-intensive; dense spikes need more mesh detail. Extreme gain or deformation can clip outside the canvas. Motion continues in silence.',
+	},
 	waveform: {
 		title: 'Waveform',
 		renderer: 'SVG',
