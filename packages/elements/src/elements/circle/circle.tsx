@@ -72,7 +72,7 @@ const circleSchema = {
 
 	width: {
 		type: 'number',
-		default: 600,
+		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,
@@ -82,7 +82,7 @@ const circleSchema = {
 	},
 	height: {
 		type: 'number',
-		default: 600,
+		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,

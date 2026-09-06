@@ -72,7 +72,7 @@ const pulsarSchema = {
 
 	width: {
 		type: 'number',
-		default: 900,
+		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,
@@ -82,7 +82,7 @@ const pulsarSchema = {
 	},
 	height: {
 		type: 'number',
-		default: 500,
+		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,

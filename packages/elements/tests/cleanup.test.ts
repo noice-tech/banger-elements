@@ -10,7 +10,7 @@ import * as Media from '@remotion/media';
 
 // Expose private helpers only in this test's in-memory module. Delivered files
 // retain exactly one exported component and no test/runtime dependency.
-function loadHelpers(element: string, names: string[]) {
+function loadHelpers(element: string, names: string[], overrides: Record<string, unknown> = {}) {
 	const source = readFileSync(`src/elements/${element}/${element}.tsx`, 'utf8');
 	const {outputText} = ts.transpileModule(`${source}\nexport {${names.join(',')}};`, {
 		compilerOptions: {
@@ -25,6 +25,7 @@ function loadHelpers(element: string, names: string[]) {
 	runInNewContext(outputText, {
 		exports,
 		require: (name: string) => {
+			if (name in overrides) return overrides[name];
 			if (name === '@remotion/media') return Media;
 			if (name === '@remotion/media-utils') return MediaUtils;
 			return require(name);
@@ -82,6 +83,170 @@ for (const element of [
 		);
 	});
 }
+
+const {waveformPath} = loadHelpers('waveform', ['waveformPath']) as {
+	waveformPath: (input: {
+		audioData: MediaUtilsAudioData;
+		dataOffsetInSeconds: number;
+		sourceTime: number;
+		width: number;
+		height: number;
+		inputGainDb: number;
+		intensity: number;
+		windowInSeconds: number;
+	}) => string;
+};
+
+const waveformSamples = new Float32Array(44100 * 5);
+waveformSamples[50004] = 1;
+waveformSamples[50014] = 1;
+const waveformInput = {
+	audioData: {
+		channelWaveforms: [waveformSamples],
+		sampleRate: 44100,
+		durationInSeconds: 5,
+		numberOfChannels: 1,
+		resultId: 'waveform-test',
+		isRemote: false,
+	},
+	dataOffsetInSeconds: 0,
+	sourceTime: 2,
+	width: 900,
+	height: 300,
+	inputGainDb: 20,
+	intensity: 1,
+	windowInSeconds: 2,
+};
+
+function upperWaveformPoints(path: string) {
+	const points = path
+		.slice(1, -2)
+		.split(' L')
+		.map((point) => point.split(',').map(Number));
+	return points.slice(0, points.length / 2);
+}
+
+test('waveform: fixed transients translate without changing amplitude between frames', () => {
+	const peaks = (sourceTime: number) =>
+		upperWaveformPoints(waveformPath({...waveformInput, sourceTime})).filter(([, y]) => y < 149);
+	const initial = peaks(2);
+	assert.ok(initial.length > 0);
+	for (let frame = 1; frame < 5; frame++) {
+		const actual = peaks(2 + frame / 30);
+		assert.equal(actual.length, initial.length);
+		actual.forEach(([x, y], index) => {
+			assert.equal(y, initial[index][1]);
+			assert.ok(Math.abs(x - (initial[index][0] - (frame / 30 / 2) * 900)) < 1e-9);
+		});
+	}
+});
+
+test('waveform: audio tail remains available until it scrolls offscreen, even on a direct seek', () => {
+	const require = createRequire(import.meta.url);
+	const sampleRate = 1000;
+	const tail = {
+		...waveformInput.audioData,
+		sampleRate,
+		durationInSeconds: 42,
+		channelWaveforms: [new Float32Array(42 * sampleRate).fill(0.5)],
+	};
+	for (const windowInSeconds of [0.1, 2, 5]) {
+		for (const remaining of [windowInSeconds / 2, windowInSeconds / 4, 0]) {
+			const sourceTime = 42 + windowInSeconds / 2 - remaining;
+			let requestedTime = -1;
+			// Fresh hook state for every frame: no prior playback buffer to rely on.
+			const {useVisualizerAudio: runAudioHook} = loadHelpers('waveform', ['useVisualizerAudio'], {
+				react: {
+					...require('react'),
+					useMemo: (factory: () => unknown) => factory(),
+					useRef: (current: unknown) => ({current}),
+					useId: () => 'tail-test',
+					useLayoutEffect: () => {},
+				},
+				remotion: {
+					...require('remotion'),
+					useDelayRender: () => ({delayRender: () => 0, continueRender: () => {}}),
+				},
+				'@remotion/media-utils': {
+					useWindowedAudioData: ({frame, fps}: {frame: number; fps: number}) => {
+						requestedTime = frame / fps;
+						const dataOffsetInSeconds = Math.max(0, (Math.floor(requestedTime / 20) - 1) * 20);
+						return {
+							audioData:
+								requestedTime >= 42
+									? null
+									: {
+											...tail,
+											channelWaveforms: [
+												tail.channelWaveforms[0].subarray(dataOffsetInSeconds * sampleRate),
+											],
+										},
+							dataOffsetInSeconds,
+						};
+					},
+				},
+			}) as {
+				useVisualizerAudio: (
+					src: string,
+					time: number,
+					fps: number,
+					window: number,
+				) => {
+					audioData: MediaUtilsAudioData | null;
+					dataOffsetInSeconds: number;
+				};
+			};
+			const result = runAudioHook('tail.mp3', sourceTime, 30, windowInSeconds);
+			assert.ok(Math.abs(requestedTime - (sourceTime - windowInSeconds / 2)) < 1e-9);
+			if (remaining === 0) {
+				assert.equal(result.audioData, null);
+				continue;
+			}
+			assert.ok(result.audioData);
+			const points = upperWaveformPoints(
+				waveformPath({
+					...waveformInput,
+					...result,
+					audioData: result.audioData,
+					sourceTime,
+					windowInSeconds,
+				}),
+			);
+			assert.ok(points.some(([x, y]) => x >= 0 && x < 900 && y < 149));
+		}
+	}
+});
+
+test('waveform: bin alignment is independent of decoded buffer origin', () => {
+	const expected = waveformPath(waveformInput);
+	const actual = waveformPath({
+		...waveformInput,
+		dataOffsetInSeconds: 1,
+		audioData: {...waveformInput.audioData, channelWaveforms: [waveformSamples.slice(44100)]},
+	});
+	assert.equal(actual, expected);
+});
+
+test('waveform: silence and low sample rates produce finite paths covering the viewport', () => {
+	for (const sourceTime of [-2, 0, 2, 8]) {
+		const points = upperWaveformPoints(
+			waveformPath({
+				...waveformInput,
+				sourceTime,
+				windowInSeconds: 0.1,
+				audioData: {
+					...waveformInput.audioData,
+					sampleRate: 100,
+					channelWaveforms: [new Float32Array(500)],
+				},
+			}),
+		);
+		assert.ok(points.length > 1);
+		assert.ok(points[0][0] < 0);
+		assert.ok(points.at(-1)![0] > 900);
+		assert.ok(points.every(([x, y]) => Number.isFinite(x) && y === 149));
+	}
+});
 
 const {setupSpectre, cleanupSpectre, drawSpectre} = loadHelpers('spectre', [
 	'setupSpectre',

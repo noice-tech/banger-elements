@@ -26,25 +26,25 @@ const AudioParticlesExample = () => <AudioParticles />;
 const HaloAndParticles = () => (
 	<AbsoluteFill style={{backgroundColor: '#080a10'}}>
 		<Halo />
-		<AudioParticles playAudio={false} width={720} height={720} maskHalo />
+		<AudioParticles playAudio={false} width={1280} height={720} maskHalo />
 	</AbsoluteFill>
 );
 
 const compositions = [
-	['Ferrofluid', FerrofluidExample, 720, 720],
-	['FerrofluidFluid', FerrofluidFluid, 720, 720],
-	['Waveform', WaveformExample, 900, 300],
-	['Spectre', SpectreExample, 1280, 300],
-	['SpectreSegmented', SpectreSegmented, 1280, 300],
-	['Oscilloscope', OscilloscopeExample, 1280, 300],
-	['Pulsar', PulsarExample, 900, 500],
-	['Circle', CircleExample, 600, 600],
-	['CircleGlow', CircleGlow, 600, 600],
-	['CircleWaveform', CircleWaveform, 600, 600],
-	['CircleDotted', CircleDotted, 600, 600],
-	['Halo', HaloExample, 720, 720],
+	['Ferrofluid', FerrofluidExample, 1280, 720],
+	['FerrofluidFluid', FerrofluidFluid, 1280, 720],
+	['Waveform', WaveformExample, 1280, 720],
+	['Spectre', SpectreExample, 1280, 720],
+	['SpectreSegmented', SpectreSegmented, 1280, 720],
+	['Oscilloscope', OscilloscopeExample, 1280, 720],
+	['Pulsar', PulsarExample, 1280, 720],
+	['Circle', CircleExample, 1280, 720],
+	['CircleGlow', CircleGlow, 1280, 720],
+	['CircleWaveform', CircleWaveform, 1280, 720],
+	['CircleDotted', CircleDotted, 1280, 720],
+	['Halo', HaloExample, 1280, 720],
 	['AudioParticles', AudioParticlesExample, 1280, 720],
-	['HaloAndParticles', HaloAndParticles, 720, 720],
+	['HaloAndParticles', HaloAndParticles, 1280, 720],
 ] as const;
 
 const Visuals = () => (

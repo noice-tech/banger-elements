@@ -76,7 +76,7 @@ const haloSchema = {
 
 	width: {
 		type: 'number',
-		default: 480,
+		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,
@@ -86,7 +86,7 @@ const haloSchema = {
 	},
 	height: {
 		type: 'number',
-		default: 480,
+		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,

@@ -67,7 +67,7 @@ import {Halo} from './halo.element';
 import {AudioParticles} from './audio-particles.element';
 
 // Add your track to public/my-track.mp3.
-// Use a 720 × 720 composition.
+// Use a 1280 × 720 composition.
 export const HaloAndParticles = () => {
   const audioSrc = staticFile('my-track.mp3');
   return (
@@ -79,7 +79,7 @@ export const HaloAndParticles = () => {
       />
       <AudioParticles
         audioSrc={audioSrc} playAudio={false}
-        width={720} height={720} maskHalo radius={0.18}
+        width={1280} height={720} maskHalo radius={0.18}
         inputGainDb={22} intensity={7.4} density={45} size={1.5}
       />
     </AbsoluteFill>

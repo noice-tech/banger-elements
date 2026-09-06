@@ -72,7 +72,7 @@ const oscilloscopeSchema = {
 	},
 	height: {
 		type: 'number',
-		default: 300,
+		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,

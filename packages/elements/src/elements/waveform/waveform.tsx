@@ -1,9 +1,5 @@
 import {Audio} from '@remotion/media';
-import {
-	useWindowedAudioData,
-	getWaveformPortion,
-	type MediaUtilsAudioData,
-} from '@remotion/media-utils';
+import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
 import React, {
 	forwardRef,
 	useRef,
@@ -39,8 +35,8 @@ type WaveformOptions = {
 type WaveformProps = InteractiveBaseProps & InteractiveTransformProps & WaveformOptions;
 
 const DEFAULT_AUDIO_SRC = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3';
-const DEFAULT_WIDTH = 900;
-const DEFAULT_HEIGHT = 300;
+const DEFAULT_WIDTH = 1280;
+const DEFAULT_HEIGHT = 720;
 const DEFAULT_AUDIO_OFFSET = 0;
 const DEFAULT_PLAY_AUDIO = true;
 const DEFAULT_INPUT_GAIN_DB = 0;
@@ -137,10 +133,14 @@ function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, 
 	);
 }
 
-function useVisualizerAudio(src: string, time: number, fps: number) {
+function useVisualizerAudio(src: string, time: number, fps: number, windowInSeconds: number) {
+	// media-utils returns null once its requested time reaches the audio end.
+	// Keep requesting the visible history until the tail has left the viewport.
+	// Unlike retaining the last buffer, this also works on a direct seek.
+	const analysisTime = Math.max(0, time - windowInSeconds / 2);
 	const result = useWindowedAudioData({
 		src,
-		frame: Math.max(0, time) * fps,
+		frame: analysisTime * fps,
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
@@ -157,7 +157,8 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 	);
 	// The hook can publish the current chunk before its retained neighbors.
 	const complete =
-		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
+		audioData === null ||
+		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, analysisTime);
 	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (complete) return;
@@ -187,25 +188,38 @@ function waveformPath({
 	readonly windowInSeconds: number;
 }) {
 	const gain = 10 ** (inputGainDb / 20);
-	const outsideAudio = sourceTime - windowInSeconds / 2 >= audioData.durationInSeconds;
-	const values = outsideAudio
-		? Array.from({length: 2048}, (_, index) => ({index, amplitude: 0}))
-		: getWaveformPortion({
-				audioData,
-				dataOffsetInSeconds,
-				startTimeInSeconds: sourceTime - windowInSeconds / 2,
-				durationInSeconds: windowInSeconds,
-				numberOfSamples: 2048,
-				normalize: false,
-			});
+	const {sampleRate, durationInSeconds} = audioData;
+	const waveform = audioData.channelWaveforms[0];
+	const startSample = (sourceTime - windowInSeconds / 2) * sampleRate;
+	const windowSamples = windowInSeconds * sampleRate;
+	// Anchor complete bins to the source timeline, not the moving viewport.
+	// Only their x coordinates change during playback. Include an extra point
+	// on either side so SVG clipping preserves smooth motion at the edges.
+	const binSize = Math.max(1, Math.floor(windowSamples / 2048));
+	const firstBin = Math.floor(startSample / binSize) - 1;
+	const lastBin = Math.ceil((startSample + windowSamples) / binSize);
+	const bufferStart = Math.round(dataOffsetInSeconds * sampleRate);
+	const sourceEnd = Math.round(durationInSeconds * sampleRate);
+	const values = Array.from({length: lastBin - firstBin + 1}, (_, index) => {
+		const binStart = (firstBin + index) * binSize;
+		const end = Math.min(binStart + binSize, sourceEnd, bufferStart + waveform.length);
+		let sum = 0;
+		for (let sample = Math.max(0, binStart, bufferStart); sample < end; sample++) {
+			sum += Math.abs(waveform[sample - bufferStart]);
+		}
+		return {
+			x: ((binStart + binSize / 2 - startSample) / windowSamples) * width,
+			amplitude: sum / binSize,
+		};
+	});
 	const upper = values.map(
-		(sample, i) =>
-			`${(i / (values.length - 1)) * width},${height / 2 - Math.max(1, Math.abs(sample.amplitude) * gain * intensity * height * 0.38)}`,
+		(sample) =>
+			`${sample.x},${height / 2 - Math.max(1, sample.amplitude * gain * intensity * height * 0.38)}`,
 	);
 	const lower = values
 		.map(
-			(sample, i) =>
-				`${(i / (values.length - 1)) * width},${height / 2 + Math.max(1, Math.abs(sample.amplitude) * gain * intensity * height * 0.38)}`,
+			(sample) =>
+				`${sample.x},${height / 2 + Math.max(1, sample.amplitude * gain * intensity * height * 0.38)}`,
 		)
 		.reverse();
 	return `M${upper.join(' L')} L${lower.join(' L')} Z`;
@@ -235,7 +249,12 @@ const WaveformContent: React.FC<Required<WaveformOptions>> = ({
 	const {fps} = useVideoConfig();
 	const offsetFrames = Math.round(audioOffsetInSeconds * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
-	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(audioSrc, sourceTime, fps);
+	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(
+		audioSrc,
+		sourceTime,
+		fps,
+		windowInSeconds,
+	);
 	const path = waveformPath({
 		audioData: audioData ?? silentAudio,
 		dataOffsetInSeconds,

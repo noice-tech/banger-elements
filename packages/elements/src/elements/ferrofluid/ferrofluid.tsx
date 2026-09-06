@@ -80,7 +80,7 @@ const ferrofluidSchema = {
 	},
 	width: {
 		type: 'number',
-		default: 720,
+		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,

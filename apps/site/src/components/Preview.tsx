@@ -92,7 +92,7 @@ const HaloAndParticles = (props: Props) => {
 				audioSrc={audioSrc}
 				audioOffsetInSeconds={audioOffsetInSeconds}
 				playAudio={false}
-				width={720}
+				width={1280}
 				height={720}
 				maskHalo
 				inputGainDb={22}
@@ -107,7 +107,7 @@ const HaloAndParticles = (props: Props) => {
 const examples = {
 	ferrofluid: {
 		component: Ferrofluid,
-		width: 720,
+		width: 1280,
 		height: 720,
 		props: {
 			inputGainDb: 10,
@@ -163,8 +163,8 @@ const examples = {
 	},
 	waveform: {
 		component: Waveform,
-		width: 900,
-		height: 300,
+		width: 1280,
+		height: 720,
 		props: {
 			inputGainDb: 4,
 			intensity: 1.6,
@@ -181,7 +181,7 @@ const examples = {
 	spectre: {
 		component: Spectre,
 		width: 1280,
-		height: 300,
+		height: 720,
 		props: {
 			inputGainDb: 4,
 			intensity: 4,
@@ -211,7 +211,7 @@ const examples = {
 	segmented: {
 		component: Spectre,
 		width: 1280,
-		height: 300,
+		height: 720,
 		props: {
 			inputGainDb: 4,
 			intensity: 4,
@@ -228,7 +228,7 @@ const examples = {
 	oscilloscope: {
 		component: Oscilloscope,
 		width: 1280,
-		height: 300,
+		height: 720,
 		props: {
 			inputGainDb: 4,
 			amplitude: 1.5,
@@ -251,8 +251,8 @@ const examples = {
 	},
 	pulsar: {
 		component: Pulsar,
-		width: 900,
-		height: 500,
+		width: 1280,
+		height: 720,
 		props: {
 			inputGainDb: 1,
 			intensity: 1,
@@ -276,8 +276,8 @@ const examples = {
 	},
 	circle: {
 		component: Circle,
-		width: 600,
-		height: 600,
+		width: 1280,
+		height: 720,
 		props: {
 			inputGainDb: 4,
 			intensity: 4,
@@ -308,8 +308,8 @@ const examples = {
 	},
 	glow: {
 		component: Circle,
-		width: 600,
-		height: 600,
+		width: 1280,
+		height: 720,
 		props: {
 			inputGainDb: 4,
 			intensity: 4,
@@ -320,8 +320,8 @@ const examples = {
 	},
 	'ring-waveform': {
 		component: Circle,
-		width: 600,
-		height: 600,
+		width: 1280,
+		height: 720,
 		props: {
 			inputGainDb: 4,
 			intensity: 4,
@@ -332,8 +332,8 @@ const examples = {
 	},
 	dotted: {
 		component: Circle,
-		width: 600,
-		height: 600,
+		width: 1280,
+		height: 720,
 		props: {
 			inputGainDb: 4,
 			intensity: 4,
@@ -346,7 +346,7 @@ const examples = {
 	},
 	halo: {
 		component: Halo,
-		width: 720,
+		width: 1280,
 		height: 720,
 		props: {
 			inputGainDb: 17,
@@ -399,7 +399,7 @@ const examples = {
 	},
 	combined: {
 		component: HaloAndParticles,
-		width: 720,
+		width: 1280,
 		height: 720,
 		props: {},
 		controls: [],

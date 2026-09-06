@@ -46,7 +46,7 @@ type SpectreProps = InteractiveBaseProps & InteractiveTransformProps & SpectreOp
 
 const DEFAULT_AUDIO_SRC = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3';
 const DEFAULT_WIDTH = 1280;
-const DEFAULT_HEIGHT = 300;
+const DEFAULT_HEIGHT = 720;
 const DEFAULT_AUDIO_OFFSET = 0;
 const DEFAULT_PLAY_AUDIO = true;
 const DEFAULT_INPUT_GAIN_DB = 0;
