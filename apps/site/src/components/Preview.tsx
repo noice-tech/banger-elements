@@ -81,12 +81,10 @@ const HaloAndParticles = (props: Props) => {
 				audioSrc={audioSrc}
 				audioOffsetInSeconds={audioOffsetInSeconds}
 				playAudio={Boolean(props.playAudio ?? true)}
-				intensity={6}
-				inputGainDb={17}
-				radius={0.18}
+				intensity={1}
+				inputGainDb={0}
+				radius={0.12}
 				trailDepth={9}
-				glowBlur={45}
-				glowSpread={30}
 			/>
 			<AudioParticles
 				audioSrc={audioSrc}
@@ -95,9 +93,9 @@ const HaloAndParticles = (props: Props) => {
 				width={1280}
 				height={720}
 				maskHalo
-				inputGainDb={22}
-				intensity={7.4}
-				radius={0.18}
+				inputGainDb={0}
+				intensity={1}
+				radius={0.12}
 				density={45}
 				size={1.5}
 			/>
@@ -349,25 +347,29 @@ const examples = {
 		width: 1280,
 		height: 720,
 		props: {
-			inputGainDb: 17,
-			intensity: 6,
-			radius: 0.18,
+			inputGainDb: 0,
+			intensity: 1,
+			radius: 0.12,
 			trailDepth: 9,
 			waveDelay: true,
-			glowBlur: 45,
-			glowSpread: 30,
-			startColor: '#b794ff',
+			motionBlur: true,
+			glowBlur: 0,
+			glowSpread: 0,
+			colorMode: 'rainbow',
+			startColor: '#aa8bff',
 			endColor: '#51e8cc',
 			artworkSrc: '',
 		},
 		controls: [
-			color('startColor', 'Start color'),
-			color('endColor', 'End color'),
+			colorMode,
+			color('startColor', 'Gradient start color'),
+			color('endColor', 'Gradient end color'),
 			gain,
 			intensity,
 			range('radius', 'Radius', 0.05, 0.8, 0.01),
 			range('trailDepth', 'Trail layers', 1, 9, 1),
 			bool('waveDelay', 'Delayed trails'),
+			bool('motionBlur', 'Temporal afterglow'),
 			range('glowBlur', 'Glow blur', 0, 100, 1),
 			range('glowSpread', 'Glow spread', 0, 100, 1),
 		],

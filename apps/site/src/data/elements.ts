@@ -91,15 +91,17 @@ const details = {
 		renderer: 'WebGL2',
 		tagline: 'Leave a little afterglow.',
 		description:
-			'Layered audio-reactive trails with optional artwork. An experimental treatment built from the original shader.',
+			'A white-edged rainbow halo with bass-driven expansion and delayed trails, faithfully adapted from the original shader without its icon or background.',
 		controls: [
 			'artworkSrc — optional artwork URL or Studio asset',
-			'radius / intensity — ring shape and response',
-			'trailDepth / waveDelay — delayed trails',
+			'colorMode — original rainbow or custom startColor / endColor gradient',
+			'inputGainDb — visual gain; 0 matches the source analyzer',
+			'radius / intensity — ring shape and response; source defaults are 0.12 / 1',
+			'trailDepth / waveDelay / motionBlur — delayed trails and temporal afterglow',
 			'glowBlur / glowSpread — glow treatment',
 		],
 		limitation:
-			'Experimental. Requires WebGL2; stacked canvases may reduce preview speed. Artwork needs CORS access. Source component is named Halo.',
+			'Experimental. Requires WebGL2. Uses a fixed 44.1 kHz / 60 Hz reference and decodes the full audio for deterministic bass accumulation; long tracks require more memory and first seeks may take longer. Artwork needs CORS access. Legacy gain/intensity presets should be reset for the corrected FFT.',
 	},
 	'audio-particles': {
 		title: 'Audio Particles',
@@ -111,7 +113,7 @@ const details = {
 			'density / size — particle field',
 			'startTimeInSeconds — emission start relative to the element: -5 pre-fills the field (default), 0 starts fresh, positive values delay emission; independent of audio trim',
 			'reactiveSpeed — bass-reactive motion',
-			'maskHalo / radius — optional explicit Halo mask',
+			'maskHalo — conservative Halo exclusion; match its radius, inputGainDb and intensity (source defaults: 0.12, 0, 1)',
 			'color / intensity — appearance',
 		],
 		limitation:

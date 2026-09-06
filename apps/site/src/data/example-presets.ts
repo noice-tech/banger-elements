@@ -74,13 +74,13 @@ export const HaloAndParticles = () => {
     <AbsoluteFill style={{backgroundColor: '#080a10'}}>
       <Halo
         audioSrc={audioSrc}
-        intensity={6} inputGainDb={17} radius={0.18}
-        trailDepth={9} glowBlur={45} glowSpread={30}
+        intensity={1} inputGainDb={0} radius={0.12}
+        colorMode="rainbow" trailDepth={9}
       />
       <AudioParticles
         audioSrc={audioSrc} playAudio={false}
-        width={1280} height={720} maskHalo radius={0.18}
-        inputGainDb={22} intensity={7.4} density={45} size={1.5}
+        width={1280} height={720} maskHalo radius={0.12}
+        inputGainDb={0} intensity={1} density={45} size={1.5}
       />
     </AbsoluteFill>
   );

@@ -1,10 +1,9 @@
 import {Audio} from '@remotion/media';
-import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
+import {useAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
 import React, {
 	forwardRef,
 	useRef,
 	useImperativeHandle,
-	useId,
 	useMemo,
 	useLayoutEffect,
 	useState,
@@ -30,18 +29,19 @@ type HaloOptions = {
 	readonly playAudio?: boolean;
 	readonly inputGainDb?: number;
 	readonly intensity?: number;
+	readonly colorMode?: 'rainbow' | 'gradient';
 	readonly startColor?: string;
 	readonly endColor?: string;
 	readonly radius?: number;
 	readonly trailDepth?: number;
 	readonly waveDelay?: boolean;
+	readonly motionBlur?: boolean;
 	readonly glowBlur?: number;
 	readonly glowSpread?: number;
 	readonly artworkSrc?: string;
 };
 
 type HaloProps = InteractiveBaseProps & InteractiveTransformProps & HaloOptions;
-const ANALYSIS_FPS = 60;
 
 const haloSchema = {
 	...Interactive.baseSchema,
@@ -73,7 +73,6 @@ const haloSchema = {
 		description: 'Play audio (disable when stacking)',
 		keyframable: false,
 	},
-
 	width: {
 		type: 'number',
 		default: 1280,
@@ -94,29 +93,35 @@ const haloSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	startColor: {type: 'color', default: '#aa8bff', description: 'Start color'},
-	endColor: {type: 'color', default: '#51e8cc', description: 'End color'},
+	colorMode: {
+		type: 'enum',
+		variants: {rainbow: {}, gradient: {}},
+		default: 'rainbow',
+		description: 'Original rainbow or custom gradient',
+	},
+	startColor: {type: 'color', default: '#aa8bff', description: 'Gradient start color'},
+	endColor: {type: 'color', default: '#51e8cc', description: 'Gradient end color'},
 	inputGainDb: {
 		type: 'number',
-		default: 17,
+		default: 0,
 		min: -30,
 		max: 30,
 		step: 1,
-		description: 'Visual gain in dB',
+		description: 'Visual gain in dB (0 matches the source analyzer)',
 		hiddenFromList: false,
 	},
 	intensity: {
 		type: 'number',
-		default: 6,
+		default: 1,
 		min: 0.1,
 		max: 10,
 		step: 0.1,
-		description: 'Intensity',
+		description: 'Spectrum deformation (1 matches the source)',
 		hiddenFromList: false,
 	},
 	radius: {
 		type: 'number',
-		default: 0.18,
+		default: 0.12,
 		min: 0.05,
 		max: 0.8,
 		step: 0.01,
@@ -125,7 +130,7 @@ const haloSchema = {
 	},
 	trailDepth: {
 		type: 'number',
-		default: 7,
+		default: 9,
 		min: 1,
 		max: 9,
 		step: 1,
@@ -133,77 +138,30 @@ const haloSchema = {
 		hiddenFromList: false,
 	},
 	waveDelay: {type: 'boolean', default: true, description: 'Delayed trails'},
+	motionBlur: {type: 'boolean', default: true, description: 'Original temporal afterglow'},
 	glowBlur: {
 		type: 'number',
-		default: 35,
+		default: 0,
 		min: 0,
 		max: 100,
 		step: 1,
-		description: 'Glow blur',
+		description: 'Optional extra glow (0 matches the source)',
 		hiddenFromList: false,
 	},
 	glowSpread: {
 		type: 'number',
-		default: 20,
+		default: 0,
 		min: 0,
 		max: 100,
 		step: 1,
-		description: 'Glow spread',
+		description: 'Extra glow spread',
 		hiddenFromList: false,
 	},
 	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
-const decodeWindowSeconds = 20;
-
-function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, time: number) {
-	const chunk = Math.floor(time / decodeWindowSeconds);
-	const expectedStart = Math.max(0, (chunk - 1) * decodeWindowSeconds);
-	const expectedEnd = Math.min(audioData.durationInSeconds, (chunk + 2) * decodeWindowSeconds);
-	return (
-		Math.abs(offset - expectedStart) < 1 / audioData.sampleRate &&
-		audioData.channelWaveforms[0].length >=
-			Math.round((expectedEnd - expectedStart) * audioData.sampleRate) - 2
-	);
-}
-
-function useVisualizerAudio(src: string, time: number, fps: number) {
-	const result = useWindowedAudioData({
-		src,
-		frame: Math.max(0, time) * fps,
-		fps,
-		windowInSeconds: decodeWindowSeconds,
-	});
-	// media-utils caches analysis by resultId; distinguish decoded buffer revisions.
-	const instanceId = useId();
-	const revision = useRef(0);
-	const audioData = useMemo(
-		() =>
-			result.audioData
-				? {
-						...result.audioData,
-						resultId: `${instanceId}:${revision.current++}`,
-					}
-				: null,
-		[result.audioData, instanceId],
-	);
-	// The current chunk can arrive before its retained neighbors.
-	const complete =
-		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
-	const {delayRender, continueRender} = useDelayRender();
-	useLayoutEffect(() => {
-		if (complete) return;
-		const handle = delayRender('Waiting for complete visualizer audio history');
-		return () => continueRender(handle);
-	}, [complete, delayRender, continueRender]);
-	return {...result, audioData: complete ? audioData : null};
-}
-
 function useArtwork(src: string) {
-	const [loaded, setLoaded] = useState<{
-		src: string;
-		image: HTMLImageElement;
-	} | null>(null);
+	const [loaded, setLoaded] = useState<{src: string; image: HTMLImageElement} | null>(null);
 	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (!src) return;
@@ -234,12 +192,40 @@ function useArtwork(src: string) {
 	return loaded?.src === src ? loaded.image : null;
 }
 
-type AudioInput = {
-	readonly audioData: MediaUtilsAudioData;
-	readonly dataOffsetInSeconds: number;
-	readonly sourceTime: number;
-	readonly inputGainDb: number;
-};
+// Shadertoy's default AnalyserNode: 2048-point FFT, Blackman window,
+// 0.8 magnitude smoothing, -100..-30 dB, first 512 byte-frequency bins.
+// Fix the reference cadence at 60 Hz, independent of host FPS/render order.
+const ANALYSIS_FPS = 60;
+// Pin the reference's 44.1 kHz frequency grid instead of using media-utils' 48 kHz default.
+const ANALYSIS_SAMPLE_RATE = 44100;
+const FFT_SIZE = 2048;
+const FREQUENCY_BIN_COUNT = 512;
+const TEMPORAL_SMOOTHING = 0.8;
+const MIN_DECIBELS = -100;
+const MAX_DECIBELS = -30;
+const SPECTRUM_SCALE = 0.08;
+// Only these bins can be read by the source shader. Keep the full FFT for
+// correctness, but retain compact, gain-independent histories (~10 KB/sec).
+const RETAINED_BINS = Math.ceil(SPECTRUM_SCALE * FREQUENCY_BIN_COUNT) + 1;
+const BLUR_SAMPLES = 6;
+const HISTORY_ROWS = 9 + BLUR_SAMPLES - 1;
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+const blackmanWindow = Float64Array.from(
+	{length: FFT_SIZE},
+	(_, index) =>
+		0.42 -
+		0.5 * Math.cos((2 * Math.PI * index) / FFT_SIZE) +
+		0.08 * Math.cos((4 * Math.PI * index) / FFT_SIZE),
+);
+const bitReversedIndices = Uint16Array.from({length: FFT_SIZE}, (_, index) => {
+	let reversed = 0;
+	for (let bits = FFT_SIZE; bits > 1; bits >>= 1) {
+		reversed = (reversed << 1) | (index & 1);
+		index >>= 1;
+	}
+	return reversed;
+});
 
 type AnalysisParameters = {
 	audioData: MediaUtilsAudioData;
@@ -249,36 +235,15 @@ type AnalysisParameters = {
 	inputGainDb: number;
 };
 
-const bassCache = new Map<string, number>();
-
-const smoothedMagnitudeCache = new Map<string, Float32Array>();
-
-const FREQUENCY_BIN_COUNT = 512;
-
-const SMOOTHING_LOOKBACK_FRAMES = 32;
-
-const rawMagnitudeCache = new Map<string, Float32Array>();
-
-const FFT_SIZE = 2048;
-
-const blackmanWindow = Float64Array.from(
-	{length: FFT_SIZE},
-	(_, index) =>
-		0.42 -
-		0.5 * Math.cos((2 * Math.PI * index) / (FFT_SIZE - 1)) +
-		0.08 * Math.cos((4 * Math.PI * index) / (FFT_SIZE - 1)),
-);
-
-const bitReversedIndices = new Uint16Array(FFT_SIZE);
-
-const MAX_CACHE_ENTRIES = 800;
-
-function setCachedValue<T>(cache: Map<string, T>, key: string, value: T) {
-	cache.set(key, value);
-	if (cache.size > MAX_CACHE_ENTRIES) {
-		const oldestKey = cache.keys().next().value;
-		if (oldestKey !== undefined) cache.delete(oldestKey);
-	}
+// Web Audio's speakers downmix to mono, including the defined quad/5.1 layouts.
+function monoSample(channels: Float32Array[], index: number) {
+	const sample = (channel: number) => channels[channel]?.[index] ?? 0;
+	if (channels.length === 1) return sample(0);
+	if (channels.length === 2) return (sample(0) + sample(1)) * 0.5;
+	if (channels.length === 4) return (sample(0) + sample(1) + sample(2) + sample(3)) * 0.25;
+	if (channels.length === 6)
+		return Math.SQRT1_2 * (sample(0) + sample(1)) + sample(2) + 0.5 * (sample(4) + sample(5));
+	return sample(0); // Web Audio's discrete fallback for other layouts.
 }
 
 function getRawMagnitudes({
@@ -286,36 +251,16 @@ function getRawMagnitudes({
 	dataOffsetInSeconds,
 	frame,
 	fps,
-}: {
-	audioData: MediaUtilsAudioData;
-	dataOffsetInSeconds: number;
-	frame: number;
-	fps: number;
-}) {
-	const cacheKey = `${audioData.resultId}:${dataOffsetInSeconds}:${fps}:${frame}`;
-	const cached = rawMagnitudeCache.get(cacheKey);
-	if (cached) return cached;
+}: Omit<AnalysisParameters, 'inputGainDb'>) {
 	const real = new Float64Array(FFT_SIZE);
 	const imaginary = new Float64Array(FFT_SIZE);
-	const waveform = audioData.channelWaveforms[0];
+	const magnitudes = new Float32Array(FREQUENCY_BIN_COUNT);
 	const endSample = Math.floor((frame / fps - dataOffsetInSeconds) * audioData.sampleRate);
 	const startSample = endSample - FFT_SIZE;
+	if (endSample <= 0 || startSample >= audioData.channelWaveforms[0].length) return magnitudes;
 	for (let index = 0; index < FFT_SIZE; index++) {
-		const waveformIndex = startSample + index;
-		const sample =
-			waveformIndex >= 0 && waveformIndex < waveform.length ? (waveform[waveformIndex] ?? 0) : 0;
-		real[index] = sample * (blackmanWindow[index] ?? 0);
-	}
-	for (let index = 1; index < FFT_SIZE; index++) {
-		const reversedIndex = bitReversedIndices[index] ?? 0;
-		if (index < reversedIndex) {
-			const realValue = real[index];
-			real[index] = real[reversedIndex];
-			real[reversedIndex] = realValue;
-			const imaginaryValue = imaginary[index];
-			imaginary[index] = imaginary[reversedIndex];
-			imaginary[reversedIndex] = imaginaryValue;
-		}
+		real[bitReversedIndices[index]] =
+			monoSample(audioData.channelWaveforms, startSample + index) * blackmanWindow[index];
 	}
 	for (let length = 2; length <= FFT_SIZE; length <<= 1) {
 		const angle = (-2 * Math.PI) / length;
@@ -343,188 +288,164 @@ function getRawMagnitudes({
 			}
 		}
 	}
-	const magnitudes = new Float32Array(FREQUENCY_BIN_COUNT);
 	for (let index = 0; index < FREQUENCY_BIN_COUNT; index++) {
 		magnitudes[index] = Math.hypot(real[index], imaginary[index]) / FFT_SIZE;
 	}
-	setCachedValue(rawMagnitudeCache, cacheKey, magnitudes);
 	return magnitudes;
 }
 
-const TEMPORAL_SMOOTHING = 0.8;
+type AnalysisTrace = {
+	magnitudes: Float32Array[];
+	gains: Map<number, {bass: number[]; phase: number[]}>;
+};
+// Owned by the decoded audio, not by playback. Seeking can only extend a trace;
+// it never changes previously computed values. No finite-window smoothing reset.
+const analysisCache = new WeakMap<MediaUtilsAudioData, Map<string, AnalysisTrace>>();
 
-function getSmoothedMagnitudes({audioData, dataOffsetInSeconds, frame, fps}: AnalysisParameters) {
-	const smoothedCacheKey = `${audioData.resultId}:${dataOffsetInSeconds}:${fps}:${frame}`;
-	const cached = smoothedMagnitudeCache.get(smoothedCacheKey);
-	if (cached) return cached;
-	const smoothedMagnitudes = new Float32Array(FREQUENCY_BIN_COUNT);
-	// Always evaluate the same finite window, regardless of cache/render order.
-	{
-		const firstFrame = Math.max(0, frame - SMOOTHING_LOOKBACK_FRAMES);
-		for (let analysisFrame = firstFrame; analysisFrame <= frame; analysisFrame++) {
-			const magnitudes = getRawMagnitudes({
-				audioData,
-				dataOffsetInSeconds,
-				frame: analysisFrame,
-				fps,
-			});
-			for (let index = 0; index < FREQUENCY_BIN_COUNT; index++) {
-				smoothedMagnitudes[index] =
-					TEMPORAL_SMOOTHING * smoothedMagnitudes[index] +
-					(1 - TEMPORAL_SMOOTHING) * (magnitudes[index] ?? 0);
-			}
-		}
+function getAnalysisTrace(parameters: AnalysisParameters) {
+	const {audioData, dataOffsetInSeconds, fps, frame} = parameters;
+	let traces = analysisCache.get(audioData);
+	if (!traces) {
+		traces = new Map();
+		analysisCache.set(audioData, traces);
 	}
-	setCachedValue(smoothedMagnitudeCache, smoothedCacheKey, smoothedMagnitudes);
-	return smoothedMagnitudes;
+	const key = `${dataOffsetInSeconds}:${fps}`;
+	let trace = traces.get(key);
+	if (!trace) {
+		trace = {magnitudes: [], gains: new Map()};
+		traces.set(key, trace);
+	}
+	const endFrame = Math.min(frame, Math.ceil(audioData.durationInSeconds * fps));
+	for (let next = trace.magnitudes.length; next <= endFrame; next++) {
+		const raw = getRawMagnitudes({...parameters, frame: next});
+		const previous = trace.magnitudes[next - 1];
+		const smoothed = new Float32Array(RETAINED_BINS);
+		for (let bin = 0; bin < RETAINED_BINS; bin++) {
+			smoothed[bin] =
+				TEMPORAL_SMOOTHING * (previous?.[bin] ?? 0) + (1 - TEMPORAL_SMOOTHING) * raw[bin];
+		}
+		trace.magnitudes.push(smoothed);
+	}
+	return trace;
 }
-
-const BASS_SAMPLE_COUNT = 8;
-
-const BASS_SAMPLE_RANGE = 0.008;
-
-const MIN_DECIBELS = -100;
-
-const MAX_DECIBELS = -30;
 
 function normalizeMagnitude(magnitude: number, inputGainDb: number) {
 	const decibels = 20 * Math.log10(Math.max(magnitude, 1e-12)) + inputGainDb;
-	return Math.max(0, Math.min(1, (decibels - MIN_DECIBELS) / (MAX_DECIBELS - MIN_DECIBELS)));
+	// getByteFrequencyData quantizes BEFORE texture interpolation and thresholds.
+	return (
+		Math.floor(clamp((decibels - MIN_DECIBELS) / (MAX_DECIBELS - MIN_DECIBELS), 0, 1) * 255) / 255
+	);
 }
 
-const BASS_VISIBILITY_THRESHOLD = 0.75;
+function sampleFrequency(values: Float32Array, x: number) {
+	// Normalized GL coordinates address texel CENTERS, not x * (width - 1).
+	const position = clamp(x * FREQUENCY_BIN_COUNT - 0.5, 0, values.length - 1);
+	const left = Math.floor(position);
+	const mix = position - left;
+	return values[left] * (1 - mix) + values[Math.min(left + 1, values.length - 1)] * mix;
+}
+
+function normalizedSpectrum(magnitudes: Float32Array, gain: number) {
+	return Float32Array.from(magnitudes, (magnitude) => normalizeMagnitude(magnitude, gain));
+}
+
+function bassFromSpectrum(values: Float32Array) {
+	let sum = 0;
+	for (let step = 0; step < 8; step++) sum += sampleFrequency(values, step * 0.001);
+	return clamp((sum / 8 - 0.75) / 0.25, 0, 1);
+}
 
 function getHaloSourceBass(parameters: AnalysisParameters) {
-	const cacheKey = `${parameters.audioData.resultId}:${parameters.dataOffsetInSeconds}:${parameters.fps}:${parameters.frame}:${parameters.inputGainDb}`;
-	const cached = bassCache.get(cacheKey);
-	if (cached !== undefined) return cached;
-	const smoothedMagnitudes = getSmoothedMagnitudes(parameters);
-	let bassAverage = 0;
-	for (let bassStep = 0; bassStep < BASS_SAMPLE_COUNT; bassStep++) {
-		const samplePosition =
-			((bassStep * BASS_SAMPLE_RANGE) / BASS_SAMPLE_COUNT) * (FREQUENCY_BIN_COUNT - 1);
-		const leftIndex = Math.floor(samplePosition);
-		const rightIndex = Math.min(FREQUENCY_BIN_COUNT - 1, leftIndex + 1);
-		const mix = samplePosition - leftIndex;
-		const leftValue = normalizeMagnitude(
-			smoothedMagnitudes[leftIndex] ?? 0,
-			parameters.inputGainDb,
-		);
-		const rightValue = normalizeMagnitude(
-			smoothedMagnitudes[rightIndex] ?? 0,
-			parameters.inputGainDb,
-		);
-		bassAverage += leftValue * (1 - mix) + rightValue * mix;
-	}
-	bassAverage /= BASS_SAMPLE_COUNT;
-	const bass = Math.max(
-		0,
-		Math.min(1, (bassAverage - BASS_VISIBILITY_THRESHOLD) / (1 - BASS_VISIBILITY_THRESHOLD)),
+	if (
+		parameters.frame < 0 ||
+		parameters.frame / parameters.fps >= parameters.audioData.durationInSeconds
+	)
+		return 0;
+	const trace = getAnalysisTrace(parameters);
+	return bassFromSpectrum(
+		normalizedSpectrum(trace.magnitudes[parameters.frame], parameters.inputGainDb),
 	);
-	setCachedValue(bassCache, cacheKey, bass);
-	return bass;
 }
 
-const frequencyDataCache = new Map<string, Float32Array>();
-
-function getHaloSourceFrequencyData(parameters: AnalysisParameters) {
-	const cacheKey = `${parameters.audioData.resultId}:${parameters.dataOffsetInSeconds}:${parameters.fps}:${parameters.frame}:${parameters.inputGainDb}`;
-	const cached = frequencyDataCache.get(cacheKey);
-	if (cached) return cached;
-	const smoothedMagnitudes = getSmoothedMagnitudes(parameters);
-	const frequencyData = new Float32Array(FREQUENCY_BIN_COUNT);
-	for (let index = 0; index < FREQUENCY_BIN_COUNT; index++) {
-		frequencyData[index] = normalizeMagnitude(
-			smoothedMagnitudes[index] ?? 0,
-			parameters.inputGainDb,
-		);
+function getBassPhase(parameters: AnalysisParameters) {
+	if (parameters.frame < 0) return 0;
+	const trace = getAnalysisTrace(parameters);
+	let gainTrace = trace.gains.get(parameters.inputGainDb);
+	if (!gainTrace) {
+		if (trace.gains.size >= 4) trace.gains.delete(trace.gains.keys().next().value!);
+		gainTrace = {bass: [], phase: [0]};
+		trace.gains.set(parameters.inputGainDb, gainTrace);
 	}
-	setCachedValue(frequencyDataCache, cacheKey, frequencyData);
-	return frequencyData;
+	const endFrame = Math.min(
+		parameters.frame,
+		Math.ceil(parameters.audioData.durationInSeconds * parameters.fps),
+	);
+	for (let next = gainTrace.bass.length; next < endFrame; next++) {
+		const bass = bassFromSpectrum(
+			normalizedSpectrum(trace.magnitudes[next], parameters.inputGainDb),
+		);
+		gainTrace.bass.push(bass);
+		// Buffer A accumulates PREVIOUS-frame bass. Float32 matches its storage.
+		gainTrace.phase.push(Math.fround(gainTrace.phase[next] + bass));
+	}
+	return gainTrace.phase[endFrame];
 }
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-type DataTexture = {
-	width: number;
-	height: number;
-	data: Uint8Array;
+type DataTexture = {width: number; height: number; data: Float32Array};
+type HistoryInput = {
+	audioData: MediaUtilsAudioData;
+	dataOffsetInSeconds: number;
+	sourceTime: number;
+	inputGainDb: number;
+	trailDepth: number;
+	waveDelay: boolean;
+	width?: number;
 };
 
-function createHaloHistory({
-	trailDepth,
-	waveDelay,
-	...input
-}: AudioInput & Pick<Required<HaloOptions>, 'trailDepth' | 'waveDelay'>) {
-	// Fixed 60 Hz analysis preserves the approved 60 FPS response at every host FPS.
-	const sample = (time: number) => ({
+function createHaloHistory(input: HistoryInput) {
+	const width = Math.max(1, Math.round(input.width ?? 1280));
+	const data = new Float32Array(width * HISTORY_ROWS * 4);
+	const headFrame = Math.round(input.sourceTime * ANALYSIS_FPS);
+	const parameters = (frame: number): AnalysisParameters => ({
 		audioData: input.audioData,
 		dataOffsetInSeconds: input.dataOffsetInSeconds,
-		frame: Math.round(Math.max(0, time) * ANALYSIS_FPS),
+		frame,
 		fps: ANALYSIS_FPS,
 		inputGainDb: input.inputGainDb,
 	});
-	const bassAt = (time: number) =>
-		time < 0 || time >= input.audioData.durationInSeconds ? 0 : getHaloSourceBass(sample(time));
-	const bass = bassAt(input.sourceTime);
-	const history = new Uint8Array(200 * 9 * 4);
-	for (let row = 0; row < (waveDelay ? trailDepth : 1); row++) {
-		const time = input.sourceTime - row / ANALYSIS_FPS;
-		if (time < 0 || time >= input.audioData.durationInSeconds) continue;
-		const values = getHaloSourceFrequencyData(sample(time));
-		const frequency = (x: number) => {
-			const p = clamp(x, 0, 1) * (values.length - 1);
-			const left = Math.floor(p);
-			return (
-				values[left] * (1 - (p - left)) +
-				(values[Math.min(left + 1, values.length - 1)] ?? 0) * (p - left)
-			);
-		};
-		for (let bar = 0; bar < 200; bar++) {
-			const position = (bar + 0.5) / 200;
+	// Build from the latest frame once, then read older rows without replaying FFTs.
+	const trace = getAnalysisTrace(parameters(Math.max(0, headFrame)));
+	for (let row = 0; row < HISTORY_ROWS; row++) {
+		const frame = headFrame - row;
+		const rowStart = row * width * 4;
+		data[rowStart + 2] = getBassPhase(parameters(frame));
+		if (frame < 0 || frame / ANALYSIS_FPS >= input.audioData.durationInSeconds) continue;
+		const values = normalizedSpectrum(trace.magnitudes[frame], input.inputGainDb);
+		data[rowStart + 1] = bassFromSpectrum(values);
+		for (let bar = 0; bar < width; bar++) {
+			const position = (bar + 0.5) / width;
 			let value = 0;
 			for (let step = 0; step < 10; step++) {
-				const offset = (step * 0.02) / 10;
+				const offset = step * 0.002;
 				const right = position + offset;
-				value += clamp((frequency(Math.abs(position - offset) * 0.08) - 0.8) / 0.2, 0, 1);
-				value += clamp((frequency((right < 1 ? right : 2 - right) * 0.08) - 0.8) / 0.2, 0, 1);
+				value += clamp(
+					(sampleFrequency(values, Math.abs(position - offset) * SPECTRUM_SCALE) - 0.8) / 0.2,
+					0,
+					1,
+				);
+				value += clamp(
+					(sampleFrequency(values, (right < 1 ? right : 2 - right) * SPECTRUM_SCALE) - 0.8) / 0.2,
+					0,
+					1,
+				);
 			}
-			history[(row * 200 + bar) * 4] = Math.round((value / 20) * 255);
-			history[(row * 200 + bar) * 4 + 3] = 255;
+			data[rowStart + bar * 4] = value / 20;
 		}
 	}
 	return {
-		bass,
-		history: {
-			width: 200,
-			height: 9,
-			data: history,
-		} satisfies DataTexture,
+		bass: getHaloSourceBass(parameters(headFrame)),
+		history: {width, height: HISTORY_ROWS, data} satisfies DataTexture,
 	};
-}
-
-// Adapt the known Banger GLSL sources to WebGL2, without Three's injected built-ins.
-function shaderSource(source: string, fragment: boolean) {
-	let code = source
-		.replace(/\bvarying\b/g, fragment ? 'in' : 'out')
-		.replace(/\battribute\b/g, 'in')
-		.replace(/\btexture2D\b/g, 'texture')
-		.replace(/\bgl_FragColor\b/g, 'outColor')
-		.replace('vec2 iResolution = vec2(1920.0, 1080.0);', 'uniform vec2 iResolution;')
-		.replace('point.x *= 16.0 / 9.0;', 'point.x *= iAspect;');
-	if (fragment)
-		code =
-			code.replace(/void main\(\)/, 'void renderEffect()') +
-			`
-void main() {
-  renderEffect();
-  vec3 c = max(outColor.rgb, vec3(0.0));
-  outColor.rgb = mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055,
-    step(vec3(0.0031308), c));
-  outColor.a = clamp(outColor.a, 0.0, 1.0);
-  outColor.rgb *= outColor.a;
-}`;
-	return `#version 300 es\nprecision highp float;\nprecision highp int;\n${fragment ? 'out vec4 outColor;\nuniform float iAspect;\n' : ''}${code}`;
 }
 
 type HaloFrame = Omit<
@@ -543,23 +464,7 @@ type HaloState = {
 	readonly buffer: WebGLBuffer;
 	readonly historyTexture: WebGLTexture;
 	readonly artworkTexture: WebGLTexture;
-	readonly uniforms: {
-		readonly time: WebGLUniformLocation | null;
-		readonly aspect: WebGLUniformLocation | null;
-		readonly history: WebGLUniformLocation | null;
-		readonly artwork: WebGLUniformLocation | null;
-		readonly hasArtwork: WebGLUniformLocation | null;
-		readonly artworkAspect: WebGLUniformLocation | null;
-		readonly startColor: WebGLUniformLocation | null;
-		readonly endColor: WebGLUniformLocation | null;
-		readonly radius: WebGLUniformLocation | null;
-		readonly intensity: WebGLUniformLocation | null;
-		readonly trailDepth: WebGLUniformLocation | null;
-		readonly waveDelay: WebGLUniformLocation | null;
-		readonly glowBlur: WebGLUniformLocation | null;
-		readonly glowSpread: WebGLUniformLocation | null;
-		readonly bass: WebGLUniformLocation | null;
-	};
+	readonly uniforms: Record<string, WebGLUniformLocation | null>;
 };
 
 function setupHalo(canvas: HTMLCanvasElement): HaloState {
@@ -581,8 +486,8 @@ function setupHalo(canvas: HTMLCanvasElement): HaloState {
 	let artworkTexture: WebGLTexture | null = null;
 	try {
 		for (const [type, source] of [
-			[gl.VERTEX_SHADER, shaderSource(haloVertex, false)],
-			[gl.FRAGMENT_SHADER, shaderSource(haloFragment, true)],
+			[gl.VERTEX_SHADER, haloVertex],
+			[gl.FRAGMENT_SHADER, haloFragment],
 		] as const) {
 			const shader = gl.createShader(type);
 			if (!shader) throw new Error('Halo could not create a shader.');
@@ -614,36 +519,39 @@ function setupHalo(canvas: HTMLCanvasElement): HaloState {
 		if (!artworkTexture) throw new Error('Halo could not create an artwork texture.');
 		for (const texture of [historyTexture, artworkTexture]) {
 			gl.bindTexture(gl.TEXTURE_2D, texture);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			const filter = texture === historyTexture ? gl.NEAREST : gl.LINEAR;
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		}
-		gl.uniform1f(gl.getUniformLocation(program, 'iOpacity'), 1);
-		gl.uniform1f(gl.getUniformLocation(program, 'iBackgroundOpacity'), 0);
+		const names = [
+			'iGlobalTime',
+			'iAspect',
+			'iHistoryTexture',
+			'iCenterImageTexture',
+			'iHasCenterImage',
+			'iCenterImageAspectRatio',
+			'iColorMode',
+			'iStartColor',
+			'iEndColor',
+			'iRadius',
+			'iIntensity',
+			'iTrailDepth',
+			'iWaveDelay',
+			'iMotionBlur',
+			'iGlowBlur',
+			'iGlowSpread',
+		];
 		return {
 			gl,
 			program,
 			buffer,
 			historyTexture,
 			artworkTexture,
-			uniforms: {
-				time: gl.getUniformLocation(program, 'iGlobalTime'),
-				aspect: gl.getUniformLocation(program, 'iAspect'),
-				history: gl.getUniformLocation(program, 'iHistoryTexture'),
-				artwork: gl.getUniformLocation(program, 'iCenterImageTexture'),
-				hasArtwork: gl.getUniformLocation(program, 'iHasCenterImage'),
-				artworkAspect: gl.getUniformLocation(program, 'iCenterImageAspectRatio'),
-				startColor: gl.getUniformLocation(program, 'iStartColor'),
-				endColor: gl.getUniformLocation(program, 'iEndColor'),
-				radius: gl.getUniformLocation(program, 'iRadius'),
-				intensity: gl.getUniformLocation(program, 'iIntensity'),
-				trailDepth: gl.getUniformLocation(program, 'iTrailDepth'),
-				waveDelay: gl.getUniformLocation(program, 'iWaveDelay'),
-				glowBlur: gl.getUniformLocation(program, 'iGlowBlur'),
-				glowSpread: gl.getUniformLocation(program, 'iGlowSpread'),
-				bass: gl.getUniformLocation(program, 'iLowFreq'),
-			},
+			uniforms: Object.fromEntries(
+				names.map((name) => [name, gl.getUniformLocation(program, name)]),
+			),
 		};
 	} catch (error) {
 		gl.deleteTexture(historyTexture);
@@ -664,56 +572,45 @@ function drawHalo(
 	gl.viewport(0, 0, frame.width, frame.height);
 	gl.clearColor(0, 0, 0, 0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
-	gl.uniform1f(uniforms.time, frame.sourceTime);
-	gl.uniform1f(uniforms.aspect, frame.width / frame.height);
-	gl.uniform3fv(uniforms.startColor, linearColor(frame.startColor));
-	gl.uniform3fv(uniforms.endColor, linearColor(frame.endColor));
-	gl.uniform1f(uniforms.radius, frame.radius);
-	gl.uniform1f(uniforms.intensity, frame.intensity);
-	gl.uniform1f(uniforms.trailDepth, frame.trailDepth);
-	gl.uniform1f(uniforms.waveDelay, Number(frame.waveDelay));
-	gl.uniform1f(uniforms.glowBlur, frame.glowBlur);
-	gl.uniform1f(uniforms.glowSpread, frame.glowSpread);
-	gl.uniform1f(uniforms.bass, frame.bass);
-	gl.uniform1f(uniforms.hasArtwork, Number(Boolean(frame.image)));
-	gl.uniform1f(
-		uniforms.artworkAspect,
-		frame.image ? frame.image.naturalWidth / frame.image.naturalHeight : 1,
-	);
+	for (const [name, value] of Object.entries({
+		iGlobalTime: frame.sourceTime,
+		iAspect: frame.width / frame.height,
+		iRadius: frame.radius,
+		iIntensity: frame.intensity,
+		iTrailDepth: frame.trailDepth,
+		iWaveDelay: Number(frame.waveDelay),
+		iMotionBlur: Number(frame.motionBlur),
+		iGlowBlur: frame.glowBlur,
+		iGlowSpread: frame.glowSpread,
+		iHasCenterImage: Number(Boolean(frame.image)),
+		iCenterImageAspectRatio: frame.image ? frame.image.naturalWidth / frame.image.naturalHeight : 1,
+	}))
+		gl.uniform1f(uniforms[name], value);
+	gl.uniform1i(uniforms.iColorMode, frame.colorMode === 'rainbow' ? 1 : 0);
+	gl.uniform3fv(uniforms.iStartColor, displayColor(frame.startColor));
+	gl.uniform3fv(uniforms.iEndColor, displayColor(frame.endColor));
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, historyTexture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 	gl.texImage2D(
 		gl.TEXTURE_2D,
 		0,
-		gl.RGBA,
+		gl.RGBA32F,
 		frame.history.width,
 		frame.history.height,
 		0,
 		gl.RGBA,
-		gl.UNSIGNED_BYTE,
+		gl.FLOAT,
 		frame.history.data,
 	);
-	gl.uniform1i(uniforms.history, 0);
+	gl.uniform1i(uniforms.iHistoryTexture, 0);
 	gl.activeTexture(gl.TEXTURE1);
 	gl.bindTexture(gl.TEXTURE_2D, artworkTexture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, Boolean(frame.image));
-	if (frame.image) {
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame.image);
-	} else {
-		gl.texImage2D(
-			gl.TEXTURE_2D,
-			0,
-			gl.RGBA,
-			emptyTexture.width,
-			emptyTexture.height,
-			0,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE,
-			emptyTexture.data,
-		);
-	}
-	gl.uniform1i(uniforms.artwork, 1);
+	if (frame.image) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame.image);
+	else
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+	gl.uniform1i(uniforms.iCenterImageTexture, 1);
 	gl.disable(gl.BLEND);
 	gl.drawArrays(gl.TRIANGLES, 0, 6);
 	gl.finish();
@@ -777,7 +674,7 @@ function HaloCanvas(frame: HaloFrame) {
 }
 
 // prettier-ignore
-const haloFragment = `
+const haloFragment = `#version 300 es
 /*
   Adapted from "Colorful Music Visualizer" by tikveel:
   https://www.shadertoy.com/view/llycWD
@@ -794,270 +691,157 @@ const haloFragment = `
   WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
   USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-
+precision highp float;
+precision highp int;
 uniform float iGlobalTime;
+uniform float iAspect;
 uniform sampler2D iHistoryTexture;
 uniform sampler2D iCenterImageTexture;
 uniform float iCenterImageAspectRatio;
 uniform float iHasCenterImage;
+uniform int iColorMode;
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
 uniform float iRadius;
 uniform float iIntensity;
 uniform float iTrailDepth;
 uniform float iWaveDelay;
+uniform float iMotionBlur;
 uniform float iGlowBlur;
 uniform float iGlowSpread;
-uniform float iBackgroundOpacity;
-uniform float iLowFreq;
-uniform float iOpacity;
-
-varying vec2 vUv;
-varying vec3 vBackgroundBottom;
-varying vec3 vBackgroundTop;
-
+in vec2 vUv;
+out vec4 outColor;
 #define TWO_PI 6.28318530718
-#define HISTORY_ROWS 9.0
-#define CIRCLE_BORDER_SIZE 0.003
-
-vec3 displayToLinear(vec3 color) {
-  vec3 low = color / 12.92;
-  vec3 high = pow((color + 0.055) / 1.055, vec3(2.4));
-  return mix(low, high, step(vec3(0.04045), color));
-}
-
-float cutLower(float value, float low) {
-  return clamp((value - low) / (1.0 - low), 0.0, 1.0);
-}
+#define CIRCLE_BORDER_SIZE 0.008
 
 vec2 rotatePoint(vec2 point, float angle) {
-  float sine = sin(angle);
-  float cosine = cos(angle);
+  float sine = sin(angle), cosine = cos(angle);
   return point * mat2(cosine, sine, -sine, cosine);
 }
 
-// Preserve the source shader's circle response, including its intentionally
-// broad radius. This shape is what gives the visualizer its large center disc.
+// The original circle function intentionally produces a visible radius of 2*r.
 float sourceCircle(float distanceFromCenter, float radius, float smoothness) {
-  float distanceFromRadius = distanceFromCenter - radius;
   float halfSmoothness = smoothness * 0.5;
-  return 1.0 - smoothstep(
-    radius - halfSmoothness,
-    radius + halfSmoothness,
-    distanceFromRadius
-  );
+  return 1.0 - smoothstep(radius - halfSmoothness, radius + halfSmoothness, distanceFromCenter - radius);
 }
 
+// Premultiplied OVER preserves the original mix() on opaque pixels and allows
+// the isolated Halo (including its temporal afterglow) to composite anywhere.
 vec4 over(vec4 back, vec4 front) {
-  float alpha = front.a + back.a * (1.0 - front.a);
-  vec3 color = (
-    front.rgb * front.a + back.rgb * back.a * (1.0 - front.a)
-  ) / max(alpha, 0.00001);
-  return vec4(color, alpha);
+  return vec4(front.rgb * front.a + back.rgb * (1.0 - front.a), front.a + back.a * (1.0 - front.a));
 }
 
-vec3 backgroundColor(vec2 uv) {
-  vec3 tint = mix(vBackgroundBottom, vBackgroundTop, uv.y + 0.1);
-  return mix(vec3(0.004, 0.006, 0.01), tint, 0.06);
-}
-
-vec4 spectrumColor(float age) {
-  float layerPosition = clamp(
-    age / max(iTrailDepth - 1.0, 1.0),
-    0.0,
-    1.0
+vec4 spectrumColor(int age) {
+  // Preserve even the source's repeated yellow opacity / shifted trail alphas.
+  const vec3 colors[9] = vec3[9](
+    vec3(1,1,1), vec3(1,1,0), vec3(1,0.5,0), vec3(1,0,0),
+    vec3(1,0.2,0.3), vec3(1,0,1), vec3(0,0,1), vec3(0,0.8,1), vec3(0,1,0)
   );
-  return vec4(
-    mix(iStartColor, iEndColor, layerPosition),
-    mix(1.0, 0.85, layerPosition)
-  );
+  const float alphas[9] = float[9](1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65);
+  float position = float(age) / max(iTrailDepth - 1.0, 1.0);
+  return vec4(iColorMode == 1 ? colors[age] : mix(iStartColor, iEndColor, position), alphas[age]);
 }
 
-float getFrequency(float frequencyX, float historyAge) {
-  float delayedAge = iWaveDelay > 0.5 ? historyAge : 0.0;
-  float historyY = (delayedAge + 0.5) / HISTORY_ROWS;
-  return texture2D(
-    iHistoryTexture,
-    vec2(clamp(frequencyX * 0.65, 0.0, 1.0), historyY)
-  ).r;
+float getFrequency(float x, int row) {
+  int width = textureSize(iHistoryTexture, 0).x;
+  return texelFetch(iHistoryTexture, ivec2(clamp(int(x * float(width)), 0, width - 1), row), 0).r;
 }
 
-vec3 innerCircle(vec2 point) {
-  float turn = 1.0 - smoothstep(
-    0.0,
-    1.0,
-    cutLower(fract(iGlobalTime * 0.06), 0.8)
-  );
+vec3 innerCircle(vec2 point, float time) {
+  float turn = 1.0 - smoothstep(0.0, 1.0, clamp((fract(time * 0.06) - 0.8) / 0.2, 0.0, 1.0));
   vec2 rotated = rotatePoint(point, TWO_PI * turn);
-  vec3 color = mix(vec3(0.005), vec3(0.035), rotated.y * 0.5 + 0.5);
-  color += sin(length(rotated) * 80.0) * 0.008;
-
-  return displayToLinear(clamp(color, 0.0, 1.0));
+  vec3 color = mix(vec3(0.0), vec3(0.15), rotated.y * 0.5 + 0.5) + 0.1;
+  // Original disc shading and concentric lines, deliberately NO triangle/icon.
+  return mix(color, vec3(0.0), sin(length(rotated) * 80.0) * 0.05);
 }
 
-vec4 centerImageColor(vec2 normalizedPoint) {
-  vec2 imageUv = normalizedPoint * 0.5 + 0.5;
-  if (iCenterImageAspectRatio >= 1.0) {
-    imageUv.x = (imageUv.x - 0.5) / iCenterImageAspectRatio + 0.5;
-  } else {
-    imageUv.y = (imageUv.y - 0.5) * iCenterImageAspectRatio + 0.5;
-  }
-  vec4 image = texture2D(iCenterImageTexture, imageUv);
-  image.rgb = displayToLinear(image.rgb);
-  return image;
+vec4 centerImageColor(vec2 point) {
+  vec2 uv = point * 0.5 + 0.5;
+  if (iCenterImageAspectRatio >= 1.0) uv.x = (uv.x - 0.5) / iCenterImageAspectRatio + 0.5;
+  else uv.y = (uv.y - 0.5) * iCenterImageAspectRatio + 0.5;
+  return texture(iCenterImageTexture, uv);
 }
 
-void main() {
-  vec2 point = vUv - 0.5;
-  point.x *= 16.0 / 9.0;
+vec2 shakeAt(float time) { return vec2(sin(time * 9.0), cos(time * 5.0)) * 0.002; }
 
-  float motionExtra = iLowFreq * 3.0;
-  vec2 shake = vec2(sin(iGlobalTime * 9.0), cos(iGlobalTime * 5.0)) * 0.002;
-  vec2 scenePoint = point + shake;
-  vec2 backgroundUv = vUv + shake;
-  vec4 result = vec4(
-    backgroundColor(backgroundUv),
-    clamp(iBackgroundOpacity, 0.0, 1.0)
-  );
+vec4 renderHalo(vec2 uv, int sampleAge) {
+  float time = iGlobalTime - float(sampleAge) / 60.0;
+  vec4 audio = texelFetch(iHistoryTexture, ivec2(0, sampleAge), 0);
+  float bass = audio.g, extra = audio.b;
+  vec2 point = (uv - 0.5) * vec2(iAspect, 1.0) + shakeAt(time);
+  point = rotatePoint(point, sin(time * 1.5 + extra) * 0.005);
+  point += vec2(cos(time * 9.0 + extra * 0.3), sin(time * 9.0 + extra * 0.3)) * 0.003;
+  float distanceFromCenter = length(point);
+  float bassGrowth = bass * 0.03;
+  float maximumRadius = min(1.0, iRadius + bassGrowth + 0.07 * iIntensity) * 2.0;
+  float glowExtent = iGlowBlur > 0.0 ? iGlowBlur * 0.001 + iGlowSpread * 0.0002 : 0.0;
+  if (distanceFromCenter > maximumRadius + glowExtent + 0.004) return vec4(0.0);
 
-  vec2 spectrumPoint = rotatePoint(
-    scenePoint,
-    sin(iGlobalTime * 1.5 + motionExtra) * 0.005
-  );
-  spectrumPoint += vec2(
-    cos(iGlobalTime * 9.0 + motionExtra * 0.3),
-    sin(iGlobalTime * 9.0 + motionExtra * 0.3)
-  ) * 0.003;
-
-  float bassGrowth = iLowFreq * 0.015;
-  float distanceFromCenter = length(spectrumPoint);
-  float maximumDrawRadius = clamp(
-    iRadius + bassGrowth + 0.03 * iIntensity,
-    iRadius + bassGrowth,
-    1.0
-  );
-
-  if (distanceFromCenter > maximumDrawRadius * 2.0 + 0.028) {
-    result.rgb += iLowFreq * 0.05;
-    result.rgb *= smoothstep(0.0, 1.0, 1.7 - length(scenePoint));
-    result.a *= iOpacity;
-    gl_FragColor = result;
-    return;
+  float angle = atan(point.x, point.y) / TWO_PI + 0.5;
+  float frequencyX = 1.0 - (angle > 0.5 ? 2.0 - angle * 2.0 : angle * 2.0);
+  vec4 result = vec4(0.0);
+  if (iGlowBlur > 0.0) {
+    float radius = min(1.0, iRadius + bassGrowth + getFrequency(frequencyX, sampleAge) * 0.07 * iIntensity);
+    float distanceToEdge = max(0.0, abs(distanceFromCenter - radius * 2.0) - iGlowSpread * 0.0002);
+    float glow = 1.0 - smoothstep(0.004, max(0.0041, iGlowBlur * 0.001), distanceToEdge);
+    result = over(result, vec4(spectrumColor(0).rgb, glow * 0.35));
   }
-
-  float polarAngle = atan(spectrumPoint.x, spectrumPoint.y) / TWO_PI + 0.5;
-  float frequencyX = polarAngle * 2.0;
-  if (frequencyX > 1.0) {
-    frequencyX = 2.0 - frequencyX;
+  for (int age = 8; age >= 0; age--) {
+    if (age >= int(iTrailDepth)) continue;
+    int row = sampleAge + (iWaveDelay > 0.5 ? age : 0);
+    float radius = clamp(iRadius + bassGrowth + getFrequency(frequencyX, row) * 0.07 * iIntensity, iRadius + bassGrowth, 1.0);
+    vec4 layer = spectrumColor(age);
+    layer.a *= sourceCircle(distanceFromCenter, radius, 0.004 + float(age) * 0.00025);
+    result = over(result, layer);
   }
-  frequencyX = 1.0 - frequencyX;
-
-  float leadFrequency = getFrequency(frequencyX, 0.0);
-  float leadRadius = iRadius + bassGrowth + leadFrequency * 0.03 * iIntensity;
-  float glowDistance = max(
-    0.0,
-    abs(distanceFromCenter - leadRadius * 2.0) - iGlowSpread * 0.0002
-  );
-  float leadGlow = 1.0 - smoothstep(
-    0.004,
-    max(0.0041, iGlowBlur * 0.001),
-    glowDistance
-  );
-  result = over(result, vec4(iStartColor, leadGlow * 0.35));
-
-  for (int ageIndex = 8; ageIndex >= 0; ageIndex--) {
-    float age = float(ageIndex);
-    if (age >= floor(iTrailDepth + 0.5)) {
-      continue;
-    }
-
-    float frequency = getFrequency(frequencyX, age);
-    float drawRadius = clamp(
-      iRadius + bassGrowth + frequency * 0.03 * iIntensity,
-      iRadius + bassGrowth,
-      1.0
-    );
-    float smoothness = 0.004 + age * 0.00025;
-    float spectrumMask = sourceCircle(
-      distanceFromCenter,
-      drawRadius,
-      smoothness
-    );
-    vec4 layerColor = spectrumColor(age);
-    layerColor.a *= spectrumMask;
-    result = over(result, layerColor);
-  }
-
   float innerRadius = max(0.02, iRadius + bassGrowth - CIRCLE_BORDER_SIZE);
   float innerMask = sourceCircle(distanceFromCenter, innerRadius, 0.004);
   if (innerMask > 0.0) {
-    vec2 innerPoint = spectrumPoint / innerRadius;
-    result = over(result, vec4(innerCircle(innerPoint), innerMask));
+    result = over(result, vec4(innerCircle(point / innerRadius, time), innerMask));
     if (iHasCenterImage > 0.5) {
-      vec4 centerImage = centerImageColor(innerPoint * 0.5);
-      centerImage.a *= innerMask;
-      result = over(result, centerImage);
+      vec4 artwork = centerImageColor(point / (innerRadius * 2.0));
+      artwork.a *= innerMask;
+      result = over(result, artwork);
     }
   }
-
-  result.rgb += iLowFreq * 0.05;
-  result.rgb *= smoothstep(0.0, 1.0, 1.7 - length(scenePoint));
-  result.a *= iOpacity;
-
-  gl_FragColor = result;
-}
-`;
-
-const haloVertex = `
-in vec2 position;
-uniform float iGlobalTime;
-uniform vec3 iStartColor;
-uniform vec3 iEndColor;
-
-varying vec2 vUv;
-varying vec3 vBackgroundBottom;
-varying vec3 vBackgroundTop;
-
-vec3 rgb2hsv(vec3 c) {
-  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-  float d = q.x - min(q.w, q.y);
-  float e = 1.0e-10;
-  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-}
-
-vec3 hsv2rgb(vec3 c) {
-  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+  result.rgb += bass * 0.05 * result.a;
+  result.rgb *= smoothstep(0.0, 1.0, 1.7 - length(point));
+  return result;
 }
 
 void main() {
-  float extra = iGlobalTime * 0.05;
-  vec3 bottomHsv = rgb2hsv(iEndColor);
-  vec3 topHsv = rgb2hsv(iStartColor);
-  bottomHsv.x = fract(bottomHsv.x + (iGlobalTime * 0.25 + extra) * 0.02);
-  topHsv.x = fract(topHsv.x + (iGlobalTime * 0.15 - extra) * 0.1);
+  // Expand the source feedback recurrence: 0.8*current + 0.2*previous.
+  // Discarded feedback weight is 0.2^6. Direct scene sampling approximates
+  // the source's bilinear framebuffer resampling at moving edges.
+  // Reproduce the feedback UV shift too, rather than blurring in place.
+  vec4 result = vec4(0.0);
+  vec2 uv = vUv;
+  float weight = 1.0;
+  for (int age = 0; age < ${BLUR_SAMPLES}; age++) {
+    float time = iGlobalTime - float(age) / 60.0;
+    if (time < 0.0) break;
+    result += renderHalo(uv, age) * weight * (iMotionBlur > 0.5 ? 0.8 : 1.0);
+    if (iMotionBlur < 0.5) break;
+    uv += shakeAt(time);
+    weight *= 0.2;
+  }
+  // Shadertoy writes display RGB directly. No additional linear/sRGB transform.
+  outColor = clamp(result, 0.0, 1.0);
+}
+`;
 
+const haloVertex = `#version 300 es
+in vec2 position;
+out vec2 vUv;
+void main() {
   vUv = position * 0.5 + 0.5;
-  vBackgroundBottom = hsv2rgb(bottomHsv);
-  vBackgroundTop = hsv2rgb(topHsv);
   gl_Position = vec4(position, 0.0, 1.0);
 }
 `;
 
-const emptyTexture: DataTexture = {
-	width: 1,
-	height: 1,
-	data: new Uint8Array(4),
-};
-
 const colorCache = new Map<string, number[]>();
-
 let colorParser: CanvasRenderingContext2D | null = null;
-
-function linearColor(color: string): number[] {
+function displayColor(color: string): number[] {
 	const cached = colorCache.get(color);
 	if (cached) return cached;
 	let bytes: number[];
@@ -1078,10 +862,7 @@ function linearColor(color: string): number[] {
 		colorParser.fillRect(0, 0, 1, 1);
 		bytes = Array.from(colorParser.getImageData(0, 0, 1, 1).data).slice(0, 3);
 	}
-	const result = bytes.map((byte) => {
-		const value = byte / 255;
-		return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-	});
+	const result = bytes.map((byte) => byte / 255);
 	if (colorCache.size >= 64) colorCache.clear();
 	colorCache.set(color, result);
 	return result;
@@ -1089,7 +870,7 @@ function linearColor(color: string): number[] {
 
 const silentAudio: MediaUtilsAudioData = {
 	channelWaveforms: [new Float32Array(1)],
-	sampleRate: 44100,
+	sampleRate: ANALYSIS_SAMPLE_RATE,
 	durationInSeconds: 0,
 	numberOfChannels: 1,
 	resultId: 'banger-elements-silence',
@@ -1101,20 +882,23 @@ const HaloContent: React.FC<Required<HaloOptions>> = (props) => {
 	const {fps} = useVideoConfig();
 	const offsetFrames = Math.round(props.audioOffsetInSeconds * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
-	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
+	// Full audio is required for source-start bass accumulation when seeking.
+	// useAudioData holds rendering until decoding completes; FFT traces grow lazily.
+	const audioData = useAudioData(props.audioSrc, {sampleRate: ANALYSIS_SAMPLE_RATE});
 	const image = useArtwork(props.artworkSrc);
-	const trailDepth = Math.round(props.trailDepth);
+	const trailDepth = clamp(Math.round(props.trailDepth), 1, 9);
 	const data = useMemo(
 		() =>
 			createHaloHistory({
 				audioData: audioData ?? silentAudio,
-				dataOffsetInSeconds,
+				dataOffsetInSeconds: 0,
 				sourceTime,
 				inputGainDb: props.inputGainDb,
 				trailDepth,
 				waveDelay: props.waveDelay,
+				width: props.width,
 			}),
-		[audioData, dataOffsetInSeconds, sourceTime, props.inputGainDb, trailDepth, props.waveDelay],
+		[audioData, sourceTime, props.inputGainDb, trailDepth, props.waveDelay, props.width],
 	);
 	return (
 		<>
@@ -1122,20 +906,12 @@ const HaloContent: React.FC<Required<HaloOptions>> = (props) => {
 				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
 			<HaloCanvas
-				width={props.width}
-				height={props.height}
+				{...props}
 				sourceTime={sourceTime}
 				history={data.history}
 				bass={data.bass}
 				image={image}
-				intensity={props.intensity}
-				startColor={props.startColor}
-				endColor={props.endColor}
-				radius={props.radius}
 				trailDepth={trailDepth}
-				waveDelay={props.waveDelay}
-				glowBlur={props.glowBlur}
-				glowSpread={props.glowSpread}
 			/>
 		</>
 	);
@@ -1143,9 +919,7 @@ const HaloContent: React.FC<Required<HaloOptions>> = (props) => {
 
 const HaloInner = forwardRef<
 	HTMLDivElement,
-	HaloProps & {
-		readonly controls: SequenceControls | undefined;
-	}
+	HaloProps & {readonly controls: SequenceControls | undefined}
 >(
 	(
 		{
@@ -1156,11 +930,13 @@ const HaloInner = forwardRef<
 			playAudio = haloSchema.playAudio.default,
 			inputGainDb = haloSchema.inputGainDb.default,
 			intensity = haloSchema.intensity.default,
+			colorMode = haloSchema.colorMode.default,
 			startColor = haloSchema.startColor.default,
 			endColor = haloSchema.endColor.default,
 			radius = haloSchema.radius.default,
 			trailDepth = haloSchema.trailDepth.default,
 			waveDelay = haloSchema.waveDelay.default,
+			motionBlur = haloSchema.motionBlur.default,
 			glowBlur = haloSchema.glowBlur.default,
 			glowSpread = haloSchema.glowSpread.default,
 			artworkSrc = haloSchema.artworkSrc.default,
@@ -1183,13 +959,7 @@ const HaloInner = forwardRef<
 			>
 				<div
 					ref={outlineRef}
-					style={{
-						boxSizing: 'border-box',
-						width,
-						height,
-						overflow: 'hidden',
-						...style,
-					}}
+					style={{boxSizing: 'border-box', width, height, overflow: 'hidden', ...style}}
 				>
 					<HaloContent
 						key={`${audioSrc}-${artworkSrc}`}
@@ -1200,11 +970,13 @@ const HaloInner = forwardRef<
 						playAudio={playAudio}
 						inputGainDb={inputGainDb}
 						intensity={intensity}
+						colorMode={colorMode}
 						startColor={startColor}
 						endColor={endColor}
 						radius={radius}
 						trailDepth={trailDepth}
 						waveDelay={waveDelay}
+						motionBlur={motionBlur}
 						glowBlur={glowBlur}
 						glowSpread={glowSpread}
 						artworkSrc={artworkSrc}

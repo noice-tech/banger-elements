@@ -17,6 +17,7 @@ const advancedKeys = new Set([
 	'sampleCount',
 	'trailDepth',
 	'waveDelay',
+	'motionBlur',
 	'glowBlur',
 	'glowSpread',
 	'maskHalo',
