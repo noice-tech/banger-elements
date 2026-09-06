@@ -4,25 +4,11 @@ import {mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import sharp from 'sharp';
+import {compositions} from '../../studio/src/fixtures/compositions.ts';
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const names = {
-	ferrofluid: 'Ferrofluid',
-	waveform: 'Waveform',
-	spectre: 'Spectre',
-	segmented: 'SpectreSegmented',
-	oscilloscope: 'Oscilloscope',
-	pulsar: 'Pulsar',
-	circle: 'Circle',
-	glow: 'CircleGlow',
-	'ring-waveform': 'CircleWaveform',
-	dotted: 'CircleDotted',
-	halo: 'Halo',
-	'audio-particles': 'AudioParticles',
-	combined: 'HaloAndParticles',
-};
 await mkdir(path.join(workspace, 'static/posters'), {recursive: true});
-for (const [slug, name] of Object.entries(names)) {
-	if (process.argv[2] && process.argv[2] !== slug) continue;
+for (const {slug, id: name} of compositions) {
+	if (!slug || (process.argv[2] && process.argv[2] !== slug)) continue;
 	await sharp(path.resolve(workspace, `../../out/${name}.png`))
 		.resize({width: 900, withoutEnlargement: true})
 		.webp({quality: 85})

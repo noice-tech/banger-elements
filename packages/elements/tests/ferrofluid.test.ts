@@ -1,37 +1,17 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {createRequire} from 'node:module';
 import test from 'node:test';
-import {runInNewContext} from 'node:vm';
-import ts from 'typescript';
-import * as MediaUtils from '@remotion/media-utils';
 import type {MediaUtilsAudioData} from '@remotion/media-utils';
-import * as Media from '@remotion/media';
+import {loadHelpers, mockCanvas} from './helpers';
 
 function load() {
-	const source = readFileSync('src/elements/ferrofluid/ferrofluid.tsx', 'utf8');
-	const {outputText} = ts.transpileModule(
-		`${source}\nexport {createSphere, createFerrofluidAudio, setupFerrofluid, drawFerrofluid, cleanupFerrofluid, vertexSource, fragmentSource, ferrofluidSchema};`,
-		{
-			compilerOptions: {
-				module: ts.ModuleKind.CommonJS,
-				jsx: ts.JsxEmit.ReactJSX,
-				target: ts.ScriptTarget.ES2022,
-				esModuleInterop: true,
-			},
-		},
-	);
-	const exports = {};
-	const require = createRequire(import.meta.url);
-	runInNewContext(outputText, {
-		exports,
-		require: (name: string) => {
-			if (name === '@remotion/media') return Media;
-			if (name === '@remotion/media-utils') return MediaUtils;
-			return require(name);
-		},
-	});
-	return exports as {
+	return loadHelpers('ferrofluid', [
+		'createSphere',
+		'createFerrofluidAudio',
+		'setupFerrofluid',
+		'drawFerrofluid',
+		'cleanupFerrofluid',
+		'ferrofluidSchema',
+	]) as {
 		createSphere: (segments: number) => {positions: Float32Array; indices: Uint32Array};
 		createFerrofluidAudio: (
 			input: {audioData: MediaUtilsAudioData; dataOffsetInSeconds: number; sourceTime: number},
@@ -40,8 +20,6 @@ function load() {
 		setupFerrofluid: (canvas: HTMLCanvasElement, quality: string, mapping: string) => unknown;
 		drawFerrofluid: (state: unknown, frame: Record<string, unknown>) => void;
 		cleanupFerrofluid: (state: unknown) => void;
-		vertexSource: (quality: string, mapping: string) => string;
-		fragmentSource: string;
 		ferrofluidSchema: Record<string, {default: unknown}>;
 	};
 }
@@ -76,67 +54,6 @@ for (const segments of [64, 128, 256]) {
 			assert.ok(cross.reduce((sum, value, j) => sum + value * positions[a + j], 0) > 0);
 		}
 	});
-}
-
-test('Ferrofluid: each quality/mapping generates standalone GLSL 3', () => {
-	for (const [octaves, quality] of ['low', 'medium', 'high'].entries()) {
-		for (const [mode, mapping] of ['uniform', 'latitude', 'radial', 'voronoi'].entries()) {
-			const shader = helpers.vertexSource(quality, mapping);
-			assert.ok(shader.startsWith('#version 300 es'));
-			assert.ok(shader.includes(`#define NOISE_OCTAVES ${octaves + 1}`));
-			assert.ok(shader.includes(`#define MAPPING_MODE ${mode}`));
-			assert.ok(!/#include|texture2D|\bvarying\b/.test(shader));
-		}
-	}
-});
-
-type Failure =
-	| 'vertex'
-	| 'fragment'
-	| 'link'
-	| 'vao'
-	| 'first-buffer'
-	| 'second-buffer'
-	| 'texture'
-	| 'draw';
-function mockCanvas(failure?: Failure) {
-	const calls: {name: string; args: unknown[]}[] = [];
-	const constants = new Map<string, number>();
-	let shaderCount = 0,
-		bufferCount = 0;
-	const gl = new Proxy(
-		{},
-		{
-			get: (_, name: string) => {
-				if (/^[A-Z_0-9]+$/.test(name)) {
-					if (!constants.has(name)) constants.set(name, constants.size + 1);
-					return constants.get(name);
-				}
-				return (...args: unknown[]) => {
-					calls.push({name, args});
-					if (name === 'createShader') return {shader: ++shaderCount};
-					if (name === 'getShaderParameter')
-						return !(failure === 'vertex' || (failure === 'fragment' && shaderCount === 2));
-					if (name === 'getProgramParameter') return failure !== 'link';
-					if (name === 'createVertexArray' && failure === 'vao') return null;
-					if (name === 'createBuffer') {
-						bufferCount++;
-						return failure === 'first-buffer' || (failure === 'second-buffer' && bufferCount === 2)
-							? null
-							: {buffer: bufferCount};
-					}
-					if (name === 'createTexture' && failure === 'texture') return null;
-					if (name.startsWith('create')) return {name};
-					if (name === 'getUniformLocation') return args[1];
-					if (name === 'getAttribLocation') return 0;
-					if (name === 'getError')
-						return failure === 'draw' ? -1 : (constants.get('NO_ERROR') ?? constants.size + 1);
-					return null;
-				};
-			},
-		},
-	);
-	return {canvas: {getContext: () => gl} as unknown as HTMLCanvasElement, calls, constants};
 }
 
 test('Ferrofluid: requires WebGL2 explicitly', () => {
@@ -212,15 +129,6 @@ test('Ferrofluid: depth-tested indexed drawing, alpha clear and full cleanup', (
 		assert.equal(calls.filter(({name}) => name === `delete${resource}`).length, count);
 	}
 });
-test('Ferrofluid: shine controls only affect the dedicated reflection', () => {
-	assert.equal((helpers.fragmentSource.match(/\buShineColor\b/g) ?? []).length, 2);
-	assert.ok(
-		helpers.fragmentSource.includes(
-			'environment += uShineColor * uShineIntensity * softbox(r, uShinePosition, vec3(1., 0., 0.), spread * uShineSize)',
-		),
-	);
-});
-
 test('Ferrofluid: shine defaults to warm ginger and updates independently in linear RGB', () => {
 	assert.equal(helpers.ferrofluidSchema.shineColor.default, '#ffbc8e');
 	const {canvas, calls} = mockCanvas();

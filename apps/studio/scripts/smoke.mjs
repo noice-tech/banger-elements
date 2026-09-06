@@ -3,6 +3,7 @@ import {mkdirSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {compositions} from '../src/fixtures/compositions.ts';
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repository = path.resolve(workspace, '../..');
@@ -14,24 +15,7 @@ const cli = path.join(
 const output = path.join(repository, 'out');
 mkdirSync(output, {recursive: true});
 
-const compositions = [
-	'Ferrofluid',
-	'FerrofluidFluid',
-	'Waveform',
-	'Spectre',
-	'SpectreSegmented',
-	'Oscilloscope',
-	'Pulsar',
-	'Circle',
-	'CircleGlow',
-	'CircleWaveform',
-	'CircleDotted',
-	'Halo',
-	'AudioParticles',
-	'HaloAndParticles',
-];
-
-for (const composition of compositions) {
+for (const {id: composition} of compositions) {
 	console.log(`Rendering ${composition}`);
 	const result = spawnSync(
 		process.execPath,

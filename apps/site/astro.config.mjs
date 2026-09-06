@@ -1,9 +1,11 @@
+import process from 'node:process';
 import {defineConfig} from 'astro/config';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 
 export default defineConfig({
 	output: 'static',
+	server: {host: '127.0.0.1', port: Number(process.env.PORT ?? 3300)},
 	publicDir: './static',
 	build: {format: 'file'},
 	trailingSlash: 'never',

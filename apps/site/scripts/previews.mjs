@@ -5,6 +5,7 @@ import {mkdirSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {compositions} from '../../studio/src/fixtures/compositions.ts';
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repository = path.resolve(workspace, '../..');
@@ -15,20 +16,9 @@ const cli = path.join(
 	'remotion-cli.js',
 );
 const previews = path.join(workspace, 'static/previews');
-const compositions = {
-	ferrofluid: 'Ferrofluid',
-	waveform: 'Waveform',
-	spectre: 'Spectre',
-	oscilloscope: 'Oscilloscope',
-	pulsar: 'Pulsar',
-	circle: 'Circle',
-	halo: 'Halo',
-	'audio-particles': 'AudioParticles',
-};
-
 mkdirSync(previews, {recursive: true});
-for (const [slug, composition] of Object.entries(compositions)) {
-	if (process.argv[2] && process.argv[2] !== slug) continue;
+for (const {slug, id: composition} of compositions) {
+	if (!slug || (process.argv[2] && process.argv[2] !== slug)) continue;
 	console.log(`Rendering overview preview: ${composition}`);
 	const result = spawnSync(
 		process.execPath,

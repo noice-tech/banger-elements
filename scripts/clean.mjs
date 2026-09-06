@@ -7,7 +7,6 @@ const generated = [
 	'packages/elements/dist',
 	'apps/site/dist',
 	'apps/site/.astro',
-	'apps/studio/dist',
 	'.turbo',
 	'packages/elements/.turbo',
 	'apps/site/.turbo',

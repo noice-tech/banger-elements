@@ -1,38 +1,8 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import test from 'node:test';
-import {runInNewContext} from 'node:vm';
-import ts from 'typescript';
-import * as MediaUtils from '@remotion/media-utils';
 import type {MediaUtilsAudioData} from '@remotion/media-utils';
-import * as Media from '@remotion/media';
-
-// Expose private helpers only in this test's in-memory module. Delivered files
-// retain exactly one exported component and no test/runtime dependency.
-function loadHelpers(element: string, names: string[], overrides: Record<string, unknown> = {}) {
-	const source = readFileSync(`src/elements/${element}/${element}.tsx`, 'utf8');
-	const {outputText} = ts.transpileModule(`${source}\nexport {${names.join(',')}};`, {
-		compilerOptions: {
-			module: ts.ModuleKind.CommonJS,
-			jsx: ts.JsxEmit.ReactJSX,
-			target: ts.ScriptTarget.ES2022,
-			esModuleInterop: true,
-		},
-	});
-	const exports = {};
-	const require = createRequire(import.meta.url);
-	runInNewContext(outputText, {
-		exports,
-		require: (name: string) => {
-			if (name in overrides) return overrides[name];
-			if (name === '@remotion/media') return Media;
-			if (name === '@remotion/media-utils') return MediaUtils;
-			return require(name);
-		},
-	});
-	return exports;
-}
+import {loadHelpers, mockCanvas} from './helpers';
 
 for (const element of [
 	'ferrofluid',
@@ -248,109 +218,8 @@ test('waveform: silence and low sample rates produce finite paths covering the v
 	}
 });
 
-const {setupSpectre, cleanupSpectre, drawSpectre} = loadHelpers('spectre', [
-	'setupSpectre',
-	'cleanupSpectre',
-	'drawSpectre',
-]) as {
-	setupSpectre: (canvas: HTMLCanvasElement, fragment: string) => unknown;
-	cleanupSpectre: (state: unknown) => void;
-	drawSpectre: (state: unknown, frame: Record<string, unknown>) => void;
-};
-
-function mockCanvas(failure?: 'fragment' | 'link' | 'texture' | 'second-texture' | 'draw') {
-	const calls: {name: string; args: unknown[]}[] = [];
-	let shaderCount = 0;
-	let textureCount = 0;
-	const constants = new Map<string, number>();
-	const gl = new Proxy(
-		{},
-		{
-			get: (_, name: string) => {
-				if (/^[A-Z_0-9]+$/.test(name)) {
-					if (!constants.has(name)) constants.set(name, constants.size);
-					return constants.get(name);
-				}
-				return (...args: unknown[]) => {
-					calls.push({name, args});
-					if (name === 'createShader') return {shader: ++shaderCount};
-					if (name === 'getShaderParameter') return !(failure === 'fragment' && shaderCount === 2);
-					if (name === 'getProgramParameter') return failure !== 'link';
-					if (name === 'createTexture') {
-						textureCount++;
-						if (failure === 'texture' || (failure === 'second-texture' && textureCount === 2))
-							return null;
-						return {texture: textureCount};
-					}
-					if (name.startsWith('create')) return {name};
-					if (name === 'getUniformLocation') return args[1];
-					if (name === 'getAttribLocation') return 0;
-					if (name === 'getError')
-						return failure === 'draw' ? -1 : (constants.get('NO_ERROR') ?? constants.size);
-					return null;
-				};
-			},
-		},
-	);
-	const canvas = {getContext: () => gl} as unknown as HTMLCanvasElement;
-	return {canvas, calls, constants};
-}
-
-test('Spectre reports unsupported WebGL rather than substituting a renderer', () => {
-	assert.throws(
-		() => setupSpectre({getContext: () => null} as unknown as HTMLCanvasElement, ''),
-		/requires WebGL2/,
-	);
-});
-
-for (const failure of ['fragment', 'link', 'texture'] as const) {
-	test(`Spectre cleans up partial setup after ${failure} failure`, () => {
-		const {canvas, calls} = mockCanvas(failure);
-		assert.throws(() => setupSpectre(canvas, 'void main() {}'), /Spectre/);
-		assert.equal(calls.filter(({name}) => name === 'deleteShader').length, 2);
-		assert.equal(calls.filter(({name}) => name === 'deleteProgram').length, 1);
-		if (failure === 'texture') {
-			assert.ok(calls.some(({name, args}) => name === 'deleteBuffer' && args[0] !== null));
-		}
-	});
-}
-
-test('Spectre draws explicit typed uniforms and disposes owned resources', () => {
-	const {canvas, calls} = mockCanvas();
-	const state = setupSpectre(canvas, 'void main() {}');
-	drawSpectre(state, {
-		width: 900,
-		height: 300,
-		sourceTime: 40.1,
-		barWidth: 3,
-		count: 64.4,
-		startColor: '#aa8bff',
-		endColor: '#51e8cc',
-		intensity: 2.5,
-		bottom: true,
-		colorMode: 'rainbow',
-		texture: {width: 1, height: 1, data: new Uint8Array(4)},
-	});
-	assert.ok(
-		calls.some(({name, args}) => name === 'uniform1f' && args[0] === 'iCount' && args[1] === 64),
-	);
-	assert.ok(
-		calls.some(({name, args}) => name === 'uniform1i' && args[0] === 'iBottom' && args[1] === 1),
-	);
-	assert.ok(
-		calls.some(({name, args}) => name === 'uniform1i' && args[0] === 'iColorMode' && args[1] === 2),
-	);
-	assert.ok(
-		calls.findIndex(({name}) => name === 'finish') >
-			calls.findIndex(({name}) => name === 'drawArrays'),
-	);
-	cleanupSpectre(state);
-	for (const resource of ['Texture', 'Buffer', 'Program']) {
-		assert.equal(calls.filter(({name}) => name === `delete${resource}`).length, 1);
-	}
-});
-
 for (const [element, component, textureCount] of [
+	['spectre', 'Spectre', 1],
 	['pulsar', 'Pulsar', 1],
 	['circle', 'Circle', 1],
 	['halo', 'Halo', 2],
@@ -383,7 +252,9 @@ for (const [element, component, textureCount] of [
 		color: '#aa8bff',
 		colorMode: 'rainbow',
 		circleVariant: 'glow-ring',
-		count: 64,
+		count: 64.4,
+		barWidth: 3,
+		bottom: true,
 		lineWidth: 3,
 		density: 3,
 		pattern: 4,
@@ -443,7 +314,11 @@ for (const [element, component, textureCount] of [
 				),
 				`${method}(${name}, ${value})`,
 			);
-		if (component === 'Circle') {
+		if (component === 'Spectre') {
+			uniform('uniform1f', 'iCount', 64);
+			uniform('uniform1i', 'iBottom', 1);
+			uniform('uniform1i', 'iColorMode', 2);
+		} else if (component === 'Circle') {
 			uniform('uniform1i', 'iSmooth', 1);
 			uniform('uniform1i', 'iColorMode', 2);
 			uniform('uniform2f', 'iResolution', 450);

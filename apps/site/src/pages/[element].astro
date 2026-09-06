@@ -24,7 +24,7 @@ const related = [elements[(index + 1) % elements.length], elements[(index + 2) %
 			<div class="element-preview">
 				<div class="stage-heading"><span><span class="status-dot" aria-hidden="true"></span> LIVE PREVIEW</span><span>REMOTION</span></div>
 				<Preview slug={entry.slug as PreviewKind} editable controlsTargetId={`${entry.slug}-preview-controls`} client:only="react"><img slot="fallback" class="fallback-poster" src={`/posters/${entry.slug}.webp`} alt={`${entry.title} preview`} width={entry.width} height={entry.height} /></Preview>
-				<section class="element-actions preview-install" aria-label={`${entry.title} installation`}>
+				<section class="preview-install" aria-label={`${entry.title} installation`}>
 					<StudioActions slug={entry.slug} client:only="react" />
 					<a class="source-download" href={`/elements/${entry.slug}.tsx`} download={`${entry.slug}.element.tsx`}>Download TSX <span aria-hidden="true">↓</span></a>
 					<p class="install-note">Installs original source defaults, not preview changes. Confirm installation in Studio.</p>

@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsx scripts/build.ts",
-		"serve": "node scripts/serve.mjs",
+		"serve": "astro preview",
 		"typecheck": "astro check && tsc --noEmit",
 		"posters": "node scripts/posters.mjs",
 		"previews": "node scripts/previews.mjs",

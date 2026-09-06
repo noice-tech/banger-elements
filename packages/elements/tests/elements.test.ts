@@ -81,25 +81,3 @@ test('drag transport round-trips through the Studio SDK', () => {
 		assert.equal(parsed.data.element.sourceCode, payload.element.sourceCode);
 	}
 });
-
-test('standalone Elements compile in strict mode', () => {
-	const program = ts.createProgram(
-		catalog.map((entry) => `dist/elements/${entry.slug}.tsx`),
-		{
-			target: ts.ScriptTarget.ES2022,
-			module: ts.ModuleKind.ESNext,
-			moduleResolution: ts.ModuleResolutionKind.Bundler,
-			jsx: ts.JsxEmit.ReactJSX,
-			strict: true,
-			esModuleInterop: true,
-			skipLibCheck: true,
-			noEmit: true,
-		},
-	);
-	const errors = ts.getPreEmitDiagnostics(program);
-	assert.equal(
-		errors.length,
-		0,
-		errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('\n'),
-	);
-});

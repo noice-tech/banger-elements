@@ -4,6 +4,8 @@ import path from 'node:path';
 
 const require = createRequire(import.meta.url);
 const turbo = path.join(path.dirname(require.resolve('turbo/package.json')), 'bin/turbo');
+// Bun's inherited lifecycle environment can make nested Turbo tasks silently
+// skip execution. Run with a clean package-manager environment and PATH.
 const env = Object.fromEntries(
 	Object.entries(process.env).filter(
 		([key]) => !key.startsWith('npm_') && key !== 'NODE' && key !== '_',

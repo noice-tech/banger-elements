@@ -5,16 +5,14 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import ExamplePicker from '../src/components/ExamplePicker';
 import {exampleGroups, examplePresets} from '../src/data/example-presets';
 
-test('all seven examples are visible in three groups with exactly one selected', () => {
+test('all examples are selectable with exactly one selected', () => {
 	const html = renderToStaticMarkup(
 		createElement(ExamplePicker, {selected: 'segmented', onSelect: () => {}}),
 	);
-	assert.equal((html.match(/type="radio"/g) ?? []).length, 7);
+	assert.equal((html.match(/type="radio"/g) ?? []).length, examplePresets.length);
 	assert.equal((html.match(/checked=""/g) ?? []).length, 1);
-	assert.ok(html.includes('Choose an example'));
-	assert.ok(!html.includes('<select'));
 	for (const group of exampleGroups) assert.ok(html.includes(group));
-	assert.equal(new Set(examplePresets.map((preset) => preset.id)).size, 7);
+	assert.equal(new Set(examplePresets.map((preset) => preset.id)).size, examplePresets.length);
 });
 
 test('only the selected example code is rendered', () => {

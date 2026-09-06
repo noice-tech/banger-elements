@@ -1,9 +1,4 @@
 {
 	"extends": "../../tsconfig.base.json",
-	"include": [
-		"remotion.config.ts",
-		"scripts/build.ts",
-		"src/fixtures",
-		"../../packages/elements/dist"
-	]
+	"include": ["remotion.config.ts", "src/fixtures", "../../packages/elements/dist"]
 }
