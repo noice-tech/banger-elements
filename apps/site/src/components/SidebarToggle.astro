@@ -1,0 +1,18 @@
+<button class="sidebar-toggle" type="button" aria-label="Collapse sidebar" title="Collapse sidebar" aria-expanded="true" aria-controls="starlight__sidebar">
+	<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg>
+	<span aria-hidden="true">Hide sidebar</span>
+</button>
+<script>
+	const toggle = document.querySelector<HTMLButtonElement>('.sidebar-toggle');
+	const desktop = window.matchMedia('(min-width: 50rem)');
+	const update = (collapsed: boolean) => {
+		document.documentElement.toggleAttribute('data-sidebar-collapsed', collapsed);
+		toggle?.setAttribute('aria-expanded', String(!collapsed));
+		toggle?.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+		toggle?.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+	};
+	toggle?.addEventListener('click', () => {
+		if (desktop.matches) update(!document.documentElement.hasAttribute('data-sidebar-collapsed'));
+	});
+	desktop.addEventListener('change', () => update(false));
+</script>

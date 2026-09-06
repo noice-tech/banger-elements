@@ -1,0 +1,26 @@
+---
+import MobileMenuFooter from '@astrojs/starlight/components/MobileMenuFooter.astro';
+import {elements} from '../data/elements';
+const current = Astro.url.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
+const isCurrent = (href: string) => current === href.replace(/\.html$/, '');
+---
+<div class="collection-nav">
+	<a class="overview-link" href="/" aria-current={current === '/' || current === '/index' ? 'page' : undefined}>
+		Browse collection <span aria-hidden="true">↗</span>
+	</a>
+	<p class="nav-label">THE COLLECTION</p>
+	<ul class="element-nav-list">
+		{elements.map(entry => <li><a href={`/${entry.slug}.html`} aria-current={isCurrent(`/${entry.slug}`) ? 'page' : undefined}>
+			<span>{entry.title}</span>
+			<span class="nav-active-dot" aria-hidden="true"></span>
+		</a></li>)}
+	</ul>
+	<div class="nav-resources">
+		<p class="nav-label">RESOURCES</p>
+		<a href="/getting-started.html" aria-current={isCurrent('/getting-started') ? 'page' : undefined}>Getting started <span aria-hidden="true">↗</span></a>
+		<a href="/examples.html" aria-current={isCurrent('/examples') ? 'page' : undefined}>Examples <span aria-hidden="true">↗</span></a>
+		<a href="https://banger.show/">Explore banger.show <span aria-hidden="true">↗</span></a>
+	</div>
+	<div class="nav-footnote"><span class="status-dot" aria-hidden="true"></span> Source files. Creative freedom.</div>
+</div>
+<div class="md:sl-hidden"><MobileMenuFooter /></div>

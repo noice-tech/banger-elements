@@ -9,10 +9,16 @@ export default defineConfig({
 	trailingSlash: 'never',
 	integrations: [
 		starlight({
-			title: 'banger-elements',
+			title: 'banger Elements',
 			description: 'Source-installable audio visualizers for Remotion.',
+			favicon: '/brand/banger-icon.png',
 			customCss: ['./src/style.css'],
-			components: {Footer: './src/components/Footer.astro'},
+			components: {
+				Footer: './src/components/Footer.astro',
+				SiteTitle: './src/components/SiteTitle.astro',
+				Sidebar: './src/components/Sidebar.astro',
+				PageTitle: './src/components/PageTitle.astro',
+			},
 			sidebar: [
 				{label: 'Overview', link: '/'},
 				{label: 'Getting started', link: '/getting-started.html'},

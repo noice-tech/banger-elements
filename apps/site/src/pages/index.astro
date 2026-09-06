@@ -1,23 +1,48 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import {elements} from '../data/elements';
+const svgCount = elements.filter(entry => entry.renderer === 'SVG').length;
 ---
-<StarlightPage frontmatter={{title: 'Audio, made visible.', description: 'Seven source-installable audio visualizers for Remotion.', tableOfContents: false}}>
-	<div class="intro">
-		<p class="eyebrow">THE ELEMENTS COLLECTION / 01—07</p>
-		<p class="lead">Give your sound a shape.</p>
-		<p>Seven audio-reactive Elements for Remotion. Preview a treatment, install it in Studio, and make the source your own. No account. No runtime library.</p>
-		<div class="actions"><a class="button primary" href="/getting-started.html">Get started <span aria-hidden="true">↗</span></a><a class="button" href="/examples.html">Explore examples</a></div>
+<StarlightPage frontmatter={{title: 'Give your sound a shape.', description: `${elements.length} source-installable audio visualizers for Remotion.`, tableOfContents: false}}>
+	<div class="collection-page not-content">
+		<header class="collection-hero">
+			<p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> AUDIO-REACTIVE. SOURCE-INSTALLABLE.</p>
+			<h1 id="_top">Give your sound<br /><span>a shape.</span></h1>
+			<p class="hero-description">A collection of audio-reactive elements for Remotion.<br class="desktop-break" /> Preview each element, adjust its settings, and use the source in your project.</p>
+			<div class="hero-links"><a class="button primary" href="#collection">Explore the collection <span aria-hidden="true">↓</span></a><a class="text-link" href="/getting-started.html">How it works <span aria-hidden="true">↗</span></a></div>
+			<div class="hero-meta"><span>No account needed</span><span>Editable TSX</span><span>Made for Remotion</span></div>
+		</header>
+		<div class="collection-heading"><h2 id="collection">The collection <span class="collection-count">{String(elements.length).padStart(2, '0')}</span></h2><span>{svgCount} SVG · {elements.length - svgCount} WebGL2</span></div>
+		<div class="element-grid">
+			{elements.map((entry, index) => <a class="element-card" href={`/${entry.slug}.html`}>
+				<div class="card-art">
+					<video muted loop playsinline preload="none" poster={`/posters/${entry.slug}.webp`} aria-hidden="true"><source src={`/previews/${entry.slug}.webm`} type="video/webm" /></video>
+					<span class="card-number">{String(index + 1).padStart(2, '0')}</span>
+					<span class="card-open" aria-hidden="true">↗</span>
+				</div>
+				<div class="card-copy"><div class="card-title"><h3>{entry.title}</h3><span class="renderer-label">{entry.renderer}</span></div><p>{entry.tagline}</p></div>
+			</a>)}
+		</div>
 	</div>
-	<div class="collection-heading"><h2 id="collection">Find your frequency</h2><span>2 SVG · 5 WebGL2</span></div>
-	<div class="element-grid">
-		{elements.map((entry, index) => <a class="element-card" href={`/${entry.slug}.html`}>
-			<div class="card-art">
-				<video autoplay muted loop playsinline preload={index < 2 ? 'auto' : 'metadata'} aria-hidden="true"><source src={`/previews/${entry.slug}.webm`} type="video/webm" /></video>
-				<span class="card-number">0{index + 1}</span>
-			</div>
-			<div class="card-copy"><div class="card-title"><h3>{entry.title}</h3><span aria-hidden="true">↗</span></div><p>{entry.tagline}</p><div class="tags"><span>{entry.renderer}</span></div></div>
-		</a>)}
-	</div>
-	<div class="source-note"><h2 id="your-source">An Element. Not a dependency.</h2><p>Each download is a complete, typed TSX file. Edit audio, color, size and timing in Studio, or work directly with the source. SVG traces stay SVG; shader treatments stay WebGL2.</p><a href="/getting-started.html">How installation works →</a></div>
 </StarlightPage>
+<script>
+	const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+	const videos = Array.from(document.querySelectorAll<HTMLVideoElement>('.card-art video'));
+	const visible = new Set<HTMLVideoElement>();
+	const sync = () => videos.forEach(video => {
+		if (!motion.matches && !document.hidden && visible.has(video)) {
+			void video.play().catch(() => { /* Poster stays visible when playback is unavailable. */ });
+		} else video.pause();
+	});
+	const observer = new IntersectionObserver(entries => {
+		entries.forEach(entry => {
+			const video = entry.target as HTMLVideoElement;
+			if (entry.isIntersecting) visible.add(video);
+			else visible.delete(video);
+		});
+		sync();
+	}, {threshold: 0.15});
+	videos.forEach(video => observer.observe(video));
+	motion.addEventListener('change', sync);
+	document.addEventListener('visibilitychange', sync);
+</script>

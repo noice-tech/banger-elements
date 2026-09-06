@@ -5,41 +5,43 @@ description: Install a source Element, connect your audio, and render in Remotio
 
 ## From preview to composition
 
-Each Element is a complete TSX file, not an npm runtime. The site previews the same generated source that Studio installs. Tested with **Remotion 4.0.520**, React 19.1.1 and aligned `@remotion/*` versions.
+Browse and preview Elements right here, then add them to your own Remotion project. There is no need to download this website or run it locally. Each Element installs as an editable TSX file, not a runtime library.
 
-1. In this repository, run `bun install --frozen-lockfile`, then `bun run dev`.
-2. Open [Studio on port 3001](http://localhost:3001) and select a fixture composition.
-3. Choose an [Element](/), then **Install in Studio**, or drag **Drag to Studio** onto the Studio canvas.
-4. **Review and confirm in Studio.** “Awaiting confirmation” only means the request arrived. It does not mean installation completed.
-5. Select the installed Element to edit its audio, size, colors, transforms and timing.
+1. Open your Remotion project in **Studio** and select the composition you want to work on.
+2. Choose an [Element](/) on this site and try its preview settings.
+3. Click **Install in Studio**, or drag **Drag to Studio** onto your Studio canvas. On a touch device, use **Install in Studio**.
+4. **Review and confirm in Studio.** “Awaiting confirmation” means the request arrived, not that installation has completed.
+5. Select the installed Element to adjust its audio, size, colors, transforms and timing.
 
-Studio discovery checks **ports 3000–3009**. Focus your intended Studio before sending a request. Use localhost or HTTPS, not `file://`. If no Studio is found, check its version, port and browser local-network permissions, then retry.
+Installation uses the Element’s original source defaults, not your preview changes. To reuse preview settings, expand **Use these settings in code** and choose **Copy configured JSX**.
+
+### If Studio is not found
+
+Keep your intended Studio open and focused before sending the request. Check that it uses a compatible Remotion version, runs on a port between **3000 and 3009**, and that your browser allows local-network access when prompted. Tested with **Remotion 4.0.520**, React 19.1.1 and aligned `@remotion/*` versions. You can also [download the source](#download-instead) if the connection is unavailable.
 
 ## Add the collection to Studio
 
 Use **Add Library to Studio** at the bottom of a page. Confirm in Studio and restart it to load the collection in Browse Elements. Keep this import in `remotion.config.ts` so the protocol can append a working call:
 
 ```ts
-import {Config} from '@remotion/cli/config';
+import { Config } from "@remotion/cli/config";
 ```
-
-The collection can be embedded in Studio. Do not add an `X-Frame-Options` header or a restrictive `frame-ancestors` policy that blocks it. Hosted HTTPS-to-local-Studio discovery still needs deployment testing; it is not claimed as supported yet.
 
 ## Audio setup
 
 No props are required: `audioSrc` defaults to Remotion’s hosted example audio. Choose an asset with the Studio control, or supply an HTTPS URL that allows CORS. For an asset in your own Remotion project's `public/` directory:
 
 ```tsx
-import {staticFile} from 'remotion';
-import {Waveform} from './waveform.element';
+import { staticFile } from "remotion";
+import { Waveform } from "./waveform.element";
 
 export const MyComposition = () => (
-  <Waveform
-    audioSrc={staticFile('my-track.mp3')}
-    audioOffsetInSeconds={12}
-    width={900}
-    height={300}
-  />
+	<Waveform
+		audioSrc={staticFile("my-track.mp3")}
+		audioOffsetInSeconds={12}
+		width={900}
+		height={300}
+	/>
 );
 ```
 
@@ -60,12 +62,20 @@ Insertion starts at **480 frames**; its duration in seconds depends on the targe
 
 ## Download instead
 
-Download the TSX from an Element page into your Remotion source directory and import its named component. The file uses only external imports: React, Remotion, `@remotion/media` and `@remotion/media-utils`. Install those packages in your own project, keeping all `@remotion/*` versions aligned with your Remotion version. Studio payload dependency versions for `@remotion/*` remain `null` so Studio resolves its compatible versions.
+Download the TSX from an Element page into your Remotion source directory and import its named component. The file uses only external imports: React, Remotion, `@remotion/media` and `@remotion/media-utils`. Install those packages in your own project, keeping all `@remotion/*` versions aligned with your Remotion version.
 
-## Renderer and release limits
+## Rendering with ANGLE
+
+WebGL2 Elements may require **ANGLE** when rendering with Remotion, depending on your system and graphics environment. If an Element previews correctly but renders blank or reports a WebGL error, try adding `--gl=angle` to your render command:
+
+```bash
+npx remotion render src/index.ts MyComposition out/video.mp4 --gl=angle
+```
+
+Replace the entry point, composition ID and output path with those from your project. This selects Chromium’s ANGLE graphics backend; it is not required for the SVG-only Waveform and Oscilloscope Elements. Graphics support still depends on the rendering environment.
+
+## Renderer compatibility
 
 Waveform and Oscilloscope use SVG. Spectre, Circle, Pulsar, Halo, Audio Particles and Ferrofluid require WebGL2 with graphics acceleration. Unsupported shaders report failure rather than switching to a different visual. Avoid running many WebGL previews at once.
 
-Halo, Audio Particles and [Ferrofluid](/ferrofluid.html) are experimental. Looping, playback-rate changes, effect support and full production-editor color parity are not included. Full production performance and cross-browser release testing remain separate work.
-
-Read the [source notices](/NOTICE.md). Local implementation approval is not publication permission or a blanket license. Remotion’s own license also applies.
+Halo, Audio Particles and [Ferrofluid](/ferrofluid.html) are experimental.

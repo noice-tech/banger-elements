@@ -2,6 +2,8 @@ import {useEffect, useMemo, useState, type ComponentType} from 'react';
 import {Player} from '@remotion/player';
 import {createPortal} from 'react-dom';
 import {AbsoluteFill} from 'remotion';
+import ExamplePicker from './ExamplePicker';
+import {configuredJsx, isAdvancedControl} from './preview-config';
 import {
 	Waveform,
 	Spectre,
@@ -524,6 +526,7 @@ const ControlField = ({
 			</span>
 			<input
 				type="range"
+				aria-label={control.label}
 				min={control.min}
 				max={control.max}
 				step={control.step}
@@ -546,6 +549,8 @@ export default function Preview({
 	controlsTargetId?: string;
 }) {
 	const [selected, setSelected] = useState<PreviewKind>(slug);
+	const [panel, setPanel] = useState<'look' | 'audio' | 'more'>('look');
+	const [copyMessage, setCopyMessage] = useState('');
 	const example = examples[selected];
 	const initialProps = useMemo<Props>(
 		() => ({...example.props, width: example.width, height: example.height}),
@@ -582,9 +587,12 @@ export default function Preview({
 		}),
 		[audioUrl, customProps, localAudio],
 	);
-	const update = (key: string, value: Value) =>
+	const update = (key: string, value: Value) => {
 		setCustomProps((current) => ({...current, [key]: value}));
+		setCopyMessage('');
+	};
 	const reset = () => {
+		setCopyMessage('');
 		if (localAudio) URL.revokeObjectURL(localAudio.url);
 		setLocalAudio(null);
 		const defaultAudio = defaultAudioFor(selected);
@@ -592,35 +600,55 @@ export default function Preview({
 		setAudioDraft(defaultAudio);
 		setCustomProps(initialProps);
 	};
+	const presets =
+		selected === 'ferrofluid'
+			? [
+					{label: 'Studio metal', props: examples.ferrofluid.props},
+					{
+						label: 'Polished chrome',
+						props: {
+							...examples.ferrofluid.props,
+							color: '#aab1c0',
+							shineColor: '#d4e5ff',
+							roughness: 0.05,
+							iridescence: 0,
+							intensity: 1.4,
+						},
+					},
+					{
+						label: 'Ultraviolet',
+						props: {
+							...examples.ferrofluid.props,
+							color: '#27123e',
+							shineColor: '#d5a2ff',
+							roughness: 0.22,
+							iridescence: 0.8,
+							intensity: 2.8,
+						},
+					},
+				]
+			: [];
+	const activePreset = presets.findIndex((preset) =>
+		Object.entries(preset.props).every(([key, value]) => customProps[key] === value),
+	);
+	const copyConfiguration = async () => {
+		try {
+			await navigator.clipboard.writeText(configuredJsx(slug, inputProps, Boolean(localAudio)));
+			setCopyMessage(
+				localAudio
+					? 'Copied. Replace the audio path with your project asset.'
+					: 'Configuration copied. Paste inside your composition.',
+			);
+		} catch {
+			setCopyMessage('Clipboard unavailable. Select and copy the configuration below.');
+		}
+	};
 	const controlsTarget =
 		controlsTargetId && typeof document !== 'undefined'
 			? document.getElementById(controlsTargetId)
 			: null;
 	return (
 		<div className="preview-block not-content">
-			{variants ? (
-				<label className="variant-picker">
-					Treatment{' '}
-					<select
-						value={selected}
-						onChange={(event) => setSelected(event.target.value as PreviewKind)}
-					>
-						<optgroup label="Spectre">
-							<option value="spectre">Frequency bars</option>
-							<option value="segmented">Segmented</option>
-						</optgroup>
-						<optgroup label="Circle">
-							<option value="circle">Radial bars</option>
-							<option value="glow">Glow ring</option>
-							<option value="ring-waveform">Waveform ring</option>
-							<option value="dotted">Dotted ring</option>
-						</optgroup>
-						<optgroup label="Combined">
-							<option value="combined">Halo + Audio Particles</option>
-						</optgroup>
-					</select>
-				</label>
-			) : null}
 			<div className="preview-stage">
 				<Player
 					key={selected}
@@ -645,121 +673,237 @@ export default function Preview({
 				<span>60 FPS · 16 seconds · Press play to hear audio</span>
 				<span>Curated preview settings — downloaded source defaults are unchanged</span>
 			</div>
+			{variants ? <ExamplePicker selected={selected} onSelect={setSelected} /> : null}
 			{editable && controlsTarget
 				? createPortal(
 						<section className="preview-controls" aria-label={`${slug} preview controls`}>
 							<div className="controls-heading">
 								<div>
-									<strong>Customize</strong>
-									<span>Changes apply live to this preview.</span>
+									<strong>Preview settings</strong>
+									<span>Changes apply live.</span>
 								</div>
 								<button type="button" onClick={reset}>
 									Reset
 								</button>
 							</div>
-							<div className="audio-controls">
-								<label className="wide-control">
-									<span>Audio URL</span>
-									<input
-										type="url"
-										value={audioDraft}
-										disabled={Boolean(localAudio)}
-										onChange={(event) => setAudioDraft(event.target.value)}
-										placeholder="https://example.com/track.mp3"
-									/>
-								</label>
-								<button
-									type="button"
-									disabled={Boolean(localAudio) || audioDraft === audioUrl}
-									onClick={() => setAudioUrl(audioDraft)}
-								>
-									Use audio URL
-								</button>
-								<label className="file-control">
-									<span>Or choose local audio</span>
-									<input
-										type="file"
-										accept="audio/*"
-										onChange={(event) => {
-											const file = event.target.files?.[0];
-											if (!file) return;
-											if (localAudio) URL.revokeObjectURL(localAudio.url);
-											setLocalAudio({
-												name: file.name,
-												url: URL.createObjectURL(file),
-											});
-										}}
-									/>
-								</label>
-								{localAudio ? (
+							<div className="inspector-tabs" role="tablist" aria-label="Preview settings">
+								{(['look', 'audio', 'more'] as const).map((tab, index, tabs) => (
 									<button
+										key={tab}
 										type="button"
-										onClick={() => {
-											URL.revokeObjectURL(localAudio.url);
-											setLocalAudio(null);
+										role="tab"
+										id={`${slug}-tab-${tab}`}
+										aria-selected={panel === tab}
+										aria-controls={`${slug}-panel-${tab}`}
+										tabIndex={panel === tab ? 0 : -1}
+										onClick={() => setPanel(tab)}
+										onKeyDown={(event) => {
+											const next =
+												event.key === 'ArrowRight'
+													? (index + 1) % tabs.length
+													: event.key === 'ArrowLeft'
+														? (index + tabs.length - 1) % tabs.length
+														: event.key === 'Home'
+															? 0
+															: event.key === 'End'
+																? tabs.length - 1
+																: -1;
+											if (next < 0) return;
+											event.preventDefault();
+											setPanel(tabs[next]!);
+											document.getElementById(`${slug}-tab-${tabs[next]}`)?.focus();
 										}}
 									>
-										Use URL instead
+										{tab === 'look' ? 'Look' : tab === 'audio' ? 'Audio' : 'More'}
 									</button>
-								) : null}
-								<label>
-									<span>
-										Audio offset{' '}
-										<output>{Number(customProps.audioOffsetInSeconds ?? 0).toFixed(1)}s</output>
-									</span>
-									<input
-										type="range"
-										min="0"
-										max="60"
-										step="0.1"
-										value={Number(customProps.audioOffsetInSeconds ?? 0)}
-										onChange={(event) => update('audioOffsetInSeconds', Number(event.target.value))}
-									/>
-								</label>
-								<ControlField
-									control={bool('playAudio', 'Play audio')}
-									value={customProps.playAudio ?? true}
-									update={(value) => update('playAudio', value)}
-								/>
-							</div>
-							<div className="visual-controls">
-								<ControlField
-									control={number('width', 'Element width', 16, 3840, 1)}
-									value={customProps.width}
-									update={(value) => update('width', value)}
-								/>
-								<ControlField
-									control={number('height', 'Element height', 16, 3840, 1)}
-									value={customProps.height}
-									update={(value) => update('height', value)}
-								/>
-								{example.controls.map((control) => (
-									<ControlField
-										key={control.key}
-										control={control}
-										value={
-											customProps[control.key] ??
-											(example.props[control.key as keyof typeof example.props] as Value)
-										}
-										update={(value) => update(control.key, value)}
-									/>
 								))}
 							</div>
-							{selected === 'halo' ? (
-								<label className="wide-control artwork-control">
-									<span>Optional artwork URL</span>
-									<input
-										type="url"
-										value={String(customProps.artworkSrc ?? '')}
-										onChange={(event) => update('artworkSrc', event.target.value)}
-										placeholder="https://example.com/cover.jpg"
+							<div
+								role="tabpanel"
+								id={`${slug}-panel-audio`}
+								aria-labelledby={`${slug}-tab-audio`}
+								hidden={panel !== 'audio'}
+								tabIndex={0}
+							>
+								<div className="audio-controls">
+									<label className="wide-control">
+										<span>Audio URL</span>
+										<input
+											type="url"
+											value={audioDraft}
+											disabled={Boolean(localAudio)}
+											onChange={(event) => setAudioDraft(event.target.value)}
+											placeholder="https://example.com/track.mp3"
+										/>
+									</label>
+									<button
+										type="button"
+										disabled={Boolean(localAudio) || audioDraft === audioUrl}
+										onClick={() => setAudioUrl(audioDraft)}
+									>
+										Use audio URL
+									</button>
+									<label className="file-control">
+										<span>Or choose local audio</span>
+										<input
+											type="file"
+											accept="audio/*"
+											onChange={(event) => {
+												const file = event.target.files?.[0];
+												if (!file) return;
+												if (localAudio) URL.revokeObjectURL(localAudio.url);
+												setLocalAudio({
+													name: file.name,
+													url: URL.createObjectURL(file),
+												});
+											}}
+										/>
+									</label>
+									{localAudio ? (
+										<button
+											type="button"
+											onClick={() => {
+												URL.revokeObjectURL(localAudio.url);
+												setLocalAudio(null);
+											}}
+										>
+											Use URL instead
+										</button>
+									) : null}
+									<label>
+										<span>
+											Audio offset{' '}
+											<output>{Number(customProps.audioOffsetInSeconds ?? 0).toFixed(1)}s</output>
+										</span>
+										<input
+											type="range"
+											aria-label="Audio offset"
+											min="0"
+											max="60"
+											step="0.1"
+											value={Number(customProps.audioOffsetInSeconds ?? 0)}
+											onChange={(event) =>
+												update('audioOffsetInSeconds', Number(event.target.value))
+											}
+										/>
+									</label>
+									<ControlField
+										control={bool('playAudio', 'Play audio')}
+										value={customProps.playAudio ?? true}
+										update={(value) => update('playAudio', value)}
 									/>
-								</label>
-							) : null}
-							<p className="control-note">
-								Remote media must allow CORS. Local files stay in your browser and are never
-								uploaded.
-							</p>
+								</div>
+								<p className="control-note">
+									Remote media must allow CORS. Local files stay in your browser and are never
+									uploaded.
+								</p>
+							</div>
+							<div
+								role="tabpanel"
+								id={`${slug}-panel-more`}
+								aria-labelledby={`${slug}-tab-more`}
+								hidden={panel !== 'more'}
+								tabIndex={0}
+							>
+								<p className="inspector-section-label">CANVAS & ADVANCED</p>
+								<div className="visual-controls">
+									<ControlField
+										control={number('width', 'Element width', 16, 3840, 1)}
+										value={customProps.width}
+										update={(value) => update('width', value)}
+									/>
+									<ControlField
+										control={number('height', 'Element height', 16, 3840, 1)}
+										value={customProps.height}
+										update={(value) => update('height', value)}
+									/>
+									{example.controls
+										.filter((control) => isAdvancedControl(control.key))
+										.map((control) => (
+											<ControlField
+												key={control.key}
+												control={control}
+												value={
+													customProps[control.key] ??
+													(example.props[control.key as keyof typeof example.props] as Value)
+												}
+												update={(value) => update(control.key, value)}
+											/>
+										))}
+								</div>
+							</div>
+							<div
+								role="tabpanel"
+								id={`${slug}-panel-look`}
+								aria-labelledby={`${slug}-tab-look`}
+								hidden={panel !== 'look'}
+								tabIndex={0}
+							>
+								{presets.length > 0 ? (
+									<label className="preset-picker">
+										<span>Starting point</span>
+										<select
+											aria-label="Preview preset"
+											value={activePreset}
+											onChange={(event) => {
+												const preset = presets[Number(event.target.value)];
+												if (preset) setCustomProps((current) => ({...current, ...preset.props}));
+											}}
+										>
+											<option value={-1} disabled>
+												Custom look
+											</option>
+											{presets.map((preset, index) => (
+												<option key={preset.label} value={index}>
+													{preset.label}
+												</option>
+											))}
+										</select>
+									</label>
+								) : null}
+								<p className="inspector-section-label">SHAPE & APPEARANCE</p>
+								<div className="visual-controls">
+									{example.controls
+										.filter((control) => !isAdvancedControl(control.key))
+										.map((control) => (
+											<ControlField
+												key={control.key}
+												control={control}
+												value={
+													customProps[control.key] ??
+													(example.props[control.key as keyof typeof example.props] as Value)
+												}
+												update={(value) => update(control.key, value)}
+											/>
+										))}
+								</div>
+								{selected === 'halo' ? (
+									<label className="wide-control artwork-control">
+										<span>Optional artwork URL</span>
+										<input
+											type="url"
+											value={String(customProps.artworkSrc ?? '')}
+											onChange={(event) => update('artworkSrc', event.target.value)}
+											placeholder="https://example.com/cover.jpg"
+										/>
+									</label>
+								) : null}
+							</div>
+							<details className="configuration-export">
+								<summary>Use these settings in code</summary>
+								<p className="control-note">
+									Preview settings are separate from the installed source defaults.
+								</p>
+								<button type="button" className="button" onClick={copyConfiguration}>
+									Copy configured JSX
+								</button>
+								<p className="control-note" role="status">
+									{copyMessage}
+								</p>
+								<pre tabIndex={0} aria-label="Configured JSX">
+									<code>{configuredJsx(slug, inputProps, Boolean(localAudio))}</code>
+								</pre>
+							</details>
 						</section>,
 						controlsTarget,
 					)

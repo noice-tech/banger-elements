@@ -41,6 +41,11 @@ test('all catalog detail pages contain static docs, downloads and real posters',
 		]) {
 			assert.ok(html.includes(text), `${slug}: missing ${text}`);
 		}
+		assert.equal((html.match(/<h1\b/g) ?? []).length, 1, `${slug}: one page title`);
+		assert.ok(html.includes('banger Elements home'));
+		assert.ok(html.includes('class="element-nav-list"'));
+		assert.ok(html.includes(`href="/${slug}.html" aria-current="page"`));
+		assert.ok(html.includes('Installs original source defaults, not preview changes.'));
 		const poster = await readFile(path.join(workspace, `dist/posters/${slug}.webp`));
 		assert.equal(poster.toString('ascii', 8, 12), 'WEBP');
 	}
@@ -48,6 +53,21 @@ test('all catalog detail pages contain static docs, downloads and real posters',
 	assert.equal((overview.match(/class="element-card"/g) ?? []).length, catalog.length);
 	assert.equal((overview.match(/<video /g) ?? []).length, catalog.length);
 	assert.ok(overview.includes('Halo'));
+	assert.equal((overview.match(/<h1\b/g) ?? []).length, 1);
+	assert.ok(!overview.includes('Seven audio-reactive'));
+	assert.ok(!overview.includes('01—07'));
+	assert.equal((overview.match(/poster="\/posters\//g) ?? []).length, catalog.length);
+	assert.ok(
+		!/<img[^>]+src="\/posters\//.test(overview),
+		'No sidebar thumbnails or image layer beneath transparent videos',
+	);
+	assert.ok(overview.includes('Browse collection'));
+	assert.ok(!overview.includes('MAKE IT YOURS'));
+	assert.ok(overview.includes('Hide sidebar'));
+	assert.ok(
+		!/<video[^>]*autoplay/.test(overview),
+		'Gallery playback must respect motion and visibility',
+	);
 	assert.ok(!overview.includes('Spectrum Halo'));
 	assert.ok(!/component-url="[^"]*\/Preview\./.test(overview), 'Gallery must not mount Players');
 	for (const {slug} of catalog) {
@@ -98,4 +118,16 @@ test('static output excludes local media and retains preview playback contract',
 		'Docs CSS must not leak into Player rendering',
 	);
 	assert.ok(!preview.includes('autoPlay'));
+});
+
+test('getting started describes the website-to-Studio visitor flow, not repository setup', async () => {
+	const html = await readFile(path.join(workspace, 'dist/getting-started.html'), 'utf8');
+	assert.ok(html.includes('Open your Remotion project'));
+	assert.ok(html.includes('Install in Studio'));
+	assert.ok(html.includes('Review and confirm in Studio'));
+	assert.ok(!html.includes('bun install'));
+	assert.ok(!html.includes('bun run dev'));
+	assert.ok(!html.includes('localhost:3001'));
+	assert.ok(!html.includes('fixture composition'));
+	assert.ok(!html.includes('frame-ancestors'));
 });
