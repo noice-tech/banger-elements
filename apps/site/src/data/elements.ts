@@ -109,6 +109,7 @@ const details = {
 			'Independent bass-reactive particles. Use them alone, or explicitly mask them around Halo.',
 		controls: [
 			'density / size — particle field',
+			'startTimeInSeconds — emission start relative to the element: -5 pre-fills the field (default), 0 starts fresh, positive values delay emission; independent of audio trim',
 			'reactiveSpeed — bass-reactive motion',
 			'maskHalo / radius — optional explicit Halo mask',
 			'color / intensity — appearance',

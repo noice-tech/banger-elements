@@ -27,6 +27,8 @@ type AudioParticlesOptions = {
 	readonly audioSrc?: string;
 	readonly audioOffsetInSeconds?: number;
 	readonly playAudio?: boolean;
+	/** Emission start relative to the element; negative values pre-fill the field. */
+	readonly startTimeInSeconds?: number;
 	readonly inputGainDb?: number;
 	readonly intensity?: number;
 	readonly color?: string;
@@ -57,6 +59,16 @@ const audioParticlesSchema = {
 		max: 86400,
 		step: 0.01,
 		description: 'Audio source offset in seconds',
+		hiddenFromList: false,
+		keyframable: false,
+	},
+	startTimeInSeconds: {
+		type: 'number',
+		default: -5,
+		min: -5,
+		max: 86400,
+		step: 0.01,
+		description: 'Emission start in seconds (0: fresh start; negative: pre-filled field)',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -508,7 +520,10 @@ type AudioParticlesFrame = Omit<
 	Required<AudioParticlesOptions>,
 	'audioSrc' | 'audioOffsetInSeconds' | 'playAudio' | 'inputGainDb'
 > &
-	ReturnType<typeof createParticleHistory> & {readonly sourceTime: number};
+	ReturnType<typeof createParticleHistory> & {
+		readonly sourceTime: number;
+		readonly particleTime: number;
+	};
 
 type AudioParticlesState = {
 	readonly gl: WebGL2RenderingContext;
@@ -518,6 +533,8 @@ type AudioParticlesState = {
 	readonly bassTexture: WebGLTexture;
 	readonly uniforms: {
 		readonly time: WebGLUniformLocation | null;
+		readonly startTime: WebGLUniformLocation | null;
+		readonly audioTimeOffset: WebGLUniformLocation | null;
 		readonly aspect: WebGLUniformLocation | null;
 		readonly history: WebGLUniformLocation | null;
 		readonly bassHistory: WebGLUniformLocation | null;
@@ -608,6 +625,8 @@ function setupAudioParticles(canvas: HTMLCanvasElement): AudioParticlesState {
 			bassTexture,
 			uniforms: {
 				time: gl.getUniformLocation(program, 'iGlobalTime'),
+				startTime: gl.getUniformLocation(program, 'iParticleStartTime'),
+				audioTimeOffset: gl.getUniformLocation(program, 'iAudioTimeOffset'),
 				aspect: gl.getUniformLocation(program, 'iAspect'),
 				history: gl.getUniformLocation(program, 'iHistoryTexture'),
 				bassHistory: gl.getUniformLocation(program, 'iParticleBassTexture'),
@@ -642,7 +661,9 @@ function drawAudioParticles(
 	gl.viewport(0, 0, frame.width, frame.height);
 	gl.clearColor(0, 0, 0, 0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
-	gl.uniform1f(uniforms.time, frame.sourceTime);
+	gl.uniform1f(uniforms.time, frame.particleTime);
+	gl.uniform1f(uniforms.startTime, frame.startTimeInSeconds);
+	gl.uniform1f(uniforms.audioTimeOffset, frame.sourceTime - frame.particleTime);
 	gl.uniform1f(uniforms.aspect, frame.width / frame.height);
 	gl.uniform3fv(uniforms.color, linearColor(frame.color));
 	gl.uniform1f(uniforms.radius, frame.radius);
@@ -775,6 +796,8 @@ const particlesVertex = `
 uniform float iAspect;
 uniform bool iMaskHalo;
 uniform float iGlobalTime;
+uniform float iParticleStartTime;
+uniform float iAudioTimeOffset;
 uniform sampler2D iHistoryTexture;
 uniform sampler2D iParticleBassTexture;
 uniform float iParticleBassHistoryDuration;
@@ -803,7 +826,6 @@ varying float vParticleOpacity;
 #define MAX_SPEED_MULTIPLIER 20.0
 #define MAX_BIRTH_RATE (BASE_BIRTH_RATE * MAX_SPEED_MULTIPLIER)
 #define PARTICLE_EVENT_WINDOW 5.0
-#define PARTICLE_PREROLL_SECONDS 5.0
 #define PARTICLE_PREROLL_SPEEDUP 9.0
 #define PARTICLE_NON_REACTIVE_SPEEDUP 7.0
 #define SOURCE_BASE_HEIGHT 500.0
@@ -842,7 +864,7 @@ float decodeParticleBassIntegral(vec4 encodedIntegral) {
 
 vec4 particleBassSample(float sampleTime) {
   float textureX = 1.0 - clamp(
-    (iParticleBassHistoryEndTime - sampleTime) /
+    (iParticleBassHistoryEndTime - (sampleTime + iAudioTimeOffset)) /
       iParticleBassHistoryDuration,
     0.0,
     1.0
@@ -873,7 +895,7 @@ void main() {
     (iGlobalTime + eventPhase) / PARTICLE_EVENT_WINDOW
   );
   float birthTime = eventCycle * PARTICLE_EVENT_WINDOW - eventPhase;
-  if (birthTime < -PARTICLE_PREROLL_SECONDS) {
+  if (iGlobalTime < iParticleStartTime || birthTime < iParticleStartTime) {
     hideParticle();
     return;
   }
@@ -1074,6 +1096,8 @@ const AudioParticlesContent: React.FC<Required<AudioParticlesOptions>> = (props)
 				width={props.width}
 				height={props.height}
 				sourceTime={sourceTime}
+				particleTime={frame / fps}
+				startTimeInSeconds={props.startTimeInSeconds}
 				history={data.history}
 				bassHistory={data.bassHistory}
 				bass={data.bass}
@@ -1103,6 +1127,7 @@ const AudioParticlesInner = forwardRef<
 			audioSrc = audioParticlesSchema.audioSrc.default,
 			audioOffsetInSeconds = audioParticlesSchema.audioOffsetInSeconds.default,
 			playAudio = audioParticlesSchema.playAudio.default,
+			startTimeInSeconds = audioParticlesSchema.startTimeInSeconds.default,
 			inputGainDb = audioParticlesSchema.inputGainDb.default,
 			intensity = audioParticlesSchema.intensity.default,
 			color = audioParticlesSchema.color.default,
@@ -1145,6 +1170,7 @@ const AudioParticlesInner = forwardRef<
 						audioSrc={audioSrc}
 						audioOffsetInSeconds={audioOffsetInSeconds}
 						playAudio={playAudio}
+						startTimeInSeconds={startTimeInSeconds}
 						inputGainDb={inputGainDb}
 						intensity={intensity}
 						color={color}

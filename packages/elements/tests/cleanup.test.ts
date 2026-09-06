@@ -244,6 +244,8 @@ for (const [element, component, textureCount] of [
 		width: 450,
 		height: 400,
 		sourceTime: 40.1,
+		particleTime: 10.1,
+		startTimeInSeconds: 0,
 		texture,
 		history: texture,
 		bassHistory: texture,
@@ -333,6 +335,9 @@ for (const [element, component, textureCount] of [
 			assert.ok(calls.some(({name, args}) => name === 'pixelStorei' && args[1] === true));
 		}
 		if (component === 'AudioParticles') {
+			uniform('uniform1f', 'iGlobalTime', 10.1);
+			uniform('uniform1f', 'iParticleStartTime', 0);
+			uniform('uniform1f', 'iAudioTimeOffset', 30);
 			uniform('uniform1f', 'iParticleReactiveSpeed', 1);
 			uniform('uniform1i', 'iMaskHalo', 1);
 		}

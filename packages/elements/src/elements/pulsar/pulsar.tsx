@@ -35,7 +35,6 @@ type PulsarOptions = {
 	readonly intensity?: number;
 	readonly startColor?: string;
 	readonly endColor?: string;
-	// Retained for compatibility; the original shader uses start/end colors only.
 	readonly colorMode?: 'gradient' | 'rainbow';
 	readonly density?: number;
 	readonly pattern?: number;
@@ -95,7 +94,7 @@ const pulsarSchema = {
 	colorMode: {
 		type: 'enum',
 		default: 'gradient',
-		description: 'Color mode',
+		description: 'Color mode (rainbow ignores start/end colors)',
 		variants: {gradient: {}, rainbow: {}},
 	},
 	inputGainDb: {
@@ -282,7 +281,7 @@ void main() {
 
 type PulsarFrame = Pick<
 	Required<PulsarOptions>,
-	'width' | 'height' | 'startColor' | 'endColor' | 'density' | 'pattern' | 'volume'
+	'width' | 'height' | 'startColor' | 'endColor' | 'colorMode' | 'density' | 'pattern' | 'volume'
 > & {readonly sourceTime: number; readonly texture: DataTexture};
 
 type PulsarState = {
@@ -296,6 +295,7 @@ type PulsarState = {
 		readonly texture: WebGLUniformLocation | null;
 		readonly startColor: WebGLUniformLocation | null;
 		readonly endColor: WebGLUniformLocation | null;
+		readonly colorMode: WebGLUniformLocation | null;
 		readonly density: WebGLUniformLocation | null;
 		readonly pattern: WebGLUniformLocation | null;
 		readonly volume: WebGLUniformLocation | null;
@@ -370,6 +370,7 @@ function setupPulsar(canvas: HTMLCanvasElement): PulsarState {
 				texture: gl.getUniformLocation(program, 'iTexture'),
 				startColor: gl.getUniformLocation(program, 'iStartColor'),
 				endColor: gl.getUniformLocation(program, 'iEndColor'),
+				colorMode: gl.getUniformLocation(program, 'iColorMode'),
 				density: gl.getUniformLocation(program, 'iDensity'),
 				pattern: gl.getUniformLocation(program, 'iPattern'),
 				volume: gl.getUniformLocation(program, 'iVolume'),
@@ -392,8 +393,17 @@ function drawPulsar({gl, program, texture, uniforms}: PulsarState, frame: Pulsar
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.uniform1f(uniforms.time, frame.sourceTime);
 	gl.uniform1f(uniforms.aspect, frame.width / frame.height);
-	gl.uniform3fv(uniforms.startColor, linearColor(frame.startColor));
-	gl.uniform3fv(uniforms.endColor, linearColor(frame.endColor));
+	const rainbow = frame.colorMode === 'rainbow';
+	// Rainbow uses the default palette only as a lighting/opacity reference.
+	gl.uniform3fv(
+		uniforms.startColor,
+		linearColor(rainbow ? pulsarSchema.startColor.default : frame.startColor),
+	);
+	gl.uniform3fv(
+		uniforms.endColor,
+		linearColor(rainbow ? pulsarSchema.endColor.default : frame.endColor),
+	);
+	gl.uniform1i(uniforms.colorMode, rainbow ? 1 : 0);
 	gl.uniform1f(uniforms.density, frame.density);
 	gl.uniform1f(uniforms.pattern, frame.pattern);
 	gl.uniform1f(uniforms.volume, frame.volume);
@@ -486,6 +496,15 @@ uniform float iCount;
 
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
+uniform int iColorMode;
+
+// Smooth, periodic hue palette in linear RGB, matching the gradient pipeline.
+vec3 rainbowColor(float hue) {
+    vec3 rgb = clamp(abs(fract(hue + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
+    rgb = rgb * rgb * (3.0 - 2.0 * rgb);
+    rgb = mix(vec3(0.35), vec3(1.0), rgb);
+    return pow((rgb + 0.055) / 1.055, vec3(2.4));
+}
 
 uniform float iIntensity;
 uniform float iDensity;
@@ -583,6 +602,9 @@ void main()
     float sphereRaysShift = camPosition.y / ( distance( camPosition, vec3(0.0,0.0,0.0) ) / focalLength ) / camSurfaceRadius;
     float sphereRaysStrength = pow( sphereSound( vec3( fragData.normalCoord  + vec2( 0.0, sphereRaysShift ), 0.0 )), 2.5 );
     vec3 color = vec3(0.);
+    vec3 referenceColor = vec3(0.);
+    // Screen-space hue avoids a seam through the volume; time is frame-derived.
+    vec3 rainbow = rainbowColor(vUv.x * 2.0 + vUv.y * 0.5 + iGlobalTime * 0.06);
     vec3 checkedSpherePoint = camSurfaceCoord;
     float cumulativeDensity = 1.0;
     
@@ -596,8 +618,13 @@ void main()
         
         float sound = sphereSound( checkedSpherePoint );
         float soundEffect = sound * sound / 50.0;
-        color += (iStartColor * density + iEndColor * max( 0.0, dot( sphereNormal( checkedSpherePoint ), -rayDirection ) - 0.5 ) * density ) 
-               / cumulativeDensity;
+        float highlight = max(0.0, dot(sphereNormal(checkedSpherePoint), -rayDirection) - 0.5);
+        float blend = smoothstep(0.0, 1.0, highlight * 2.0);
+        vec3 palette = iColorMode == 1 ? rainbow : mix(iStartColor, iEndColor, blend);
+        float weight = density / cumulativeDensity;
+        color += palette * (1.0 + highlight) * weight;
+        // Retain the original light distribution independently of palette blending.
+        referenceColor += (iStartColor + iEndColor * highlight) * weight;
         cumulativeDensity += density;
     }
 
@@ -605,7 +632,11 @@ void main()
     float threshold = 0.35;
     float softness = 0.1;
 
-    float luminance = dot(color, vec3(0.299, 0.587, 0.114));
+    const vec3 luma = vec3(0.299, 0.587, 0.114);
+    float luminance = dot(referenceColor, luma);
+    float paletteLuminance = dot(color, luma);
+    // Only redistribute chroma: preserve the original glow and alpha silhouette.
+    color *= luminance / max(paletteLuminance, 0.000001);
     alpha = smoothstep(threshold - softness, threshold + softness, luminance) * iOpacity;
 
     gl_FragColor = vec4(color, alpha);
@@ -689,6 +720,7 @@ const PulsarContent: React.FC<Required<PulsarOptions>> = (props) => {
 				texture={texture}
 				startColor={props.startColor}
 				endColor={props.endColor}
+				colorMode={props.colorMode}
 				density={props.density}
 				pattern={props.pattern}
 				volume={props.volume}
