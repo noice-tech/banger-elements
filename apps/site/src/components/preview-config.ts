@@ -35,12 +35,19 @@ export function configuredJsx(
 		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
 		.join('');
 	const safeProps = {...props};
-	if (localAudio || String(safeProps.audioSrc ?? '').startsWith('blob:')) {
-		safeProps.audioSrc = '/audio/your-track.mp3';
-	}
+	const replaceAudio = localAudio || String(safeProps.audioSrc ?? '').startsWith('blob:');
+	const replaceArtwork = String(safeProps.artworkSrc ?? '').startsWith('blob:');
+	if (replaceAudio) safeProps.audioSrc = '/audio/your-track.mp3';
+	if (replaceArtwork) safeProps.artworkSrc = '/images/your-artwork.png';
+	const notes = [
+		...(replaceAudio ? ['// Replace /audio/your-track.mp3 with your project audio asset.'] : []),
+		...(replaceArtwork
+			? ['// Replace /images/your-artwork.png with your project image asset.']
+			: []),
+	];
 	const attributes = Object.entries(safeProps)
 		.filter(([, value]) => typeof value !== 'number' || Number.isFinite(value))
 		.map(([key, value]) => `  ${key}={${JSON.stringify(value)}}`)
 		.join('\n');
-	return `import {${name}} from './${slug}.element';\n\n${localAudio ? '// Replace /audio/your-track.mp3 with your project audio asset.\n' : ''}// Inside your Remotion composition:\n<${name}\n${attributes}\n/>`;
+	return `import {${name}} from './${slug}.element';\n\n${notes.length ? `${notes.join('\n')}\n` : ''}// Inside your Remotion composition:\n<${name}\n${attributes}\n/>`;
 }

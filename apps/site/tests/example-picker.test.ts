@@ -29,7 +29,9 @@ test('only the selected example code is rendered', () => {
 test('combined example shares audio, aligns the mask, and disables duplicate playback', () => {
 	const combined = examplePresets.find((preset) => preset.id === 'combined')!;
 	assert.equal((combined.code.match(/audioSrc=\{audioSrc\}/g) ?? []).length, 2);
-	assert.equal((combined.code.match(/radius=\{0\.18\}/g) ?? []).length, 2);
+	assert.equal((combined.code.match(/radius=\{0\.12\}/g) ?? []).length, 2);
+	assert.equal((combined.code.match(/inputGainDb=\{0\}/g) ?? []).length, 2);
+	assert.equal((combined.code.match(/intensity=\{1\}/g) ?? []).length, 2);
 	assert.ok(combined.code.includes('playAudio={false}'));
 	assert.ok(combined.code.includes('maskHalo'));
 });

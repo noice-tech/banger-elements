@@ -91,17 +91,20 @@ const details = {
 		renderer: 'WebGL2',
 		tagline: 'Leave a little afterglow.',
 		description:
-			'A white-edged rainbow halo with bass-driven expansion and delayed trails, faithfully adapted from the original shader without its icon or background.',
+			'A white-edged rainbow halo with bass-driven expansion, delayed trails, and an optional artwork or transparent center.',
 		controls: [
 			'artworkSrc — optional artwork URL or Studio asset',
-			'colorMode — original rainbow or custom startColor / endColor gradient',
-			'inputGainDb — visual gain; 0 matches the source analyzer',
-			'radius / intensity — ring shape and response; source defaults are 0.12 / 1',
+			'colorMode — rainbow palette or custom startColor / endColor gradient',
+			'leadingColor — optional front reactive layer override; unset uses white in rainbow or startColor in gradient',
+			'centerMode — filled (default) or transparent cutout, including temporal trails',
+			'centerColor — shaded center base color (default #2d2d2d); artwork remains untinted; both are ignored in transparent mode',
+			'inputGainDb — visual gain in dB (0 = no boost)',
+			'radius / intensity — ring shape and response; defaults are 0.12 / 1',
 			'trailDepth / waveDelay / motionBlur — delayed trails and temporal afterglow',
 			'glowBlur / glowSpread — glow treatment',
 		],
 		limitation:
-			'Experimental. Requires WebGL2. Uses a fixed 44.1 kHz / 60 Hz reference and decodes the full audio for deterministic bass accumulation; long tracks require more memory and first seeks may take longer. Artwork needs CORS access. Legacy gain/intensity presets should be reset for the corrected FFT.',
+			'Experimental. Requires WebGL2. Analyzes audio at a fixed 44.1 kHz / 60 Hz and decodes the full track for deterministic bass accumulation; long tracks require more memory and first seeks may take longer. Artwork needs CORS access.',
 	},
 	'audio-particles': {
 		title: 'Audio Particles',
@@ -113,7 +116,7 @@ const details = {
 			'density / size — particle field',
 			'startTimeInSeconds — emission start relative to the element: -5 pre-fills the field (default), 0 starts fresh, positive values delay emission; independent of audio trim',
 			'reactiveSpeed — bass-reactive motion',
-			'maskHalo — conservative Halo exclusion; match its radius, inputGainDb and intensity (source defaults: 0.12, 0, 1)',
+			'maskHalo — conservative Halo exclusion; match its radius, inputGainDb and intensity (defaults: 0.12, 0, 1)',
 			'color / intensity — appearance',
 		],
 		limitation:

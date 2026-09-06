@@ -32,6 +32,9 @@ type HaloOptions = {
 	readonly colorMode?: 'rainbow' | 'gradient';
 	readonly startColor?: string;
 	readonly endColor?: string;
+	readonly leadingColor?: string;
+	readonly centerColor?: string;
+	readonly centerMode?: 'filled' | 'transparent';
 	readonly radius?: number;
 	readonly trailDepth?: number;
 	readonly waveDelay?: boolean;
@@ -97,17 +100,33 @@ const haloSchema = {
 		type: 'enum',
 		variants: {rainbow: {}, gradient: {}},
 		default: 'rainbow',
-		description: 'Original rainbow or custom gradient',
+		description: 'Rainbow palette or custom gradient',
 	},
 	startColor: {type: 'color', default: '#aa8bff', description: 'Gradient start color'},
 	endColor: {type: 'color', default: '#51e8cc', description: 'Gradient end color'},
+	leadingColor: {
+		type: 'color',
+		default: undefined,
+		description: 'Leading edge override (unset: white in rainbow, startColor in gradient)',
+	},
+	centerMode: {
+		type: 'enum',
+		variants: {filled: {}, transparent: {}},
+		default: 'filled',
+		description: 'Filled center or transparent cutout (ignores center color and artwork)',
+	},
+	centerColor: {
+		type: 'color',
+		default: '#2d2d2d',
+		description: 'Center base color; preserves shading and does not tint artwork',
+	},
 	inputGainDb: {
 		type: 'number',
 		default: 0,
 		min: -30,
 		max: 30,
 		step: 1,
-		description: 'Visual gain in dB (0 matches the source analyzer)',
+		description: 'Visual gain in dB',
 		hiddenFromList: false,
 	},
 	intensity: {
@@ -116,7 +135,7 @@ const haloSchema = {
 		min: 0.1,
 		max: 10,
 		step: 0.1,
-		description: 'Spectrum deformation (1 matches the source)',
+		description: 'Spectrum deformation',
 		hiddenFromList: false,
 	},
 	radius: {
@@ -138,14 +157,14 @@ const haloSchema = {
 		hiddenFromList: false,
 	},
 	waveDelay: {type: 'boolean', default: true, description: 'Delayed trails'},
-	motionBlur: {type: 'boolean', default: true, description: 'Original temporal afterglow'},
+	motionBlur: {type: 'boolean', default: true, description: 'Temporal afterglow'},
 	glowBlur: {
 		type: 'number',
 		default: 0,
 		min: 0,
 		max: 100,
 		step: 1,
-		description: 'Optional extra glow (0 matches the source)',
+		description: 'Extra glow blur (0 disables)',
 		hiddenFromList: false,
 	},
 	glowSpread: {
@@ -192,11 +211,8 @@ function useArtwork(src: string) {
 	return loaded?.src === src ? loaded.image : null;
 }
 
-// Shadertoy's default AnalyserNode: 2048-point FFT, Blackman window,
-// 0.8 magnitude smoothing, -100..-30 dB, first 512 byte-frequency bins.
-// Fix the reference cadence at 60 Hz, independent of host FPS/render order.
+// Fixed analysis timing and frequency bins keep results independent of host FPS and audio device.
 const ANALYSIS_FPS = 60;
-// Pin the reference's 44.1 kHz frequency grid instead of using media-utils' 48 kHz default.
 const ANALYSIS_SAMPLE_RATE = 44100;
 const FFT_SIZE = 2048;
 const FREQUENCY_BIN_COUNT = 512;
@@ -204,8 +220,7 @@ const TEMPORAL_SMOOTHING = 0.8;
 const MIN_DECIBELS = -100;
 const MAX_DECIBELS = -30;
 const SPECTRUM_SCALE = 0.08;
-// Only these bins can be read by the source shader. Keep the full FFT for
-// correctness, but retain compact, gain-independent histories (~10 KB/sec).
+// Retain only the low-frequency bins used by the ring (~10 KB/sec).
 const RETAINED_BINS = Math.ceil(SPECTRUM_SCALE * FREQUENCY_BIN_COUNT) + 1;
 const BLUR_SAMPLES = 6;
 const HISTORY_ROWS = 9 + BLUR_SAMPLES - 1;
@@ -385,7 +400,7 @@ function getBassPhase(parameters: AnalysisParameters) {
 			normalizedSpectrum(trace.magnitudes[next], parameters.inputGainDb),
 		);
 		gainTrace.bass.push(bass);
-		// Buffer A accumulates PREVIOUS-frame bass. Float32 matches its storage.
+		// Accumulate previous-frame bass in Float32 for stable GPU phase values.
 		gainTrace.phase.push(Math.fround(gainTrace.phase[next] + bass));
 	}
 	return gainTrace.phase[endFrame];
@@ -535,6 +550,9 @@ function setupHalo(canvas: HTMLCanvasElement): HaloState {
 			'iColorMode',
 			'iStartColor',
 			'iEndColor',
+			'iLeadingColor',
+			'iCenterTint',
+			'iTransparentCenter',
 			'iRadius',
 			'iIntensity',
 			'iTrailDepth',
@@ -582,13 +600,19 @@ function drawHalo(
 		iMotionBlur: Number(frame.motionBlur),
 		iGlowBlur: frame.glowBlur,
 		iGlowSpread: frame.glowSpread,
-		iHasCenterImage: Number(Boolean(frame.image)),
+		iHasCenterImage: Number(Boolean(frame.image) && frame.centerMode !== 'transparent'),
 		iCenterImageAspectRatio: frame.image ? frame.image.naturalWidth / frame.image.naturalHeight : 1,
 	}))
 		gl.uniform1f(uniforms[name], value);
 	gl.uniform1i(uniforms.iColorMode, frame.colorMode === 'rainbow' ? 1 : 0);
+	gl.uniform1i(uniforms.iTransparentCenter, Number(frame.centerMode === 'transparent'));
 	gl.uniform3fv(uniforms.iStartColor, displayColor(frame.startColor));
 	gl.uniform3fv(uniforms.iEndColor, displayColor(frame.endColor));
+	gl.uniform3fv(uniforms.iLeadingColor, displayColor(resolveLeadingColor(frame)));
+	gl.uniform3fv(
+		uniforms.iCenterTint,
+		centerTint(frame.centerColor ?? haloSchema.centerColor.default),
+	);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, historyTexture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
@@ -676,9 +700,6 @@ function HaloCanvas(frame: HaloFrame) {
 // prettier-ignore
 const haloFragment = `#version 300 es
 /*
-  Adapted from "Colorful Music Visualizer" by tikveel:
-  https://www.shadertoy.com/view/llycWD
-
   Free Public License 1.0.0
 
   Copyright (C) 2018 by tikveel <steven@tikveel.nl>
@@ -702,6 +723,9 @@ uniform float iHasCenterImage;
 uniform int iColorMode;
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
+uniform vec3 iLeadingColor;
+uniform vec3 iCenterTint;
+uniform bool iTransparentCenter;
 uniform float iRadius;
 uniform float iIntensity;
 uniform float iTrailDepth;
@@ -719,27 +743,26 @@ vec2 rotatePoint(vec2 point, float angle) {
   return point * mat2(cosine, sine, -sine, cosine);
 }
 
-// The original circle function intentionally produces a visible radius of 2*r.
+// The visible radius is twice the radius parameter.
 float sourceCircle(float distanceFromCenter, float radius, float smoothness) {
   float halfSmoothness = smoothness * 0.5;
   return 1.0 - smoothstep(radius - halfSmoothness, radius + halfSmoothness, distanceFromCenter - radius);
 }
 
-// Premultiplied OVER preserves the original mix() on opaque pixels and allows
-// the isolated Halo (including its temporal afterglow) to composite anywhere.
+// Premultiplied alpha keeps layered colors and afterglow compositable.
 vec4 over(vec4 back, vec4 front) {
   return vec4(front.rgb * front.a + back.rgb * (1.0 - front.a), front.a + back.a * (1.0 - front.a));
 }
 
 vec4 spectrumColor(int age) {
-  // Preserve even the source's repeated yellow opacity / shifted trail alphas.
   const vec3 colors[9] = vec3[9](
     vec3(1,1,1), vec3(1,1,0), vec3(1,0.5,0), vec3(1,0,0),
     vec3(1,0.2,0.3), vec3(1,0,1), vec3(0,0,1), vec3(0,0.8,1), vec3(0,1,0)
   );
   const float alphas[9] = float[9](1.0, 0.95, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65);
   float position = float(age) / max(iTrailDepth - 1.0, 1.0);
-  return vec4(iColorMode == 1 ? colors[age] : mix(iStartColor, iEndColor, position), alphas[age]);
+  vec3 color = iColorMode == 1 ? colors[age] : mix(iStartColor, iEndColor, position);
+  return vec4(age == 0 ? iLeadingColor : color, alphas[age]);
 }
 
 float getFrequency(float x, int row) {
@@ -751,8 +774,7 @@ vec3 innerCircle(vec2 point, float time) {
   float turn = 1.0 - smoothstep(0.0, 1.0, clamp((fract(time * 0.06) - 0.8) / 0.2, 0.0, 1.0));
   vec2 rotated = rotatePoint(point, TWO_PI * turn);
   vec3 color = mix(vec3(0.0), vec3(0.15), rotated.y * 0.5 + 0.5) + 0.1;
-  // Original disc shading and concentric lines, deliberately NO triangle/icon.
-  return mix(color, vec3(0.0), sin(length(rotated) * 80.0) * 0.05);
+  return mix(color, vec3(0.0), sin(length(rotated) * 80.0) * 0.05) * iCenterTint;
 }
 
 vec4 centerImageColor(vec2 point) {
@@ -764,7 +786,8 @@ vec4 centerImageColor(vec2 point) {
 
 vec2 shakeAt(float time) { return vec2(sin(time * 9.0), cos(time * 5.0)) * 0.002; }
 
-vec4 renderHalo(vec2 uv, int sampleAge) {
+vec4 renderHalo(vec2 uv, int sampleAge, out float innerMask) {
+  innerMask = 0.0;
   float time = iGlobalTime - float(sampleAge) / 60.0;
   vec4 audio = texelFetch(iHistoryTexture, ivec2(0, sampleAge), 0);
   float bass = audio.g, extra = audio.b;
@@ -795,8 +818,11 @@ vec4 renderHalo(vec2 uv, int sampleAge) {
     result = over(result, layer);
   }
   float innerRadius = max(0.02, iRadius + bassGrowth - CIRCLE_BORDER_SIZE);
-  float innerMask = sourceCircle(distanceFromCenter, innerRadius, 0.004);
-  if (innerMask > 0.0) {
+  innerMask = sourceCircle(distanceFromCenter, innerRadius, 0.004);
+  if (iTransparentCenter) {
+    // Cut ALL premultiplied channels, including the spectrum discs and glow.
+    result *= 1.0 - innerMask;
+  } else if (innerMask > 0.0) {
     result = over(result, vec4(innerCircle(point / innerRadius, time), innerMask));
     if (iHasCenterImage > 0.5) {
       vec4 artwork = centerImageColor(point / (innerRadius * 2.0));
@@ -810,22 +836,25 @@ vec4 renderHalo(vec2 uv, int sampleAge) {
 }
 
 void main() {
-  // Expand the source feedback recurrence: 0.8*current + 0.2*previous.
-  // Discarded feedback weight is 0.2^6. Direct scene sampling approximates
-  // the source's bilinear framebuffer resampling at moving edges.
-  // Reproduce the feedback UV shift too, rather than blurring in place.
+  // Evaluate 0.8*current + 0.2*previous without persistent GPU state.
+  // Six shifted samples approximate temporal blur; discarded weight is 0.2^6.
   vec4 result = vec4(0.0);
   vec2 uv = vUv;
   float weight = 1.0;
+  float currentInnerMask = 0.0;
   for (int age = 0; age < ${BLUR_SAMPLES}; age++) {
     float time = iGlobalTime - float(age) / 60.0;
     if (time < 0.0) break;
-    result += renderHalo(uv, age) * weight * (iMotionBlur > 0.5 ? 0.8 : 1.0);
+    float innerMask;
+    result += renderHalo(uv, age, innerMask) * weight * (iMotionBlur > 0.5 ? 0.8 : 1.0);
+    if (age == 0) currentInnerMask = innerMask;
     if (iMotionBlur < 0.5) break;
     uv += shakeAt(time);
     weight *= 0.2;
   }
-  // Shadertoy writes display RGB directly. No additional linear/sRGB transform.
+  // Old, smaller rings must not leave ghosts inside the current bass-expanded hole.
+  if (iTransparentCenter && iMotionBlur > 0.5) result *= 1.0 - currentInnerMask;
+  // Colors are already in display RGB; no additional color-space conversion.
   outColor = clamp(result, 0.0, 1.0);
 }
 `;
@@ -838,6 +867,23 @@ void main() {
   gl_Position = vec4(position, 0.0, 1.0);
 }
 `;
+
+function resolveLeadingColor({
+	colorMode,
+	startColor,
+	leadingColor,
+}: Pick<HaloOptions, 'colorMode' | 'startColor' | 'leadingColor'>) {
+	return (
+		leadingColor ??
+		(colorMode === 'gradient' ? (startColor ?? haloSchema.startColor.default) : '#ffffff')
+	);
+}
+
+function centerTint(color: string) {
+	// Neutral charcoal maps to exactly 1, preserving the default shading.
+	// Scale the existing lighting/lines, not the artwork sampled above the disc.
+	return displayColor(color).map((channel) => channel / (45 / 255));
+}
 
 const colorCache = new Map<string, number[]>();
 let colorParser: CanvasRenderingContext2D | null = null;
@@ -885,7 +931,7 @@ const HaloContent: React.FC<Required<HaloOptions>> = (props) => {
 	// Full audio is required for source-start bass accumulation when seeking.
 	// useAudioData holds rendering until decoding completes; FFT traces grow lazily.
 	const audioData = useAudioData(props.audioSrc, {sampleRate: ANALYSIS_SAMPLE_RATE});
-	const image = useArtwork(props.artworkSrc);
+	const image = useArtwork(props.centerMode === 'transparent' ? '' : props.artworkSrc);
 	const trailDepth = clamp(Math.round(props.trailDepth), 1, 9);
 	const data = useMemo(
 		() =>
@@ -933,6 +979,9 @@ const HaloInner = forwardRef<
 			colorMode = haloSchema.colorMode.default,
 			startColor = haloSchema.startColor.default,
 			endColor = haloSchema.endColor.default,
+			leadingColor,
+			centerColor = haloSchema.centerColor.default,
+			centerMode = haloSchema.centerMode.default,
 			radius = haloSchema.radius.default,
 			trailDepth = haloSchema.trailDepth.default,
 			waveDelay = haloSchema.waveDelay.default,
@@ -973,6 +1022,9 @@ const HaloInner = forwardRef<
 						colorMode={colorMode}
 						startColor={startColor}
 						endColor={endColor}
+						leadingColor={resolveLeadingColor({colorMode, startColor, leadingColor})}
+						centerColor={centerColor}
+						centerMode={centerMode}
 						radius={radius}
 						trailDepth={trailDepth}
 						waveDelay={waveDelay}

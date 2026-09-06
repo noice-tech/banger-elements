@@ -358,12 +358,20 @@ const examples = {
 			colorMode: 'rainbow',
 			startColor: '#aa8bff',
 			endColor: '#51e8cc',
+			centerColor: '#2d2d2d',
+			centerMode: 'filled',
 			artworkSrc: '',
 		},
 		controls: [
 			colorMode,
 			color('startColor', 'Gradient start color'),
 			color('endColor', 'Gradient end color'),
+			color('leadingColor', 'Leading edge'),
+			select('centerMode', 'Center mode', [
+				{value: 'filled', label: 'Filled'},
+				{value: 'transparent', label: 'Transparent'},
+			]),
+			color('centerColor', 'Center color'),
 			gain,
 			intensity,
 			range('radius', 'Radius', 0.05, 0.8, 0.01),
@@ -458,10 +466,16 @@ const ControlField = ({
 	control,
 	value,
 	update,
+	disabled = false,
+	reset,
+	automatic = false,
 }: {
 	control: Control;
 	value: Value;
 	update: (value: Value) => void;
+	disabled?: boolean;
+	reset?: () => void;
+	automatic?: boolean;
 }) => {
 	if (control.type === 'boolean')
 		return (
@@ -508,17 +522,35 @@ const ControlField = ({
 		);
 	if (control.type === 'color')
 		return (
-			<label>
-				<span>{control.label}</span>
-				<span className="color-control">
-					<input
-						type="color"
-						value={String(value)}
-						onChange={(event) => update(event.target.value)}
-					/>
-					<output>{String(value)}</output>
-				</span>
-			</label>
+			<div className="color-field" data-disabled={disabled || undefined}>
+				<label>
+					<span>{control.label}</span>
+					<span className="color-control">
+						<input
+							type="color"
+							aria-label={control.label}
+							disabled={disabled}
+							value={String(value)}
+							onChange={(event) => update(event.target.value)}
+						/>
+						<output>
+							{String(value)}
+							{automatic ? ' · auto' : ''}
+						</output>
+					</span>
+				</label>
+				{reset ? (
+					<button
+						type="button"
+						className="color-auto"
+						onClick={reset}
+						disabled={automatic}
+						aria-label="Use automatic leading edge color"
+					>
+						Auto
+					</button>
+				) : null}
+			</div>
 		);
 	return (
 		<label>
@@ -568,8 +600,34 @@ export default function Preview({
 		name: string;
 		url: string;
 	} | null>(null);
+	const [artworkFile, setArtworkFile] = useState<File | null>(null);
+	const [localArtwork, setLocalArtwork] = useState<{name: string; url: string} | null>(null);
+	const [artworkError, setArtworkError] = useState('');
+	useEffect(() => {
+		setLocalArtwork(null);
+		setArtworkError('');
+		if (!artworkFile) return;
+		const url = URL.createObjectURL(artworkFile);
+		const image = new Image();
+		let active = true;
+		image.onload = () => {
+			if (active) setLocalArtwork({name: artworkFile.name, url});
+		};
+		image.onerror = () => {
+			if (active)
+				setArtworkError('This image could not be opened. Try a PNG, JPEG, WebP, or SVG file.');
+		};
+		image.src = url;
+		return () => {
+			active = false;
+			image.onload = null;
+			image.onerror = null;
+			URL.revokeObjectURL(url);
+		};
+	}, [artworkFile]);
 	useEffect(() => {
 		setCustomProps(initialProps);
+		setArtworkFile(null);
 	}, [initialProps]);
 	useEffect(() => {
 		const defaultAudio = defaultAudioFor(selected);
@@ -585,11 +643,14 @@ export default function Preview({
 	const inputProps = useMemo(
 		() => ({
 			...customProps,
+			...(selected === 'halo'
+				? {artworkSrc: artworkFile ? (localArtwork?.url ?? '') : (customProps.artworkSrc ?? '')}
+				: {}),
 			audioSrc: localAudio?.url ?? audioUrl,
 			audioOffsetInSeconds: Number(customProps.audioOffsetInSeconds ?? 0),
 			playAudio: Boolean(customProps.playAudio ?? true),
 		}),
-		[audioUrl, customProps, localAudio],
+		[audioUrl, customProps, localAudio, selected, artworkFile, localArtwork],
 	);
 	const update = (key: string, value: Value) => {
 		setCustomProps((current) => ({...current, [key]: value}));
@@ -599,6 +660,7 @@ export default function Preview({
 		setCopyMessage('');
 		if (localAudio) URL.revokeObjectURL(localAudio.url);
 		setLocalAudio(null);
+		setArtworkFile(null);
 		const defaultAudio = defaultAudioFor(selected);
 		setAudioUrl(defaultAudio);
 		setAudioDraft(defaultAudio);
@@ -639,8 +701,8 @@ export default function Preview({
 		try {
 			await navigator.clipboard.writeText(configuredJsx(slug, inputProps, Boolean(localAudio)));
 			setCopyMessage(
-				localAudio
-					? 'Copied. Replace the audio path with your project asset.'
+				localAudio || localArtwork
+					? 'Copied. Replace local asset paths with your project files.'
 					: 'Configuration copied. Paste inside your composition.',
 			);
 		} catch {
@@ -875,22 +937,103 @@ export default function Preview({
 												control={control}
 												value={
 													customProps[control.key] ??
-													(example.props[control.key as keyof typeof example.props] as Value)
+													(selected === 'halo' && control.key === 'leadingColor'
+														? customProps.colorMode === 'gradient'
+															? customProps.startColor
+															: '#ffffff'
+														: (example.props[control.key as keyof typeof example.props] as Value))
+												}
+												disabled={
+													selected === 'halo' &&
+													((customProps.colorMode !== 'gradient' &&
+														['startColor', 'endColor'].includes(control.key)) ||
+														(customProps.centerMode === 'transparent' &&
+															control.key === 'centerColor'))
+												}
+												automatic={
+													selected === 'halo' &&
+													control.key === 'leadingColor' &&
+													customProps.leadingColor === undefined
+												}
+												reset={
+													selected === 'halo' && control.key === 'leadingColor'
+														? () =>
+																setCustomProps((current) => {
+																	const next = {...current};
+																	delete next.leadingColor;
+																	return next;
+																})
+														: undefined
 												}
 												update={(value) => update(control.key, value)}
 											/>
 										))}
 								</div>
+								{selected === 'halo' && customProps.colorMode !== 'gradient' ? (
+									<p className="control-note">
+										Switch to Gradient to use start/end colors. Leading edge works in both color
+										modes.
+									</p>
+								) : null}
 								{selected === 'halo' ? (
-									<label className="wide-control artwork-control">
-										<span>Optional artwork URL</span>
-										<input
-											type="url"
-											value={String(customProps.artworkSrc ?? '')}
-											onChange={(event) => update('artworkSrc', event.target.value)}
-											placeholder="https://example.com/cover.jpg"
-										/>
-									</label>
+									<div className="artwork-controls artwork-control">
+										{customProps.centerMode === 'transparent' ? (
+											<p className="control-note">
+												The center is transparent. Color and artwork settings are kept for Filled
+												mode.
+											</p>
+										) : null}
+										<label className="wide-control">
+											<span>Optional artwork URL</span>
+											<input
+												type="url"
+												value={String(customProps.artworkSrc ?? '')}
+												disabled={Boolean(artworkFile) || customProps.centerMode === 'transparent'}
+												onChange={(event) => update('artworkSrc', event.target.value)}
+												placeholder="https://example.com/cover.jpg"
+											/>
+										</label>
+										<label className="file-control">
+											<span>Or choose local artwork</span>
+											<input
+												type="file"
+												accept="image/*"
+												disabled={customProps.centerMode === 'transparent'}
+												onChange={(event) => {
+													const file = event.currentTarget.files?.[0];
+													event.currentTarget.value = '';
+													if (!file) return;
+													setArtworkFile(file);
+													setCopyMessage('');
+												}}
+											/>
+										</label>
+										{artworkFile ? (
+											<>
+												<p className="control-note" role="status">
+													{artworkFile.name}
+													{!localArtwork && !artworkError ? ' — loading…' : ''}
+												</p>
+												<button
+													type="button"
+													onClick={() => {
+														setArtworkFile(null);
+														update('artworkSrc', '');
+													}}
+												>
+													Remove artwork
+												</button>
+											</>
+										) : null}
+										{artworkError ? (
+											<p className="control-note" role="alert">
+												{artworkError}
+											</p>
+										) : null}
+										<p className="control-note">
+											Local images stay in your browser and are never uploaded.
+										</p>
+									</div>
 								) : null}
 							</div>
 							<details className="configuration-export">

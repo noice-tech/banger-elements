@@ -23,10 +23,6 @@ test('site stages producer-owned artifacts byte-for-byte', async () => {
 			);
 		}
 	}
-	assert.deepEqual(
-		await readFile(path.join(dist, 'NOTICE.md')),
-		await readFile(path.join(repository, 'NOTICE.md')),
-	);
 });
 
 test('every catalog entry has a downloadable detail page, poster and gallery preview', async () => {

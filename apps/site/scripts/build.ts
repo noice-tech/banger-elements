@@ -29,5 +29,5 @@ for (const {slug} of catalog) {
 		path.join(dist, 'elements', `${slug}.json`),
 	);
 }
-await copyFile(path.join(producerDist, 'NOTICE.md'), path.join(dist, 'NOTICE.md'));
+
 console.log('Built static showcase in apps/site/dist.');

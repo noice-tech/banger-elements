@@ -19,5 +19,3 @@ Open http://localhost:3300.
 - `src/components/` — previews, controls, navigation, and Studio integration
 - `src/content/docs/` — Getting started and Examples
 - `static/` — branding, fonts, posters, and preview videos
-
-See [source notices](../../NOTICE.md) for attribution.

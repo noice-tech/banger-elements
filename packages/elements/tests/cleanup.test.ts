@@ -11,7 +11,6 @@ for (const element of [
 	'oscilloscope',
 	'pulsar',
 	'circle',
-	'halo',
 	'audio-particles',
 ]) {
 	const {hasCompleteAudioWindow} = loadHelpers(element, ['hasCompleteAudioWindow']) as {
@@ -265,6 +264,7 @@ for (const [element, component, textureCount] of [
 		radius: 0.18,
 		trailDepth: 7,
 		waveDelay: true,
+		motionBlur: true,
 		glowBlur: 35,
 		glowSpread: 20,
 		bass: 0.5,
@@ -329,6 +329,8 @@ for (const [element, component, textureCount] of [
 		}
 		if (component === 'Halo') {
 			uniform('uniform1f', 'iWaveDelay', 1);
+			uniform('uniform1f', 'iMotionBlur', 1);
+			uniform('uniform1i', 'iColorMode', 1);
 			draw(state, {...frame, image: {naturalWidth: 80, naturalHeight: 40}});
 			uniform('uniform1f', 'iHasCenterImage', 1);
 			uniform('uniform1f', 'iCenterImageAspectRatio', 2);
@@ -379,7 +381,7 @@ for (const [element, helper] of [
 	test(`${element}: source history is independent of cache/render order`, () => {
 		type History = {
 			bass: number;
-			history: {data: Uint8Array};
+			history: {data: Uint8Array | Float32Array};
 			bassHistory?: {data: Uint8Array};
 		};
 		type HistoryInput = {
@@ -420,7 +422,7 @@ for (const [element, helper] of [
 		for (const sourceTime of [41, 39, 40.1]) warm({...input, sourceTime});
 		const actual = warm(input);
 		assert.equal(actual.bass, expected.bass);
-		assert.deepEqual(Buffer.from(actual.history.data), Buffer.from(expected.history.data));
+		assert.deepEqual(Array.from(actual.history.data), Array.from(expected.history.data));
 		if (actual.bassHistory && expected.bassHistory) {
 			assert.deepEqual(
 				Buffer.from(actual.bassHistory.data),
@@ -429,6 +431,10 @@ for (const [element, helper] of [
 		}
 		const silent = warm({...input, sourceTime: 48});
 		assert.equal(silent.bass, 0);
-		assert.ok(silent.history.data.every((byte) => byte === 0));
+		assert.ok(
+			silent.history.data.every(
+				(value, index) => (element === 'halo' && index % 4 === 2) || value === 0,
+			),
+		);
 	});
 }

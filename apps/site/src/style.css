@@ -645,7 +645,8 @@ a[aria-current='page'] .nav-active-dot {
 	color: var(--sl-color-gray-3);
 }
 .controls-heading button,
-.audio-controls > button {
+.audio-controls > button,
+.artwork-controls > button {
 	min-height: 36px;
 	padding: 0.35rem 0.6rem;
 	border: 1px solid var(--sl-color-gray-5);
@@ -688,12 +689,14 @@ a[aria-current='page'] .nav-active-dot {
 	margin-bottom: 1rem;
 }
 .audio-controls,
-.visual-controls {
+.visual-controls,
+.artwork-controls {
 	display: grid;
 	grid-template-columns: 1fr;
 	gap: 0.8rem;
 }
-.audio-controls > button {
+.audio-controls > button,
+.artwork-controls > button {
 	width: max-content;
 }
 .audio-controls > button:disabled {
@@ -761,6 +764,32 @@ a[aria-current='page'] .nav-active-dot {
 .toggle-control span {
 	justify-content: start !important;
 }
+.color-field {
+	position: relative;
+}
+.color-field[data-disabled] {
+	opacity: 0.5;
+}
+.color-field:has(.color-auto) .color-control {
+	padding-right: 3.5rem;
+}
+.color-auto {
+	position: absolute;
+	right: 0.5rem;
+	bottom: 0.5rem;
+	border: 0;
+	border-radius: 4px;
+	padding: 0.2rem 0.4rem;
+	background: var(--sl-color-gray-5);
+	color: var(--sl-color-white);
+	font: inherit;
+	font-size: 0.65rem;
+	cursor: pointer;
+}
+.color-auto:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
 .color-control {
 	display: flex !important;
 	align-items: center;
@@ -781,6 +810,9 @@ a[aria-current='page'] .nav-active-dot {
 }
 .artwork-control {
 	margin-top: 1rem !important;
+}
+.artwork-controls .control-note {
+	overflow-wrap: anywhere;
 }
 .control-note {
 	margin: 0.75rem 0 0;

@@ -42,7 +42,6 @@ await writeFile(
 		.join('\n')}\n`,
 );
 await writeFile(path.join(dist, 'catalog.json'), `${JSON.stringify(catalog)}\n`);
-await writeFile(path.join(dist, 'NOTICE.md'), await readFile(path.join(repository, 'NOTICE.md')));
 
 const consumer = ts.createProgram(
 	catalog.map((entry) => path.join(dist, 'elements', `${entry.slug}.tsx`)),

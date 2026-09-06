@@ -41,7 +41,7 @@ type AudioParticlesOptions = {
 
 type AudioParticlesProps = InteractiveBaseProps & InteractiveTransformProps & AudioParticlesOptions;
 const ANALYSIS_FPS = 60;
-const MASK_TRAIL_DEPTH = 7;
+const MASK_TRAIL_DEPTH = 9;
 const PARTICLE_COUNT = 3500;
 
 const audioParticlesSchema = {
@@ -153,7 +153,7 @@ const audioParticlesSchema = {
 	maskHalo: {
 		type: 'boolean',
 		default: false,
-		description: 'Exclude matching Halo edge in combined scenes',
+		description: 'Halo exclusion: match its radius, inputGainDb and intensity',
 	},
 	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
@@ -221,7 +221,7 @@ const smoothedMagnitudeCache = new Map<string, Float32Array>();
 
 const FREQUENCY_BIN_COUNT = 512;
 
-const SMOOTHING_LOOKBACK_FRAMES = 32;
+const SMOOTHING_LOOKBACK_FRAMES = 64;
 
 const rawMagnitudeCache = new Map<string, Float32Array>();
 
@@ -231,11 +231,29 @@ const blackmanWindow = Float64Array.from(
 	{length: FFT_SIZE},
 	(_, index) =>
 		0.42 -
-		0.5 * Math.cos((2 * Math.PI * index) / (FFT_SIZE - 1)) +
-		0.08 * Math.cos((4 * Math.PI * index) / (FFT_SIZE - 1)),
+		0.5 * Math.cos((2 * Math.PI * index) / FFT_SIZE) +
+		0.08 * Math.cos((4 * Math.PI * index) / FFT_SIZE),
 );
 
-const bitReversedIndices = new Uint16Array(FFT_SIZE);
+const bitReversedIndices = Uint16Array.from({length: FFT_SIZE}, (_, index) => {
+	let reversed = 0;
+	for (let bits = FFT_SIZE; bits > 1; bits >>= 1) {
+		reversed = (reversed << 1) | (index & 1);
+		index >>= 1;
+	}
+	return reversed;
+});
+
+// Web Audio mono downmix, shared with Halo's analysis.
+function monoSample(channels: Float32Array[], index: number) {
+	const sample = (channel: number) => channels[channel]?.[index] ?? 0;
+	if (channels.length === 1) return sample(0);
+	if (channels.length === 2) return (sample(0) + sample(1)) * 0.5;
+	if (channels.length === 4) return (sample(0) + sample(1) + sample(2) + sample(3)) * 0.25;
+	if (channels.length === 6)
+		return Math.SQRT1_2 * (sample(0) + sample(1)) + sample(2) + 0.5 * (sample(4) + sample(5));
+	return sample(0);
+}
 
 const MAX_CACHE_ENTRIES = 800;
 
@@ -263,13 +281,11 @@ function getRawMagnitudes({
 	if (cached) return cached;
 	const real = new Float64Array(FFT_SIZE);
 	const imaginary = new Float64Array(FFT_SIZE);
-	const waveform = audioData.channelWaveforms[0];
 	const endSample = Math.floor((frame / fps - dataOffsetInSeconds) * audioData.sampleRate);
 	const startSample = endSample - FFT_SIZE;
 	for (let index = 0; index < FFT_SIZE; index++) {
 		const waveformIndex = startSample + index;
-		const sample =
-			waveformIndex >= 0 && waveformIndex < waveform.length ? (waveform[waveformIndex] ?? 0) : 0;
+		const sample = monoSample(audioData.channelWaveforms, waveformIndex);
 		real[index] = sample * (blackmanWindow[index] ?? 0);
 	}
 	for (let index = 1; index < FFT_SIZE; index++) {
@@ -355,7 +371,11 @@ const MAX_DECIBELS = -30;
 
 function normalizeMagnitude(magnitude: number, inputGainDb: number) {
 	const decibels = 20 * Math.log10(Math.max(magnitude, 1e-12)) + inputGainDb;
-	return Math.max(0, Math.min(1, (decibels - MIN_DECIBELS) / (MAX_DECIBELS - MIN_DECIBELS)));
+	return (
+		Math.floor(
+			Math.max(0, Math.min(1, (decibels - MIN_DECIBELS) / (MAX_DECIBELS - MIN_DECIBELS))) * 255,
+		) / 255
+	);
 }
 
 const BASS_VISIBILITY_THRESHOLD = 0.75;
@@ -367,8 +387,10 @@ function getSourceBass(parameters: AnalysisParameters) {
 	const smoothedMagnitudes = getSmoothedMagnitudes(parameters);
 	let bassAverage = 0;
 	for (let bassStep = 0; bassStep < BASS_SAMPLE_COUNT; bassStep++) {
-		const samplePosition =
-			((bassStep * BASS_SAMPLE_RANGE) / BASS_SAMPLE_COUNT) * (FREQUENCY_BIN_COUNT - 1);
+		const samplePosition = Math.max(
+			0,
+			((bassStep * BASS_SAMPLE_RANGE) / BASS_SAMPLE_COUNT) * FREQUENCY_BIN_COUNT - 0.5,
+		);
 		const leftIndex = Math.floor(samplePosition);
 		const rightIndex = Math.min(FREQUENCY_BIN_COUNT - 1, leftIndex + 1);
 		const mix = samplePosition - leftIndex;
@@ -422,7 +444,7 @@ function createParticleHistory({
 	reactiveSpeed,
 	...input
 }: AudioInput & Pick<Required<AudioParticlesOptions>, 'maskHalo' | 'reactiveSpeed'>) {
-	// Fixed 60 Hz analysis preserves the approved 60 FPS response at every host FPS.
+	// Fixed analysis timing keeps the response independent of host FPS.
 	const sample = (time: number) => ({
 		audioData: input.audioData,
 		dataOffsetInSeconds: input.dataOffsetInSeconds,
@@ -441,7 +463,7 @@ function createParticleHistory({
 			if (time < 0 || time >= input.audioData.durationInSeconds) continue;
 			const values = getMaskFrequencyData(sample(time));
 			const frequency = (x: number) => {
-				const p = clamp(x, 0, 1) * (values.length - 1);
+				const p = clamp(x * values.length - 0.5, 0, values.length - 1);
 				const left = Math.floor(p);
 				return (
 					values[left] * (1 - (p - left)) +
@@ -492,7 +514,7 @@ function createParticleHistory({
 	};
 }
 
-// Adapt the known Banger GLSL sources to WebGL2, without Three's injected built-ins.
+// Normalize shader syntax and output for WebGL2.
 function shaderSource(source: string, fragment: boolean) {
 	let code = source
 		.replace(/\bvarying\b/g, fragment ? 'in' : 'out')
@@ -850,7 +872,7 @@ float getFrequency(float frequencyX, float historyAge) {
   float historyY = (delayedAge + 0.5) / HISTORY_ROWS;
   return texture2D(
     iHistoryTexture,
-    vec2(clamp(frequencyX * 0.65, 0.0, 1.0), historyY)
+    vec2(clamp(frequencyX, 0.0, 1.0), historyY)
   ).r;
 }
 
@@ -985,7 +1007,7 @@ void main() {
   }
   frequencyX = 1.0 - frequencyX;
 
-  float bassGrowth = iLowFreq * 0.015;
+  float bassGrowth = iLowFreq * 0.03;
   float outerRadius = (iRadius + bassGrowth) * 2.0;
   for (int ageIndex = 0; ageIndex < 9; ageIndex++) {
     float historyAge = float(ageIndex);
@@ -994,14 +1016,15 @@ void main() {
     }
 
     float frequency = getFrequency(frequencyX, historyAge);
-    float drawRadius = iRadius + bassGrowth + frequency * 0.03 * iIntensity;
+    float drawRadius = clamp(iRadius + bassGrowth + frequency * 0.07 * iIntensity, iRadius + bassGrowth, 1.0);
     outerRadius = max(outerRadius, drawRadius * 2.0);
   }
 
   float distanceFromCenter = length(projected);
+  // Conservative padding covers Halo's independent shake and temporal edges.
   float ringVisibility = iMaskHalo ? smoothstep(
-    outerRadius + 0.004,
-    outerRadius + 0.035,
+    outerRadius + 0.012,
+    outerRadius + 0.04,
     distanceFromCenter
   ) : 1.0;
   float outputScale = max(0.1, iOutputHeight / 720.0);
