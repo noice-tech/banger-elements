@@ -2,15 +2,17 @@
 
 Audio-reactive elements for [Remotion](https://remotion.dev), from the makers of [banger.show](https://banger.show).
 
+Preview each element, adjust its settings, and use the source in your project.
+
 ![Animated previews of Spectre, Circle, Ferrofluid, and Audio Particles](docs/assets/preview.gif)
 
-**v0.1.0** — each element is an editable TSX file you add to your project, not a runtime library.
+## Getting started
 
-## Use
+1. Browse the [showcase](https://banger-elements.dev) and preview an element.
+2. Choose **Install in Studio** and confirm in Remotion Studio, or download the TSX source.
+3. Connect your audio and adjust the element’s settings in your composition.
 
-Preview an element, then install it in Remotion Studio or download its source.
-
-See [Getting started](apps/site/src/content/docs/getting-started.mdx) for setup and usage.
+See the [setup and usage guide](apps/site/src/content/docs/getting-started.mdx) for details.
 
 ## Run locally
 
@@ -21,7 +23,7 @@ bun install
 bun run dev
 ```
 
-Open the showcase at [localhost:3300](http://localhost:3300). This also starts Remotion Studio.
+This starts the showcase at [localhost:3300](http://localhost:3300) alongside Remotion Studio.
 
 ## Development
 
@@ -29,7 +31,7 @@ Open the showcase at [localhost:3300](http://localhost:3300). This also starts R
 - `apps/site` — showcase and docs
 - `apps/studio` — Remotion compositions
 
-Run `bun run check` for formatting, lint, types, and tests.
+Run `bun run check` to check formatting, lint, types, and tests.
 
 ## License
 
