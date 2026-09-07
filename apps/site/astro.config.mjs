@@ -11,7 +11,7 @@ export default defineConfig({
 	trailingSlash: 'never',
 	integrations: [
 		starlight({
-			title: 'banger Elements',
+			title: 'Banger Elements',
 			description: 'Source-installable audio visualizers for Remotion.',
 			social: [
 				{

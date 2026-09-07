@@ -6,6 +6,7 @@
 	font-display: swap;
 }
 :root {
+	scrollbar-gutter: stable;
 	--sl-color-accent-low: #261739;
 	--sl-color-accent: #9333ea;
 	--sl-color-accent-high: #d5b6fa;
@@ -1000,14 +1001,16 @@ a[aria-current='page'] .nav-active-dot {
 	margin-left: auto;
 	color: var(--sl-color-gray-3);
 }
-.fallback-poster {
-	display: block;
+.preview-placeholder {
 	width: 100%;
 	aspect-ratio: 16 / 9;
-	object-fit: contain;
-	background: #080a10;
-	border: 1px solid var(--sl-color-gray-5);
-	border-radius: 0 0 12px 12px;
+}
+.preview-player {
+	opacity: 0;
+	transition: opacity 350ms ease-out;
+}
+.preview-stage[data-ready='true'] .preview-player {
+	opacity: 1;
 }
 .example-picker {
 	border: 0;

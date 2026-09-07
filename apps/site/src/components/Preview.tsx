@@ -1,5 +1,5 @@
-import {useEffect, useMemo, useState} from 'react';
-import {Player} from '@remotion/player';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import {Player, type PlayerRef} from '@remotion/player';
 import {createPortal} from 'react-dom';
 import ExamplePicker from './ExamplePicker';
 import {examples, type PreviewKind} from './preview/examples';
@@ -22,6 +22,33 @@ export default function Preview({
 	controlsTargetId?: string;
 }) {
 	const [selected, setSelected] = useState<PreviewKind>(slug);
+	const playerRef = useRef<PlayerRef>(null);
+	const [readyKind, setReadyKind] = useState<PreviewKind | null>(null);
+	useEffect(() => {
+		const player = playerRef.current;
+		if (!player) return;
+		let frame = 0;
+		let settledFrames = 0;
+		let buffering = false;
+		const onWaiting = () => { buffering = true; };
+		const onResume = () => { buffering = false; };
+		player.addEventListener('waiting', onWaiting);
+		player.addEventListener('resume', onResume);
+		const revealWhenReady = () => {
+			settledFrames = buffering ? 0 : settledFrames + 1;
+			if (settledFrames >= 2) {
+				setReadyKind(selected);
+			} else {
+				frame = requestAnimationFrame(revealWhenReady);
+			}
+		};
+		frame = requestAnimationFrame(revealWhenReady);
+		return () => {
+			cancelAnimationFrame(frame);
+			player.removeEventListener('waiting', onWaiting);
+			player.removeEventListener('resume', onResume);
+		};
+	}, [selected]);
 	const example = examples[selected];
 	const durationInSeconds =
 		selected === 'ferrofluid' ||
@@ -69,8 +96,10 @@ export default function Preview({
 
 	return (
 		<div className="preview-block not-content">
-			<div className="preview-stage">
+			<div className="preview-stage" data-ready={readyKind === selected}>
 				<Player
+					ref={playerRef}
+					className="preview-player"
 					key={selected}
 					component={PreviewRenderer}
 					inputProps={{...inputProps, previewKind: selected}}

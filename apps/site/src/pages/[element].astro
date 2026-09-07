@@ -22,9 +22,17 @@ const related = [elements[(index + 1) % elements.length], elements[(index + 2) %
 		<div class="element-workbench not-content">
 			<div class="element-preview">
 				<div class="stage-heading"><span><span class="status-dot" aria-hidden="true"></span> LIVE PREVIEW</span></div>
-				<Preview slug={entry.slug as PreviewKind} editable controlsTargetId={`${entry.slug}-preview-controls`} client:only="react"><img slot="fallback" class="fallback-poster" src={`/posters/${entry.slug}.webp`} alt={`${entry.title} preview`} width={entry.width} height={entry.height} /></Preview>
+				<Preview slug={entry.slug as PreviewKind} editable controlsTargetId={`${entry.slug}-preview-controls`} client:only="react">
+					<div slot="fallback" class="preview-block not-content">
+						<div class="preview-stage"><div class="preview-placeholder" role="status" aria-label="Loading preview"></div></div>
+						<div class="preview-caption" aria-hidden="true">
+							<span>60 FPS · {['ferrofluid', 'halo', 'audio-particles', 'combined'].includes(entry.slug) ? 16 : 9} seconds · Press play to hear audio</span>
+							<span>Curated preview settings — downloaded source defaults are unchanged</span>
+						</div>
+					</div>
+				</Preview>
 				<section class="preview-install" aria-label={`${entry.title} installation`}>
-					<StudioActions slug={entry.slug} client:only="react" />
+					<StudioActions slug={entry.slug} client:load />
 					<div class="source-links">
 						<a href={`/elements/${entry.slug}.tsx`} download={`${entry.slug}.element.tsx`}>Download TSX <span aria-hidden="true">↓</span></a>
 						<a href={`https://github.com/noice-tech/banger-elements/blob/main/packages/elements/src/elements/${entry.slug}/${entry.slug}.tsx`} target="_blank" rel="noreferrer"><GitHubIcon /> GitHub source</a>
