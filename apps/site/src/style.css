@@ -540,10 +540,6 @@ a[aria-current='page'] .nav-active-dot {
 	padding: 0.3rem 0.45rem;
 	color: var(--sl-color-gray-2);
 }
-.tags .experimental-tag {
-	color: var(--sl-color-accent-high);
-	background: var(--sl-color-accent-low);
-}
 .element-workbench {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 19rem;
@@ -616,10 +612,14 @@ a[aria-current='page'] .nav-active-dot {
 	overflow: hidden;
 	background: var(--sl-color-gray-6);
 }
+.controls-slot {
+	min-width: 0;
+}
 .controls-slot:empty {
 	display: none;
 }
 .preview-controls {
+	min-width: 0;
 	padding: 1rem;
 	font-size: 0.75rem;
 }
@@ -818,6 +818,8 @@ a[aria-current='page'] .nav-active-dot {
 	margin: 0.75rem 0 0;
 }
 .configuration-export {
+	min-width: 0;
+	max-width: 100%;
 	margin-top: 1.4rem;
 	border-top: 1px solid var(--sl-color-gray-5);
 	padding-top: 0.9rem;
@@ -833,6 +835,9 @@ a[aria-current='page'] .nav-active-dot {
 	width: 100%;
 }
 .configuration-export pre {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
 	max-height: 15rem;
 	overflow: auto;
 	padding: 0.6rem;
@@ -849,13 +854,23 @@ a[aria-current='page'] .nav-active-dot {
 	border-top: 1px solid var(--sl-color-gray-5);
 }
 .preview-install .actions {
+	align-items: flex-start;
 	gap: 0.5rem;
+}
+.preview-install .actions button {
+	width: 8.5rem;
 }
 .preview-install .actions button:not(.primary) {
 	background: transparent;
-	font-size: 0.65rem;
 }
-.preview-install .source-download {
+.preview-install .source-links {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0 1rem;
+}
+.preview-install .source-links a {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -1144,9 +1159,6 @@ a[aria-current='page'] .nav-active-dot {
 .site-footer p {
 	margin: 0.6rem 0;
 }
-.site-footer a {
-	color: var(--sl-color-accent-high);
-}
 @media (min-width: 1600px) {
 	.element-workbench {
 		grid-template-columns: minmax(0, 1fr) 21rem;
@@ -1232,8 +1244,8 @@ a[aria-current='page'] .nav-active-dot {
 		grid-template-columns: 1fr;
 		gap: 0;
 	}
-	.preview-install .source-download {
-		justify-content: start;
+	.preview-install .source-links {
+		justify-content: flex-start;
 	}
 	.preview-install .install-help {
 		margin-top: 0;

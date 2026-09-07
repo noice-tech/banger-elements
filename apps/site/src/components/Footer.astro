@@ -1,7 +1,8 @@
 ---
+import packageMetadata from '../../package.json';
 import StudioActions from './StudioActions';
 ---
 <footer class="site-footer">
 	<StudioActions client:only="react" />
-	<p>Source-installable elements for Remotion.</p>
+	<p>v{packageMetadata.version} · Source-installable elements for Remotion.</p>
 </footer>

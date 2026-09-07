@@ -14,7 +14,12 @@ function load() {
 	]) as {
 		createSphere: (segments: number) => {positions: Float32Array; indices: Uint32Array};
 		createFerrofluidAudio: (
-			input: {audioData: MediaUtilsAudioData; dataOffsetInSeconds: number; sourceTime: number},
+			input: {
+				audioData: MediaUtilsAudioData;
+				dataOffsetInSeconds: number;
+				sourceTime: number;
+				fps: number;
+			},
 			gain: number,
 		) => {bars: number[]; texture: Uint8Array; momentum: number};
 		setupFerrofluid: (canvas: HTMLCanvasElement, quality: string, mapping: string) => unknown;
@@ -241,7 +246,7 @@ test('Ferrofluid: audio texture and momentum are independent of render order and
 		resultId: 'ferrofluid-history',
 		isRemote: false,
 	};
-	const input = {audioData, dataOffsetInSeconds: 20, sourceTime: 24.5};
+	const input = {audioData, dataOffsetInSeconds: 20, sourceTime: 24.5, fps: 60};
 	const cold = load().createFerrofluidAudio(input, 10);
 	for (const sourceTime of [25.5, 24, 25])
 		helpers.createFerrofluidAudio({...input, sourceTime}, 10);
@@ -252,6 +257,11 @@ test('Ferrofluid: audio texture and momentum are independent of render order and
 		cold.texture.some((v, i) => i % 4 === 0 && v > 0),
 		'Synthetic tone produces reactive audio',
 	);
+	const at30 = {...input, fps: 30};
+	const cold30 = load().createFerrofluidAudio(at30, 10);
+	const warm30 = helpers.createFerrofluidAudio(at30, 10);
+	assert.equal(cold30.momentum, warm30.momentum);
+	assert.deepEqual(Buffer.from(cold30.texture), Buffer.from(warm30.texture));
 	const silent = helpers.createFerrofluidAudio({...input, sourceTime: 32}, 10);
 	assert.equal(silent.momentum, 0);
 	assert.deepEqual([...silent.texture], [0, 0, 0, 255]);

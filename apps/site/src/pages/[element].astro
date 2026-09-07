@@ -1,15 +1,14 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-import {Code} from '@astrojs/starlight/components';
 import Preview from '../components/Preview';
 import type {PreviewKind} from '../components/Preview';
+import GitHubIcon from '../components/GitHubIcon.astro';
 import StudioActions from '../components/StudioActions';
 import {elements} from '../data/elements';
 export function getStaticPaths() {
 	return elements.map(entry => ({params: {element: entry.slug}, props: {entry}}));
 }
 const {entry} = Astro.props;
-const usage = `import {${entry.name}} from './${entry.slug}.element';\n\n// Inside a Remotion composition. The Element owns its Sequence.\nexport const MyComposition = () => (\n  <${entry.name} width={${entry.width}} height={${entry.height}} />\n);`;
 const index = elements.findIndex(element => element.slug === entry.slug);
 const related = [elements[(index + 1) % elements.length], elements[(index + 2) % elements.length]];
 ---
@@ -17,16 +16,19 @@ const related = [elements[(index + 1) % elements.length], elements[(index + 2) %
 	<div class="element-page">
 		<header class="element-heading not-content">
 			<a class="back-link" href="/">← Collection</a>
-			<div class="element-title-row"><h1 id="_top">{entry.title}</h1><div class="tags"><span>{entry.renderer}</span>{entry.limitation.startsWith('Experimental.') && <span class="experimental-tag">Experimental</span>}</div></div>
+			<div class="element-title-row"><h1 id="_top">{entry.title}</h1><div class="tags"><span>{entry.renderer}</span></div></div>
 			<p>{entry.tagline}</p>
 		</header>
 		<div class="element-workbench not-content">
 			<div class="element-preview">
-				<div class="stage-heading"><span><span class="status-dot" aria-hidden="true"></span> LIVE PREVIEW</span><span>REMOTION</span></div>
+				<div class="stage-heading"><span><span class="status-dot" aria-hidden="true"></span> LIVE PREVIEW</span></div>
 				<Preview slug={entry.slug as PreviewKind} editable controlsTargetId={`${entry.slug}-preview-controls`} client:only="react"><img slot="fallback" class="fallback-poster" src={`/posters/${entry.slug}.webp`} alt={`${entry.title} preview`} width={entry.width} height={entry.height} /></Preview>
 				<section class="preview-install" aria-label={`${entry.title} installation`}>
 					<StudioActions slug={entry.slug} client:only="react" />
-					<a class="source-download" href={`/elements/${entry.slug}.tsx`} download={`${entry.slug}.element.tsx`}>Download TSX <span aria-hidden="true">↓</span></a>
+					<div class="source-links">
+						<a href={`/elements/${entry.slug}.tsx`} download={`${entry.slug}.element.tsx`}>Download TSX <span aria-hidden="true">↓</span></a>
+						<a href={`https://github.com/noice-tech/banger-elements/blob/main/packages/elements/src/elements/${entry.slug}/${entry.slug}.tsx`} target="_blank" rel="noreferrer"><GitHubIcon /> GitHub source</a>
+					</div>
 					<p class="install-note">Installs original source defaults, not preview changes. Confirm installation in Studio.</p>
 					<details class="install-help"><summary>Need help connecting?</summary><p>Open a composition in a compatible Remotion Studio first. Install and drag both require confirmation. On touch devices, use Install in Studio.</p></details>
 				</section>
@@ -37,8 +39,9 @@ const related = [elements[(index + 1) % elements.length], elements[(index + 2) %
 			</aside>
 		</div>
 		<div class="element-documentation">
-			<h2 id="usage">Basic usage</h2><Code code={usage} lang="tsx" />
-			<p>No props are required. The preview and default component reference Remotion’s hosted example audio; no audio is bundled here. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track.</p>
+			<h2 id="after-installation">After installation</h2>
+			<p>The Studio protocol handles source installation and insertion, so this workflow does not require a manual import. Confirm the request in Studio, then select the inserted Element to adjust its Interactive controls.</p>
+			<p>No props are required. The installed default references Remotion’s hosted example audio; no audio is bundled here. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track, or copy the configured JSX from the preview controls to reproduce these settings in code.</p>
 			<details class="reference-section" open><summary id="controls">Key controls</summary><ul>{entry.controls.map(control => <li>{control}</li>)}</ul><p>All Elements expose <code>audioSrc</code>, <code>audioOffsetInSeconds</code>, <code>playAudio</code>, <code>inputGainDb</code>, <code>width</code> and <code>height</code>. Select the Element itself in Studio to see its Interactive controls.</p></details>
 			<details class="reference-section" open><summary id="limitations">Before you render</summary><aside class="limitation">{entry.limitation}</aside>{entry.renderer === 'WebGL2' && <p>Depending on your rendering environment, you may need to enable ANGLE when rendering with Remotion. If the element renders blank or reports a WebGL error, try adding <code>--gl=angle</code> to your <code>remotion render</code> command. See <a href="/getting-started.html#rendering-with-angle">Rendering with ANGLE</a>.</p>}<p>Playback is enabled by default. Stacking visualizers? Enable only one audio track. Analysis gain affects visuals, not playback volume. Each instance decodes its own fixed audio windows, so stacked instances use more memory.</p></details>
 		</div>

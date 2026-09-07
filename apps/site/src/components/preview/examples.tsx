@@ -39,28 +39,32 @@ const HaloAndParticles = (props: Props) => {
 	const audioOffsetInSeconds = Number(props.audioOffsetInSeconds ?? 0);
 	return (
 		<AbsoluteFill style={{backgroundColor: '#080a10'}}>
-			<Halo
-				audioSrc={audioSrc}
-				audioOffsetInSeconds={audioOffsetInSeconds}
-				playAudio={Boolean(props.playAudio ?? true)}
-				intensity={1}
-				inputGainDb={0}
-				radius={0.12}
-				trailDepth={9}
-			/>
-			<AudioParticles
-				audioSrc={audioSrc}
-				audioOffsetInSeconds={audioOffsetInSeconds}
-				playAudio={false}
-				width={1280}
-				height={720}
-				maskHalo
-				inputGainDb={0}
-				intensity={1}
-				radius={0.12}
-				density={45}
-				size={1.5}
-			/>
+			<AbsoluteFill>
+				<Halo
+					audioSrc={audioSrc}
+					audioOffsetInSeconds={audioOffsetInSeconds}
+					playAudio={Boolean(props.playAudio ?? true)}
+					intensity={1}
+					inputGainDb={0}
+					radius={0.12}
+					trailDepth={9}
+				/>
+			</AbsoluteFill>
+			<AbsoluteFill>
+				<AudioParticles
+					audioSrc={audioSrc}
+					audioOffsetInSeconds={audioOffsetInSeconds}
+					playAudio={false}
+					width={1280}
+					height={720}
+					maskHalo
+					inputGainDb={0}
+					intensity={1}
+					radius={0.12}
+					density={45}
+					size={1.5}
+				/>
+			</AbsoluteFill>
 		</AbsoluteFill>
 	);
 };

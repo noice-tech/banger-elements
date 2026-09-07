@@ -72,16 +72,20 @@ export const HaloAndParticles = () => {
   const audioSrc = staticFile('my-track.mp3');
   return (
     <AbsoluteFill style={{backgroundColor: '#080a10'}}>
-      <Halo
-        audioSrc={audioSrc}
-        intensity={1} inputGainDb={0} radius={0.12}
-        colorMode="rainbow" trailDepth={9}
-      />
-      <AudioParticles
-        audioSrc={audioSrc} playAudio={false}
-        width={1280} height={720} maskHalo radius={0.12}
-        inputGainDb={0} intensity={1} density={45} size={1.5}
-      />
+      <AbsoluteFill>
+        <Halo
+          audioSrc={audioSrc}
+          intensity={1} inputGainDb={0} radius={0.12}
+          colorMode="rainbow" trailDepth={9}
+        />
+      </AbsoluteFill>
+      <AbsoluteFill>
+        <AudioParticles
+          audioSrc={audioSrc} playAudio={false}
+          width={1280} height={720} maskHalo radius={0.12}
+          inputGainDb={0} intensity={1} density={45} size={1.5}
+        />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };`,

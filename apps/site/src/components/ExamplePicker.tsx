@@ -89,8 +89,8 @@ export default function ExamplePicker({
 				{active.id === 'combined' && (
 					<p className="example-code-note">
 						Use the same audio source and offset for both elements. Keep their radius aligned when
-						adjusting the mask. Both are experimental WebGL2 elements; the extra canvas and audio
-						analysis use more GPU time and memory.
+						adjusting the mask. Both are WebGL2 elements; the extra canvas and audio analysis use
+						more GPU time and memory.
 					</p>
 				)}
 			</section>

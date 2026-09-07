@@ -40,7 +40,6 @@ type AudioParticlesOptions = {
 };
 
 type AudioParticlesProps = InteractiveBaseProps & InteractiveTransformProps & AudioParticlesOptions;
-const ANALYSIS_FPS = 60;
 const BASS_HISTORY_FRAMES = 300;
 const MASK_TRAIL_DEPTH = 9;
 const PARTICLE_COUNT = 3500;
@@ -175,7 +174,7 @@ function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, 
 function useVisualizerAudio(src: string, time: number, fps: number) {
 	// Preserve five seconds of bass history after EOF, including on direct seeks.
 	// Include one analysis frame for rounding at the history boundary.
-	const analysisTime = Math.max(0, time - (BASS_HISTORY_FRAMES + 1) / ANALYSIS_FPS);
+	const analysisTime = Math.max(0, time - (BASS_HISTORY_FRAMES + 1) / fps);
 	const result = useWindowedAudioData({
 		src,
 		frame: analysisTime * fps,
@@ -209,6 +208,7 @@ type AudioInput = {
 	readonly audioData: MediaUtilsAudioData;
 	readonly dataOffsetInSeconds: number;
 	readonly sourceTime: number;
+	readonly fps: number;
 	readonly inputGainDb: number;
 };
 
@@ -449,12 +449,12 @@ function createParticleHistory({
 	reactiveSpeed,
 	...input
 }: AudioInput & Pick<Required<AudioParticlesOptions>, 'maskHalo' | 'reactiveSpeed'>) {
-	// Fixed analysis timing keeps the response independent of host FPS.
+	// Sample current and historical audio on the composition's frame grid.
 	const sample = (time: number) => ({
 		audioData: input.audioData,
 		dataOffsetInSeconds: input.dataOffsetInSeconds,
-		frame: Math.round(Math.max(0, time) * ANALYSIS_FPS),
-		fps: ANALYSIS_FPS,
+		frame: Math.round(Math.max(0, time) * input.fps),
+		fps: input.fps,
 		inputGainDb: input.inputGainDb,
 	});
 	const bassAt = (time: number) =>
@@ -464,7 +464,7 @@ function createParticleHistory({
 	// Only build the matching Halo edge when explicit masking is enabled.
 	if (maskHalo)
 		for (let row = 0; row < MASK_TRAIL_DEPTH; row++) {
-			const time = input.sourceTime - row / ANALYSIS_FPS;
+			const time = input.sourceTime - row / input.fps;
 			if (time < 0 || time >= input.audioData.durationInSeconds) continue;
 			const values = getMaskFrequencyData(sample(time));
 			const frequency = (x: number) => {
@@ -489,20 +489,18 @@ function createParticleHistory({
 			}
 		}
 	const bassHistory = new Uint8Array((BASS_HISTORY_FRAMES + 1) * 4);
-	const endTime = Math.floor(input.sourceTime * ANALYSIS_FPS) / ANALYSIS_FPS;
+	const endTime = Math.floor(input.sourceTime * input.fps) / input.fps;
 	if (reactiveSpeed) {
 		for (let i = 0; i <= BASS_HISTORY_FRAMES; i++) {
 			bassHistory[i * 4 + 2] = Math.round(
-				bassAt(endTime - (BASS_HISTORY_FRAMES - i) / ANALYSIS_FPS) * 255,
+				bassAt(endTime - (BASS_HISTORY_FRAMES - i) / input.fps) * 255,
 			);
 			bassHistory[i * 4 + 3] = 255;
 		}
 		let integral = 0;
 		for (let i = BASS_HISTORY_FRAMES; i >= 0; i--) {
-			if (i < BASS_HISTORY_FRAMES) integral += bassHistory[(i + 1) * 4 + 2] / 255 / ANALYSIS_FPS;
-			const encoded = Math.round(
-				clamp(integral / (BASS_HISTORY_FRAMES / ANALYSIS_FPS), 0, 1) * 65535,
-			);
+			if (i < BASS_HISTORY_FRAMES) integral += bassHistory[(i + 1) * 4 + 2] / 255 / input.fps;
+			const encoded = Math.round(clamp(integral / (BASS_HISTORY_FRAMES / input.fps), 0, 1) * 65535);
 			bassHistory[i * 4] = encoded >> 8;
 			bassHistory[i * 4 + 1] = encoded & 255;
 		}
@@ -510,6 +508,7 @@ function createParticleHistory({
 	return {
 		bass,
 		endTime,
+		bassHistoryDuration: BASS_HISTORY_FRAMES / input.fps,
 		history: {
 			width: 200,
 			height: 9,
@@ -568,6 +567,7 @@ type AudioParticlesState = {
 		readonly history: WebGLUniformLocation | null;
 		readonly bassHistory: WebGLUniformLocation | null;
 		readonly endTime: WebGLUniformLocation | null;
+		readonly bassHistoryDuration: WebGLUniformLocation | null;
 		readonly color: WebGLUniformLocation | null;
 		readonly radius: WebGLUniformLocation | null;
 		readonly intensity: WebGLUniformLocation | null;
@@ -645,10 +645,6 @@ function setupAudioParticles(canvas: HTMLCanvasElement): AudioParticlesState {
 		gl.uniform1f(gl.getUniformLocation(program, 'iOpacity'), 1);
 		gl.uniform1f(gl.getUniformLocation(program, 'iTrailDepth'), MASK_TRAIL_DEPTH);
 		gl.uniform1f(gl.getUniformLocation(program, 'iWaveDelay'), 1);
-		gl.uniform1f(
-			gl.getUniformLocation(program, 'iParticleBassHistoryDuration'),
-			BASS_HISTORY_FRAMES / ANALYSIS_FPS,
-		);
 		return {
 			gl,
 			program,
@@ -663,6 +659,7 @@ function setupAudioParticles(canvas: HTMLCanvasElement): AudioParticlesState {
 				history: gl.getUniformLocation(program, 'iHistoryTexture'),
 				bassHistory: gl.getUniformLocation(program, 'iParticleBassTexture'),
 				endTime: gl.getUniformLocation(program, 'iParticleBassHistoryEndTime'),
+				bassHistoryDuration: gl.getUniformLocation(program, 'iParticleBassHistoryDuration'),
 				color: gl.getUniformLocation(program, 'iParticleColor'),
 				radius: gl.getUniformLocation(program, 'iRadius'),
 				intensity: gl.getUniformLocation(program, 'iIntensity'),
@@ -702,6 +699,7 @@ function drawAudioParticles(
 	gl.uniform1f(uniforms.intensity, frame.intensity);
 	gl.uniform1f(uniforms.bass, frame.bass);
 	gl.uniform1f(uniforms.endTime, frame.endTime);
+	gl.uniform1f(uniforms.bassHistoryDuration, frame.bassHistoryDuration);
 	gl.uniform1f(uniforms.density, clamp(frame.density, 0, 50));
 	gl.uniform1f(uniforms.size, frame.size);
 	gl.uniform1f(uniforms.reactiveSpeed, Number(frame.reactiveSpeed));
@@ -1106,6 +1104,7 @@ const AudioParticlesContent: React.FC<Required<AudioParticlesOptions>> = (props)
 				audioData: audioData ?? silentAudio,
 				dataOffsetInSeconds,
 				sourceTime,
+				fps,
 				inputGainDb: props.inputGainDb,
 				maskHalo: props.maskHalo,
 				reactiveSpeed: props.reactiveSpeed,
@@ -1114,6 +1113,7 @@ const AudioParticlesContent: React.FC<Required<AudioParticlesOptions>> = (props)
 			audioData,
 			dataOffsetInSeconds,
 			sourceTime,
+			fps,
 			props.inputGainDb,
 			props.maskHalo,
 			props.reactiveSpeed,
@@ -1132,6 +1132,7 @@ const AudioParticlesContent: React.FC<Required<AudioParticlesOptions>> = (props)
 				startTimeInSeconds={props.startTimeInSeconds}
 				history={data.history}
 				bassHistory={data.bassHistory}
+				bassHistoryDuration={data.bassHistoryDuration}
 				bass={data.bass}
 				endTime={data.endTime}
 				intensity={props.intensity}

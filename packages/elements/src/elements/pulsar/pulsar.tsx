@@ -42,7 +42,6 @@ type PulsarOptions = {
 };
 
 type PulsarProps = InteractiveBaseProps & InteractiveTransformProps & PulsarOptions;
-const ANALYSIS_FPS = 60;
 
 const pulsarSchema = {
 	...Interactive.baseSchema,
@@ -191,6 +190,7 @@ type AudioInput = {
 	readonly audioData: MediaUtilsAudioData;
 	readonly dataOffsetInSeconds: number;
 	readonly sourceTime: number;
+	readonly fps: number;
 };
 
 function computeBars({
@@ -229,8 +229,8 @@ function spectrumBars(input: AudioInput, count = 308) {
 	const frequencies = visualizeAudio({
 		audioData: input.audioData,
 		dataOffsetInSeconds: input.dataOffsetInSeconds,
-		frame: input.sourceTime * ANALYSIS_FPS,
-		fps: ANALYSIS_FPS,
+		frame: input.sourceTime * input.fps,
+		fps: input.fps,
 		numberOfSamples: 4096,
 		optimizeFor: 'speed',
 		smoothing: true,
@@ -655,7 +655,7 @@ const PulsarContent: React.FC<Required<PulsarOptions>> = (props) => {
 	const sourceTime = (frame + offsetFrames) / fps;
 	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
 	const bars = spectrumBars(
-		{audioData: audioData ?? silentAudio, dataOffsetInSeconds, sourceTime},
+		{audioData: audioData ?? silentAudio, dataOffsetInSeconds, sourceTime, fps},
 		2048,
 	);
 	const texture = barsTexture(bars, props.intensity * 10 ** (props.inputGainDb / 20) * 60);

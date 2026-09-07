@@ -13,6 +13,13 @@ export default defineConfig({
 		starlight({
 			title: 'banger Elements',
 			description: 'Source-installable audio visualizers for Remotion.',
+			social: [
+				{
+					icon: 'github',
+					label: 'GitHub',
+					href: 'https://github.com/noice-tech/banger-elements',
+				},
+			],
 			favicon: '/brand/banger-icon.png',
 			customCss: ['./src/style.css'],
 			components: {

@@ -4,9 +4,9 @@ const details = {
 	ferrofluid: {
 		title: 'Ferrofluid',
 		renderer: 'WebGL2',
-		tagline: 'Liquid metal, moved by sound.',
+		tagline: 'Liquid metal that moves with your music.',
 		description:
-			'A liquid-metal sphere that pulses, flows and forms spikes with your music. Shape its surface and add colorful reflections for a glossy, otherworldly look.',
+			'A metallic sphere that pulses and forms spikes with your audio. Adjust the surface, finish and reflections.',
 		controls: [
 			'intensity / pattern / fluidity — spikes and deformation',
 			'color / roughness / iridescence — metallic finish',
@@ -17,14 +17,14 @@ const details = {
 			'quality — low, medium or high mesh detail',
 		],
 		limitation:
-			'Experimental. Requires WebGL2. High quality is GPU-intensive; dense spikes need more mesh detail. Extreme gain or deformation can clip outside the canvas. Motion continues in silence.',
+			'Requires WebGL2. High quality is GPU-intensive; dense spikes need more mesh detail. Extreme gain or deformation can clip outside the canvas. Motion continues in silence.',
 	},
 	waveform: {
 		title: 'Waveform',
 		renderer: 'SVG',
-		tagline: 'Let the whole track take shape.',
+		tagline: 'Your track as a scrolling waveform.',
 		description:
-			'A moving, filled envelope of the source audio. A clean foundation for lyric videos, podcasts and track excerpts.',
+			'A filled waveform showing how the audio level changes over time. Adjust the color, height and visible duration.',
 		controls: [
 			'color — envelope fill',
 			'intensity — visual amplitude',
@@ -35,9 +35,9 @@ const details = {
 	spectre: {
 		title: 'Spectre',
 		renderer: 'WebGL2',
-		tagline: 'Every frequency, in focus.',
+		tagline: 'A frequency spectrum in bars or segments.',
 		description:
-			'Frequency bars with crisp gradients, or a segmented treatment. Both use the original shaders.',
+			'Bars show the strength of different audio frequencies. Choose continuous or segmented bars, set their count and customize the color gradient.',
 		controls: [
 			'spectreVariant — bars or segmented',
 			'count — frequency bar count',
@@ -48,9 +48,9 @@ const details = {
 	oscilloscope: {
 		title: 'Oscilloscope',
 		renderer: 'SVG',
-		tagline: 'The signal, stripped back.',
+		tagline: 'The audio signal, drawn in real time.',
 		description:
-			'A triggered PCM trace that follows the shape of the audio signal. Fine lines, fast detail, no extra ornament.',
+			'A thin line traces the audio waveform. Adjust its color, thickness and height, or change how many samples it shows.',
 		controls: [
 			'lineColor / lineWidth — trace styling',
 			'amplitude — trace height',
@@ -61,9 +61,9 @@ const details = {
 	pulsar: {
 		title: 'Pulsar',
 		renderer: 'WebGL2',
-		tagline: 'Sound with another dimension.',
+		tagline: 'A glowing 3D shape that reacts to sound.',
 		description:
-			'An audio-deformed volume drawn by the original raymarch shader. Dense, luminous and always in motion.',
+			'Audio reshapes a glowing volume. Adjust its density, pattern and response, with gradient or rainbow colors.',
 		controls: [
 			'colorMode — gradient or rainbow',
 			'density / pattern — volume structure',
@@ -75,9 +75,9 @@ const details = {
 	circle: {
 		title: 'Circle',
 		renderer: 'WebGL2',
-		tagline: 'Put your sound at the center.',
+		tagline: 'Bars, waves, glow or dots around a ring.',
 		description:
-			'Four reactive ring treatments: radial bars, glow, waveform and dots, rendered with the original WebGL2 shaders.',
+			'Four audio-reactive ring styles: radial bars, glow, waveform and dots. Customize the colors and level of detail.',
 		controls: [
 			'circleVariant — radial-bars, glow-ring, waveform-ring or dotted-ring',
 			'count / lineWidth — detail and stroke',
@@ -89,9 +89,9 @@ const details = {
 	halo: {
 		title: 'Halo',
 		renderer: 'WebGL2',
-		tagline: 'Leave a little afterglow.',
+		tagline: 'A bass-reactive ring with trailing color.',
 		description:
-			'A white-edged rainbow halo with bass-driven expansion, delayed trails, and an optional artwork or transparent center.',
+			'A glowing ring expands with the bass and leaves trails behind it. Customize the colors and glow, add artwork or leave the center transparent.',
 		controls: [
 			'artworkSrc — optional artwork URL or Studio asset',
 			'colorMode — rainbow palette or custom startColor / endColor gradient',
@@ -104,14 +104,14 @@ const details = {
 			'glowBlur / glowSpread — glow treatment',
 		],
 		limitation:
-			'Experimental. Requires WebGL2. Analyzes audio at a fixed 44.1 kHz / 60 Hz and decodes the full track for deterministic bass accumulation; long tracks require more memory and first seeks may take longer. Artwork needs CORS access.',
+			'Requires WebGL2. Analyzes audio at a fixed 44.1 kHz / 60 Hz and decodes the full track for deterministic bass accumulation; long tracks require more memory and first seeks may take longer. Artwork needs CORS access.',
 	},
 	'audio-particles': {
 		title: 'Audio Particles',
 		renderer: 'WebGL2',
-		tagline: 'Small particles. Big energy.',
+		tagline: 'Floating particles that react to bass.',
 		description:
-			'Independent bass-reactive particles. Use them alone, or explicitly mask them around Halo.',
+			'A field of particles whose motion responds to bass. Adjust their size, density and color. Use them on their own or mask them around Halo.',
 		controls: [
 			'density / size — particle field',
 			'startTimeInSeconds — emission start relative to the element: -5 pre-fills the field (default), 0 starts fresh, positive values delay emission; independent of audio trim',
@@ -120,7 +120,7 @@ const details = {
 			'color / intensity — appearance',
 		],
 		limitation:
-			'Experimental. Requires WebGL2. Halo masking is opt-in; it does not automatically discover another Element. Procedural motion may continue in silence.',
+			'Requires WebGL2. Halo masking is opt-in; it does not automatically discover another Element. Procedural motion may continue in silence.',
 	},
 } as const;
 

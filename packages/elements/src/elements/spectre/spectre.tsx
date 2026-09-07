@@ -58,7 +58,6 @@ const DEFAULT_COUNT = 64;
 const DEFAULT_BAR_WIDTH = 3;
 const DEFAULT_BOTTOM = false;
 const DEFAULT_VARIANT = 'bars';
-const ANALYSIS_FPS = 60;
 
 const spectreSchema = {
 	...Interactive.baseSchema,
@@ -220,6 +219,7 @@ type AudioInput = {
 	readonly audioData: MediaUtilsAudioData;
 	readonly dataOffsetInSeconds: number;
 	readonly sourceTime: number;
+	readonly fps: number;
 };
 
 function computeBars({
@@ -255,8 +255,8 @@ function spectrumBars(input: AudioInput, count = 308) {
 	const frequencies = visualizeAudio({
 		audioData: input.audioData,
 		dataOffsetInSeconds: input.dataOffsetInSeconds,
-		frame: input.sourceTime * ANALYSIS_FPS,
-		fps: ANALYSIS_FPS,
+		frame: input.sourceTime * input.fps,
+		fps: input.fps,
 		numberOfSamples: 4096,
 		optimizeFor: 'speed',
 		smoothing: true,
@@ -737,6 +737,7 @@ const SpectreContent: React.FC<Required<SpectreOptions>> = (props) => {
 		audioData: audioData ?? silentAudio,
 		dataOffsetInSeconds,
 		sourceTime,
+		fps,
 	});
 	const gain = 10 ** (props.inputGainDb / 20);
 	return (

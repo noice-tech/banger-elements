@@ -2,6 +2,13 @@
 	"name": "@banger-elements/site",
 	"version": "0.1.0",
 	"private": true,
+	"description": "Showcase and documentation for Banger Elements.",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/noice-tech/banger-elements.git",
+		"directory": "apps/site"
+	},
 	"type": "module",
 	"scripts": {
 		"build": "tsx scripts/build.ts",

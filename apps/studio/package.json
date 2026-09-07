@@ -2,6 +2,13 @@
 	"name": "@banger-elements/studio",
 	"version": "0.1.0",
 	"private": true,
+	"description": "Remotion compositions for developing and testing Banger Elements.",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/noice-tech/banger-elements.git",
+		"directory": "apps/studio"
+	},
 	"type": "module",
 	"scripts": {
 		"studio": "remotion studio",

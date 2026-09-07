@@ -5,7 +5,7 @@ description: Install a source Element, connect your audio, and render in Remotio
 
 ## From preview to composition
 
-Browse and preview Elements right here, then add them to your own Remotion project. There is no need to download this website or run it locally. Each Element installs as an editable TSX file, not a runtime library.
+Browse and preview Elements right here, then add them to your own Remotion project. Each Element installs as an editable TSX file, not a runtime library.
 
 1. Open your Remotion project in **Studio** and select the composition you want to work on.
 2. Choose an [Element](/) on this site and try its preview settings.
@@ -58,11 +58,19 @@ Use audio you have permission to use. No user-provided audio or artwork is distr
 
 Every Element owns its Sequence. **Do not wrap it in another `<Sequence>`**: selecting the outer Sequence would show its controls instead of the Element schema. Use the Element’s Studio timing controls.
 
-Insertion starts at **480 frames**; its duration in seconds depends on the target FPS. Site previews are 960 frames at 60 FPS. Use `width` and `height` for drawing bounds and Studio transforms for positioning or scaling.
+Insertion starts at **480 frames**; its duration in seconds depends on the target FPS. Site previews using the default Remotion track are 540 frames at 60 FPS; Ferrofluid, Halo and particle previews remain 960 frames. Use `width` and `height` for drawing bounds and Studio transforms for positioning or scaling.
 
 ## Download instead
 
-Download the TSX from an Element page into your Remotion source directory and import its named component. The file uses only external imports: React, Remotion, `@remotion/media` and `@remotion/media-utils`. Install those packages in your own project, keeping all `@remotion/*` versions aligned with your Remotion version.
+Download the TSX from an Element page into your Remotion source directory and import its named component. The import path depends on where you save the file. For example, if you save Waveform as `src/elements/waveform.element.tsx`:
+
+```tsx
+import { Waveform } from "./elements/waveform.element";
+
+export const MyComposition = () => <Waveform width={900} height={300} />;
+```
+
+The downloaded file uses only external imports: React, Remotion, `@remotion/media` and `@remotion/media-utils`. Install those packages in your own project, keeping all `@remotion/*` versions aligned with your Remotion version.
 
 ## Rendering with ANGLE
 
@@ -77,5 +85,3 @@ Replace the entry point, composition ID and output path with those from your pro
 ## Renderer compatibility
 
 Waveform and Oscilloscope use SVG. Spectre, Circle, Pulsar, Halo, Audio Particles and Ferrofluid require WebGL2 with graphics acceleration. Unsupported shaders report failure rather than switching to a different visual. Avoid running many WebGL previews at once.
-
-Halo, Audio Particles and [Ferrofluid](/ferrofluid.html) are experimental.

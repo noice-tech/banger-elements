@@ -27,16 +27,20 @@ const components = {
 	AudioParticles,
 	HaloAndParticles: () => (
 		<AbsoluteFill style={{backgroundColor: '#080a10'}}>
-			<Halo />
-			<AudioParticles
-				playAudio={false}
-				width={1280}
-				height={720}
-				maskHalo
-				radius={0.12}
-				inputGainDb={0}
-				intensity={1}
-			/>
+			<AbsoluteFill>
+				<Halo />
+			</AbsoluteFill>
+			<AbsoluteFill>
+				<AudioParticles
+					playAudio={false}
+					width={1280}
+					height={720}
+					maskHalo
+					radius={0.12}
+					inputGainDb={0}
+					intensity={1}
+				/>
+			</AbsoluteFill>
 		</AbsoluteFill>
 	),
 };

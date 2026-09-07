@@ -27,7 +27,6 @@ type OscilloscopeOptions = {
 };
 
 type OscilloscopeProps = InteractiveBaseProps & InteractiveTransformProps & OscilloscopeOptions;
-const ANALYSIS_FPS = 60;
 
 const oscilloscopeSchema = {
 	...Interactive.baseSchema,
@@ -187,7 +186,7 @@ const OscilloscopeContent: React.FC<Required<OscilloscopeOptions>> = (props) => 
 	const samples = triggeredSamples(
 		audioData ?? silentAudio,
 		sourceTime,
-		ANALYSIS_FPS,
+		fps,
 		props.sampleCount,
 		dataOffsetInSeconds,
 	);

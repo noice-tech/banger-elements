@@ -34,4 +34,9 @@ test('combined example shares audio, aligns the mask, and disables duplicate pla
 	assert.equal((combined.code.match(/intensity=\{1\}/g) ?? []).length, 2);
 	assert.ok(combined.code.includes('playAudio={false}'));
 	assert.ok(combined.code.includes('maskHalo'));
+	assert.equal(
+		(combined.code.match(/<AbsoluteFill/g) ?? []).length,
+		3,
+		'Both elements must be absolutely layered instead of sharing flex layout',
+	);
 });

@@ -23,6 +23,13 @@ export default function Preview({
 }) {
 	const [selected, setSelected] = useState<PreviewKind>(slug);
 	const example = examples[selected];
+	const durationInSeconds =
+		selected === 'ferrofluid' ||
+		selected === 'halo' ||
+		selected === 'audio-particles' ||
+		selected === 'combined'
+			? 16
+			: 9;
 	const initialProps = useMemo<PreviewProps>(
 		() => ({...example.props, width: example.width, height: example.height}),
 		[example],
@@ -70,7 +77,7 @@ export default function Preview({
 					compositionWidth={PREVIEW_WIDTH}
 					compositionHeight={PREVIEW_HEIGHT}
 					fps={60}
-					durationInFrames={960}
+					durationInFrames={durationInSeconds * 60}
 					initialFrame={96}
 					controls
 					style={{width: '100%', aspectRatio: '16 / 9'}}
@@ -83,7 +90,7 @@ export default function Preview({
 				/>
 			</div>
 			<div className="preview-caption">
-				<span>60 FPS · 16 seconds · Press play to hear audio</span>
+				<span>60 FPS · {durationInSeconds} seconds · Press play to hear audio</span>
 				<span>Curated preview settings — downloaded source defaults are unchanged</span>
 			</div>
 			{variants ? <ExamplePicker selected={selected} onSelect={setSelected} /> : null}

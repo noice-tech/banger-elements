@@ -52,7 +52,6 @@ type FerrofluidOptions = {
 	readonly rotationSpeed?: number;
 };
 type FerrofluidProps = InteractiveBaseProps & InteractiveTransformProps & FerrofluidOptions;
-const ANALYSIS_FPS = 60;
 const MOMENTUM_HISTORY_FRAMES = 240;
 const ferrofluidSchema = {
 	...Interactive.baseSchema,
@@ -253,7 +252,7 @@ function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, 
 function useVisualizerAudio(src: string, time: number, fps: number) {
 	// Request the oldest needed history, even on a direct seek past audio EOF.
 	// Include one analysis frame for rounding at the history boundary.
-	const analysisTime = Math.max(0, time - (MOMENTUM_HISTORY_FRAMES + 1) / ANALYSIS_FPS);
+	const analysisTime = Math.max(0, time - (MOMENTUM_HISTORY_FRAMES + 1) / fps);
 	const result = useWindowedAudioData({
 		src,
 		frame: analysisTime * fps,
@@ -288,6 +287,7 @@ type AudioInput = {
 	readonly audioData: MediaUtilsAudioData;
 	readonly dataOffsetInSeconds: number;
 	readonly sourceTime: number;
+	readonly fps: number;
 };
 
 function computeBars({
@@ -323,8 +323,8 @@ function spectrumBars(input: AudioInput, count = 308) {
 	const frequencies = visualizeAudio({
 		audioData: input.audioData,
 		dataOffsetInSeconds: input.dataOffsetInSeconds,
-		frame: input.sourceTime * ANALYSIS_FPS,
-		fps: ANALYSIS_FPS,
+		frame: input.sourceTime * input.fps,
+		fps: input.fps,
 		numberOfSamples: 4096,
 		optimizeFor: 'speed',
 		smoothing: true,
@@ -338,12 +338,12 @@ function spectrumBars(input: AudioInput, count = 308) {
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 const audioCache = new Map<string, number[]>();
 function barsAt(input: AudioInput, time: number) {
-	const frame = Math.round(Math.max(0, time) * ANALYSIS_FPS);
+	const frame = Math.round(Math.max(0, time) * input.fps);
 	if (time < 0 || time >= input.audioData.durationInSeconds) return [];
-	const key = `${input.audioData.resultId}:${input.dataOffsetInSeconds}:${frame}`;
+	const key = `${input.audioData.resultId}:${input.dataOffsetInSeconds}:${input.fps}:${frame}`;
 	const cached = audioCache.get(key);
 	if (cached) return cached;
-	const bars = spectrumBars({...input, sourceTime: frame / ANALYSIS_FPS});
+	const bars = spectrumBars({...input, sourceTime: frame / input.fps});
 	audioCache.set(key, bars);
 	if (audioCache.size > 600) audioCache.delete(audioCache.keys().next().value!);
 	return bars;
@@ -356,10 +356,10 @@ function createFerrofluidAudio(input: AudioInput, inputGainDb: number) {
 		texture[i * 4] = Math.round(clamp(bars[i] ?? 0, 0, 1) * 255);
 		texture[i * 4 + 3] = 255;
 	}
-	const last = Math.round(input.sourceTime * ANALYSIS_FPS);
+	const last = Math.round(input.sourceTime * input.fps);
 	let momentum = 0;
 	for (let f = Math.max(0, last - MOMENTUM_HISTORY_FRAMES); f <= last; f++) {
-		const bass = barsAt(input, f / ANALYSIS_FPS)[11] ?? 0;
+		const bass = barsAt(input, f / input.fps)[11] ?? 0;
 		momentum = (momentum + bass * gain) * 0.95;
 	}
 	return {bars, texture, momentum};
@@ -953,10 +953,10 @@ function FerrofluidContent(props: Required<FerrofluidOptions>) {
 	const audio = useMemo(
 		() =>
 			createFerrofluidAudio(
-				{audioData: audioData ?? silentAudio, dataOffsetInSeconds, sourceTime},
+				{audioData: audioData ?? silentAudio, dataOffsetInSeconds, sourceTime, fps},
 				props.inputGainDb,
 			),
-		[audioData, dataOffsetInSeconds, sourceTime, props.inputGainDb],
+		[audioData, dataOffsetInSeconds, sourceTime, fps, props.inputGainDb],
 	);
 	return (
 		<>

@@ -43,7 +43,6 @@ type CircleOptions = {
 };
 
 type CircleProps = InteractiveBaseProps & InteractiveTransformProps & CircleOptions;
-const ANALYSIS_FPS = 60;
 
 const circleSchema = {
 	...Interactive.baseSchema,
@@ -203,6 +202,7 @@ type AudioInput = {
 	readonly audioData: MediaUtilsAudioData;
 	readonly dataOffsetInSeconds: number;
 	readonly sourceTime: number;
+	readonly fps: number;
 };
 
 function computeBars({
@@ -238,8 +238,8 @@ function spectrumBars(input: AudioInput, count = 308) {
 	const frequencies = visualizeAudio({
 		audioData: input.audioData,
 		dataOffsetInSeconds: input.dataOffsetInSeconds,
-		frame: input.sourceTime * ANALYSIS_FPS,
-		fps: ANALYSIS_FPS,
+		frame: input.sourceTime * input.fps,
+		fps: input.fps,
 		numberOfSamples: 4096,
 		optimizeFor: 'speed',
 		smoothing: true,
@@ -944,6 +944,7 @@ const CircleContent: React.FC<Required<CircleOptions>> = (props) => {
 		audioData: audioData ?? silentAudio,
 		dataOffsetInSeconds,
 		sourceTime,
+		fps,
 	});
 	const gain = 10 ** (props.inputGainDb / 20);
 	return (

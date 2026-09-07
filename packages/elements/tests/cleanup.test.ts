@@ -388,6 +388,7 @@ for (const [element, helper] of [
 			audioData: MediaUtilsAudioData;
 			dataOffsetInSeconds: number;
 			sourceTime: number;
+			fps: number;
 			inputGainDb: number;
 			trailDepth: number;
 			waveDelay: boolean;
@@ -411,6 +412,7 @@ for (const [element, helper] of [
 			},
 			dataOffsetInSeconds: 20,
 			sourceTime: 40,
+			fps: 60,
 			inputGainDb: 0,
 			trailDepth: 7,
 			waveDelay: true,
@@ -428,6 +430,15 @@ for (const [element, helper] of [
 				Buffer.from(actual.bassHistory.data),
 				Buffer.from(expected.bassHistory.data),
 			);
+		}
+		// Switching composition FPS must not reuse history from the previous frame grid.
+		const at30 = {...input, fps: 30};
+		const cold30 = load()(at30);
+		const warm30 = warm(at30);
+		assert.deepEqual(Array.from(warm30.history.data), Array.from(cold30.history.data));
+		assert.equal(warm30.bass, cold30.bass);
+		if (warm30.bassHistory && cold30.bassHistory) {
+			assert.deepEqual(Buffer.from(warm30.bassHistory.data), Buffer.from(cold30.bassHistory.data));
 		}
 		const silent = warm({...input, sourceTime: 48});
 		if (element === 'audio-particles') assert.equal(silent.bass, 0);

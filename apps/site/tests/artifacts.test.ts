@@ -30,6 +30,12 @@ test('every catalog entry has a downloadable detail page, poster and gallery pre
 	for (const {slug} of catalog) {
 		const html = await readFile(path.join(dist, `${slug}.html`), 'utf8');
 		assert.ok(html.includes(`/elements/${slug}.tsx`), `${slug}: missing download`);
+		assert.ok(
+			html.includes(
+				`https://github.com/noice-tech/banger-elements/blob/main/packages/elements/src/elements/${slug}/${slug}.tsx`,
+			),
+			`${slug}: missing GitHub source`,
+		);
 		assert.ok(html.includes(`/posters/${slug}.webp`), `${slug}: missing poster`);
 		assert.equal((html.match(/<h1\b/g) ?? []).length, 1, `${slug}: one page title`);
 		assert.ok(overview.includes(`/${slug}.html`), `${slug}: missing gallery link`);

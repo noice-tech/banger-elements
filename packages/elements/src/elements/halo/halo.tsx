@@ -211,8 +211,7 @@ function useArtwork(src: string) {
 	return loaded?.src === src ? loaded.image : null;
 }
 
-// Fixed analysis timing and frequency bins keep results independent of host FPS and audio device.
-const ANALYSIS_FPS = 60;
+// Fixed frequency bins keep results independent of the audio device.
 const ANALYSIS_SAMPLE_RATE = 44100;
 const FFT_SIZE = 2048;
 const FREQUENCY_BIN_COUNT = 512;
@@ -398,6 +397,7 @@ type HistoryInput = {
 	audioData: MediaUtilsAudioData;
 	dataOffsetInSeconds: number;
 	sourceTime: number;
+	fps: number;
 	inputGainDb: number;
 	width?: number;
 };
@@ -405,12 +405,12 @@ type HistoryInput = {
 function createHaloHistory(input: HistoryInput) {
 	const width = Math.max(1, Math.round(input.width ?? 1280));
 	const data = new Float32Array(width * HISTORY_ROWS * 4);
-	const headFrame = Math.round(input.sourceTime * ANALYSIS_FPS);
+	const headFrame = Math.round(input.sourceTime * input.fps);
 	const parameters = (frame: number): AnalysisParameters => ({
 		audioData: input.audioData,
 		dataOffsetInSeconds: input.dataOffsetInSeconds,
 		frame,
-		fps: ANALYSIS_FPS,
+		fps: input.fps,
 		inputGainDb: input.inputGainDb,
 	});
 	// Build from the latest frame once, then read older rows without replaying FFTs.
@@ -419,7 +419,7 @@ function createHaloHistory(input: HistoryInput) {
 		const frame = headFrame - row;
 		const rowStart = row * width * 4;
 		data[rowStart + 2] = getBassPhase(parameters(frame));
-		if (frame < 0 || frame / ANALYSIS_FPS >= input.audioData.durationInSeconds) continue;
+		if (frame < 0 || frame / input.fps >= input.audioData.durationInSeconds) continue;
 		const values = normalizedSpectrum(trace.magnitudes[frame], input.inputGainDb);
 		data[rowStart + 1] = bassFromSpectrum(values);
 		for (let bar = 0; bar < width; bar++) {
@@ -921,10 +921,11 @@ const HaloContent: React.FC<Required<HaloOptions>> = (props) => {
 				audioData: audioData ?? silentAudio,
 				dataOffsetInSeconds: 0,
 				sourceTime,
+				fps,
 				inputGainDb: props.inputGainDb,
 				width: props.width,
 			}),
-		[audioData, sourceTime, props.inputGainDb, props.width],
+		[audioData, sourceTime, fps, props.inputGainDb, props.width],
 	);
 	return (
 		<>
