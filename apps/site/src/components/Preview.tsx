@@ -78,7 +78,7 @@ export default function Preview({
 					compositionHeight={PREVIEW_HEIGHT}
 					fps={60}
 					durationInFrames={durationInSeconds * 60}
-					initialFrame={96}
+					initialFrame={0}
 					controls
 					style={{width: '100%', aspectRatio: '16 / 9'}}
 					errorFallback={({error}) => (
