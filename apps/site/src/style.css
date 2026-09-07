@@ -215,6 +215,9 @@ body:not(:has(.collection-page, .element-page)) {
 	color: var(--sl-color-gray-3);
 	margin: 1.8rem 0.7rem 0.6rem;
 }
+.nav-category .nav-label {
+	text-transform: uppercase;
+}
 .element-nav-list {
 	list-style: none;
 	padding: 0;
@@ -395,7 +398,11 @@ a[aria-current='page'] .nav-active-dot {
 	gap: 1rem;
 	padding-bottom: 1.2rem;
 }
-.collection-heading h2 {
+.collection-category + .collection-category {
+	margin-top: 3rem;
+}
+.collection-heading h2,
+.collection-heading h3 {
 	font-size: 1.15rem;
 	font-weight: 650;
 	letter-spacing: -0.035em;
@@ -479,7 +486,7 @@ a[aria-current='page'] .nav-active-dot {
 	justify-content: space-between;
 	gap: 0.5rem;
 }
-.card-title h3 {
+.card-title h4 {
 	font-size: 0.87rem;
 	font-weight: 650;
 	margin: 0;
@@ -1224,7 +1231,7 @@ a[aria-current='page'] .nav-active-dot {
 	.card-art {
 		aspect-ratio: 1.9;
 	}
-	.card-title h3 {
+	.card-title h4 {
 		font-size: 1rem;
 	}
 	.card-copy p {

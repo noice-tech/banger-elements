@@ -1,50 +1,75 @@
+type ElementCategory = 'visualizers' | 'shaders';
+
+type CatalogEntry = {
+	readonly slug: string;
+	readonly name: string;
+	readonly category: ElementCategory;
+	readonly width: number;
+	readonly height: number;
+};
+
 export const catalog = [
 	{
 		slug: 'ferrofluid',
 		name: 'Ferrofluid',
+		category: 'visualizers',
 		width: 1280,
 		height: 720,
 	},
 	{
 		slug: 'waveform',
 		name: 'Waveform',
+		category: 'visualizers',
 		width: 1280,
 		height: 720,
 	},
 	{
 		slug: 'spectre',
 		name: 'Spectre',
+		category: 'visualizers',
 		width: 1280,
 		height: 720,
 	},
 	{
 		slug: 'oscilloscope',
 		name: 'Oscilloscope',
+		category: 'visualizers',
 		width: 1280,
 		height: 720,
 	},
 	{
 		slug: 'pulsar',
 		name: 'Pulsar',
+		category: 'visualizers',
 		width: 1280,
 		height: 720,
 	},
 	{
 		slug: 'circle',
 		name: 'Circle',
+		category: 'visualizers',
 		width: 1280,
 		height: 720,
 	},
 	{
 		slug: 'halo',
 		name: 'Halo',
+		category: 'visualizers',
 		width: 1280,
 		height: 720,
 	},
 	{
 		slug: 'audio-particles',
 		name: 'AudioParticles',
+		category: 'visualizers',
 		width: 1280,
 		height: 720,
 	},
-] as const;
+	{
+		slug: 'trip',
+		name: 'Trip',
+		category: 'shaders',
+		width: 1280,
+		height: 720,
+	},
+] as const satisfies readonly CatalogEntry[];

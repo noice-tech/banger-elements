@@ -1,0 +1,7 @@
+{
+	"useTabs": true,
+	"singleQuote": true,
+	"bracketSpacing": false,
+	"printWidth": 100,
+	"embeddedLanguageFormatting": "off"
+}

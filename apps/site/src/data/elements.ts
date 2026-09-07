@@ -1,6 +1,29 @@
 import catalog from '../../../../packages/elements/dist/catalog.json';
 
+export const elementCategories = [
+	{id: 'visualizers', title: 'Visualizers'},
+	{id: 'shaders', title: 'Shaders'},
+] as const;
+
 const details = {
+	trip: {
+		title: 'Trip',
+		renderer: 'WebGL2',
+		tagline: 'A psychedelic tunnel that moves with your music.',
+		description:
+			'A full-frame procedural background with twisting, audio-reactive patterns. Customize its colors, structure and tempo, or layer a visualizer on top.',
+		controls: [
+			'baseColor / intensifyColor — background and highlight colors',
+			'thickness / pattern — tunnel structure',
+			'intensity — raymarch iterations, not audio gain; fractional values truncate to whole iterations, and zero does not hide the background',
+			'bpm — animation tempo (default 120); changing it changes phase, not an accumulated playback speed',
+			'timeOffsetInSeconds — animation phase, independent of audioOffsetInSeconds',
+			'inputGainDb — visual audio gain, without changing playback volume',
+		],
+		limitation:
+			'Requires WebGL2. Higher intensity costs more GPU time. Opaque inside its bounds: place it behind other elements. Uses the original fixed camera and spherical projection; motion continues in silence. Analysis runs at a fixed 60 Hz.',
+	},
+
 	ferrofluid: {
 		title: 'Ferrofluid',
 		renderer: 'WebGL2',

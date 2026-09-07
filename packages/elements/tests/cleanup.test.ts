@@ -12,6 +12,7 @@ for (const element of [
 	'pulsar',
 	'circle',
 	'audio-particles',
+	'trip',
 ]) {
 	const {hasCompleteAudioWindow} = loadHelpers(element, ['hasCompleteAudioWindow']) as {
 		hasCompleteAudioWindow: (data: MediaUtilsAudioData, origin: number, time: number) => boolean;
