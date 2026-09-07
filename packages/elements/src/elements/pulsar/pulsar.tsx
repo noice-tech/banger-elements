@@ -259,11 +259,7 @@ type DataTexture = {
 function shaderSource(source: string, fragment: boolean) {
 	let code = source
 		.replace(/\bvarying\b/g, fragment ? 'in' : 'out')
-		.replace(/\battribute\b/g, 'in')
-		.replace(/\btexture2D\b/g, 'texture')
-		.replace(/\bgl_FragColor\b/g, 'outColor')
-		.replace('vec2 iResolution = vec2(1920.0, 1080.0);', 'uniform vec2 iResolution;')
-		.replace('point.x *= 16.0 / 9.0;', 'point.x *= iAspect;');
+		.replace(/\bgl_FragColor\b/g, 'outColor');
 	if (fragment)
 		code =
 			code.replace(/void main\(\)/, 'void renderEffect()') +
@@ -445,7 +441,6 @@ function PulsarCanvas(frame: PulsarFrame) {
 			state.current = setupPulsar(canvas);
 		} catch (error) {
 			cancelRender(error);
-			return;
 		}
 		const current = state.current;
 		const lost = (event: Event) => {
@@ -487,13 +482,6 @@ function PulsarCanvas(frame: PulsarFrame) {
 const fragmentShader = `
 uniform float iGlobalTime;
 uniform sampler2D iTexture;
-uniform sampler2D iChannel0;
-uniform sampler2D iChannel1;
-uniform sampler2D iChannel2;
-
-uniform float iWidth;
-uniform float iCount;
-
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
 uniform int iColorMode;
@@ -506,15 +494,12 @@ vec3 rainbowColor(float hue) {
     return pow((rgb + 0.055) / 1.055, vec3(2.4));
 }
 
-uniform float iIntensity;
 uniform float iDensity;
 uniform float iPattern;
 uniform float iVolume;
 uniform float iOpacity;
 
 varying vec2 vUv;
-
-vec3 iResolution = vec3(1280.,720.,1.);
 
 float sphereSound( in vec3 checkedPoint )
 {
@@ -545,46 +530,16 @@ vec3 sphereNormal( in vec3 checkedPoint )
     );
 }
 
-struct FragData{
-    vec2 screenCoord;
-    vec2 normalCoord;
-    float normalDistance;
-};
-
-vec3 background( in FragData fragData )
-{    
-    float sound = texture( iTexture, vec2( cos( fragData.normalDistance ), 0.25 )).r 
-                + texture( iTexture, vec2( sin( fragData.normalDistance ), 0.25 )).r;
-    float fragAngle = cos( atan( fragData.normalCoord.x, fragData.normalCoord.y ) * 8.0 );
-    
-    float shiftedTime = iGlobalTime * 3.0 - ( fragData.normalDistance * 7.0 ) + fragAngle * sin( pow(( 1.3 - fragData.normalDistance ), ( 1.3 - fragData.normalDistance )) * 100.0 + iGlobalTime * 3.0 + sound * sound * 2.0);
-    
-    float waveModulator = 0.35 + sin(( fragData.normalDistance-shiftedTime /  5.0 ) * 20.0 ) / 2.0 * sound * 2.0;
-    
-    float red = ( 0.95 + sin( shiftedTime + sound * 4.0 ) / 7.0 ) * waveModulator;
-    float green = 0.1 * waveModulator;
-    float blue = ( 0.55 + cos( shiftedTime + sound * 4.0 ) / 3.0 ) * waveModulator;
-    
-    return vec3( red, green, blue );
-}
-
 void main()
 {
     const float focalLength = 5.0;
     const float camSurfaceRadius = 5.0;
     
-    FragData fragData;
-
-
-    fragData.screenCoord = vUv;
     // Standalone, aspect-correct framing instead of the editor plane's bottom offset.
     vec2 nuv = (vUv - vec2(0.5)) * vec2(iAspect, 1.0);
     nuv = vec2(nuv.y, -nuv.x);
     nuv.x -= 3.0 / 37.0;
 
-    fragData.normalCoord = nuv;
-    fragData.normalDistance = distance(fragData.normalCoord, vec2( 0.0, 0.0 ));
-    
     float camRotation = 0. / 5.0;
     float rotationRadius = 25.0 + 10.0 * cos( camRotation / 1.3 );
     vec3 camPosition = vec3( rotationRadius * sin( camRotation ) + 3.0  * cos( camRotation * 3.0 ), 4.0 * sin( camRotation / 1.3 ), -rotationRadius * cos( camRotation ) + 3.0  * sin( camRotation * 2.3 ) );
@@ -592,15 +547,13 @@ void main()
 
     vec3 camLocalSurfaceCoord = 
         vec3(
-            cos( camYaw ) * fragData.normalCoord.x * camSurfaceRadius, 
-            fragData.normalCoord.y * camSurfaceRadius,
-            sin( camYaw ) * fragData.normalCoord.x * camSurfaceRadius
+            cos( camYaw ) * nuv.x * camSurfaceRadius,
+            nuv.y * camSurfaceRadius,
+            sin( camYaw ) * nuv.x * camSurfaceRadius
         );
     vec3 rayDirection = normalize( vec3( camLocalSurfaceCoord.x - sin( camYaw ) * focalLength, camLocalSurfaceCoord.y, camLocalSurfaceCoord.z + cos( camYaw ) * focalLength ) );
     vec3 camSurfaceCoord = camPosition + camLocalSurfaceCoord;
     
-    float sphereRaysShift = camPosition.y / ( distance( camPosition, vec3(0.0,0.0,0.0) ) / focalLength ) / camSurfaceRadius;
-    float sphereRaysStrength = pow( sphereSound( vec3( fragData.normalCoord  + vec2( 0.0, sphereRaysShift ), 0.0 )), 2.5 );
     vec3 color = vec3(0.);
     vec3 referenceColor = vec3(0.);
     // Screen-space hue avoids a seam through the volume; time is frame-derived.
@@ -616,8 +569,6 @@ void main()
         
         float density = pow( max( 0.0, 3.5 - currentDistance ), iDensity );
         
-        float sound = sphereSound( checkedSpherePoint );
-        float soundEffect = sound * sound / 50.0;
         float highlight = max(0.0, dot(sphereNormal(checkedSpherePoint), -rayDirection) - 0.5);
         float blend = smoothstep(0.0, 1.0, highlight * 2.0);
         vec3 palette = iColorMode == 1 ? rainbow : mix(iStartColor, iEndColor, blend);
@@ -770,6 +721,7 @@ const PulsarInner = forwardRef<
 				<div
 					ref={outlineRef}
 					style={{
+						position: 'relative',
 						boxSizing: 'border-box',
 						width,
 						height,

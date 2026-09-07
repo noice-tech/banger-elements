@@ -244,9 +244,6 @@ function computeBars({
 				binIndex < Math.floor(outputBarsCount * 0.334415584415584)
 					? allVisualizationValues[index] * 1.3
 					: allVisualizationValues[index];
-			if (outputBarsCount !== 308 && binIndex >= Math.floor(outputBarsCount * 0.9845)) {
-				bars[binIndex] = defaultFill;
-			}
 		}
 	}
 	return bars.filter((b) => b !== defaultFill && !Number.isNaN(b));
@@ -294,7 +291,6 @@ uniform float iWidth;
 uniform float iCount;
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
-uniform vec3 iMiddleColor;
 uniform float iIntensity;
 uniform float iOpacity;
 uniform bool iBottom;
@@ -324,10 +320,6 @@ vec3 getBaseColor(float t) {
 	if (iColorMode == 2) {
 		float hue = t + iGlobalTime * iRainbowSpeed * 0.1;
 		return hsv2rgb(vec3(fract(hue), iRainbowSaturation, iRainbowBrightness));
-	}
-	if (iColorMode == 1) {
-		if (t < 0.5) return mix(iStartColor, iMiddleColor, t * 2.0);
-		return mix(iMiddleColor, iEndColor, (t - 0.5) * 2.0);
 	}
 	return mix(iStartColor, iEndColor, t);
 }
@@ -367,7 +359,6 @@ uniform float iWidth;
 uniform float iCount;
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
-uniform vec3 iMiddleColor;
 uniform float iIntensity;
 uniform float iOpacity;
 uniform bool iBottom;
@@ -398,10 +389,6 @@ vec3 getBaseColor(float t) {
 	if (iColorMode == 2) {
 		float hue = t + iGlobalTime * iRainbowSpeed * 0.1;
 		return hsv2rgb(vec3(fract(hue), iRainbowSaturation, iRainbowBrightness));
-	}
-	if (iColorMode == 1) {
-		if (t < 0.5) return mix(iStartColor, iMiddleColor, t * 2.0);
-		return mix(iMiddleColor, iEndColor, (t - 0.5) * 2.0);
 	}
 	return mix(iStartColor, iEndColor, t);
 }
@@ -471,7 +458,6 @@ type SpectreState = {
 		readonly count: WebGLUniformLocation | null;
 		readonly startColor: WebGLUniformLocation | null;
 		readonly endColor: WebGLUniformLocation | null;
-		readonly middleColor: WebGLUniformLocation | null;
 		readonly intensity: WebGLUniformLocation | null;
 		readonly opacity: WebGLUniformLocation | null;
 		readonly bottom: WebGLUniformLocation | null;
@@ -568,7 +554,6 @@ function setupSpectre(canvas: HTMLCanvasElement, fragment: string): SpectreState
 				count: gl.getUniformLocation(program, 'iCount'),
 				startColor: gl.getUniformLocation(program, 'iStartColor'),
 				endColor: gl.getUniformLocation(program, 'iEndColor'),
-				middleColor: gl.getUniformLocation(program, 'iMiddleColor'),
 				intensity: gl.getUniformLocation(program, 'iIntensity'),
 				opacity: gl.getUniformLocation(program, 'iOpacity'),
 				bottom: gl.getUniformLocation(program, 'iBottom'),
@@ -602,7 +587,6 @@ function drawSpectre(state: SpectreState, frame: SpectreFrame) {
 	gl.uniform1f(uniforms.count, Math.round(frame.count));
 	gl.uniform3fv(uniforms.startColor, linearColor(frame.startColor));
 	gl.uniform3fv(uniforms.endColor, linearColor(frame.endColor));
-	gl.uniform3f(uniforms.middleColor, 1, 1, 1);
 	gl.uniform1f(uniforms.intensity, frame.intensity);
 	gl.uniform1f(uniforms.opacity, 1);
 	gl.uniform1i(uniforms.bottom, Number(frame.bottom));
@@ -650,7 +634,6 @@ function SpectreCanvas({fragment, ...frame}: SpectreFrame & {readonly fragment: 
 			state.current = setupSpectre(canvas, fragment);
 		} catch (error) {
 			cancelRender(error);
-			return;
 		}
 		const onContextLost = (event: Event) => {
 			event.preventDefault();
@@ -823,6 +806,7 @@ const SpectreInner = forwardRef<
 				<div
 					ref={outlineRef}
 					style={{
+						position: 'relative',
 						boxSizing: 'border-box',
 						width,
 						height,

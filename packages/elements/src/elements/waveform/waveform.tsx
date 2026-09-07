@@ -1,13 +1,6 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {forwardRef, useRef, useImperativeHandle, useLayoutEffect} from 'react';
 import {
 	Interactive,
 	Sequence,
@@ -144,17 +137,7 @@ function useVisualizerAudio(src: string, time: number, fps: number, windowInSeco
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId. Keep each decoded buffer revision
-	// distinct, including when neighboring windows arrive asynchronously.
-	const instanceId = useId();
-	const revision = useRef(0);
-	const audioData = useMemo(
-		() =>
-			result.audioData
-				? {...result.audioData, resultId: `${instanceId}:${revision.current++}`}
-				: null,
-		[result.audioData, instanceId],
-	);
+	const {audioData} = result;
 	// The hook can publish the current chunk before its retained neighbors.
 	const complete =
 		audioData === null ||

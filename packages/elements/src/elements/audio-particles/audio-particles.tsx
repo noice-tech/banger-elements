@@ -41,6 +41,7 @@ type AudioParticlesOptions = {
 
 type AudioParticlesProps = InteractiveBaseProps & InteractiveTransformProps & AudioParticlesOptions;
 const ANALYSIS_FPS = 60;
+const BASS_HISTORY_FRAMES = 300;
 const MASK_TRAIL_DEPTH = 9;
 const PARTICLE_COUNT = 3500;
 
@@ -172,9 +173,12 @@ function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, 
 }
 
 function useVisualizerAudio(src: string, time: number, fps: number) {
+	// Preserve five seconds of bass history after EOF, including on direct seeks.
+	// Include one analysis frame for rounding at the history boundary.
+	const analysisTime = Math.max(0, time - (BASS_HISTORY_FRAMES + 1) / ANALYSIS_FPS);
 	const result = useWindowedAudioData({
 		src,
-		frame: Math.max(0, time) * fps,
+		frame: analysisTime * fps,
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
@@ -190,7 +194,8 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 	);
 	// The current chunk can arrive before its retained neighbors.
 	const complete =
-		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
+		audioData === null ||
+		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, analysisTime);
 	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (complete) return;
@@ -483,17 +488,21 @@ function createParticleHistory({
 				history[(row * 200 + bar) * 4 + 3] = 255;
 			}
 		}
-	const bassHistory = new Uint8Array(301 * 4);
+	const bassHistory = new Uint8Array((BASS_HISTORY_FRAMES + 1) * 4);
 	const endTime = Math.floor(input.sourceTime * ANALYSIS_FPS) / ANALYSIS_FPS;
 	if (reactiveSpeed) {
-		for (let i = 0; i < 301; i++) {
-			bassHistory[i * 4 + 2] = Math.round(bassAt(endTime - (300 - i) / ANALYSIS_FPS) * 255);
+		for (let i = 0; i <= BASS_HISTORY_FRAMES; i++) {
+			bassHistory[i * 4 + 2] = Math.round(
+				bassAt(endTime - (BASS_HISTORY_FRAMES - i) / ANALYSIS_FPS) * 255,
+			);
 			bassHistory[i * 4 + 3] = 255;
 		}
 		let integral = 0;
-		for (let i = 300; i >= 0; i--) {
-			if (i < 300) integral += bassHistory[(i + 1) * 4 + 2] / 255 / ANALYSIS_FPS;
-			const encoded = Math.round(clamp(integral / 5, 0, 1) * 65535);
+		for (let i = BASS_HISTORY_FRAMES; i >= 0; i--) {
+			if (i < BASS_HISTORY_FRAMES) integral += bassHistory[(i + 1) * 4 + 2] / 255 / ANALYSIS_FPS;
+			const encoded = Math.round(
+				clamp(integral / (BASS_HISTORY_FRAMES / ANALYSIS_FPS), 0, 1) * 65535,
+			);
 			bassHistory[i * 4] = encoded >> 8;
 			bassHistory[i * 4 + 1] = encoded & 255;
 		}
@@ -507,7 +516,7 @@ function createParticleHistory({
 			data: history,
 		} satisfies DataTexture,
 		bassHistory: {
-			width: 301,
+			width: BASS_HISTORY_FRAMES + 1,
 			height: 1,
 			data: bassHistory,
 		} satisfies DataTexture,
@@ -520,9 +529,7 @@ function shaderSource(source: string, fragment: boolean) {
 		.replace(/\bvarying\b/g, fragment ? 'in' : 'out')
 		.replace(/\battribute\b/g, 'in')
 		.replace(/\btexture2D\b/g, 'texture')
-		.replace(/\bgl_FragColor\b/g, 'outColor')
-		.replace('vec2 iResolution = vec2(1920.0, 1080.0);', 'uniform vec2 iResolution;')
-		.replace('point.x *= 16.0 / 9.0;', 'point.x *= iAspect;');
+		.replace(/\bgl_FragColor\b/g, 'outColor');
 	if (fragment)
 		code =
 			code.replace(/void main\(\)/, 'void renderEffect()') +
@@ -638,7 +645,10 @@ function setupAudioParticles(canvas: HTMLCanvasElement): AudioParticlesState {
 		gl.uniform1f(gl.getUniformLocation(program, 'iOpacity'), 1);
 		gl.uniform1f(gl.getUniformLocation(program, 'iTrailDepth'), MASK_TRAIL_DEPTH);
 		gl.uniform1f(gl.getUniformLocation(program, 'iWaveDelay'), 1);
-		gl.uniform1f(gl.getUniformLocation(program, 'iParticleBassHistoryDuration'), 5);
+		gl.uniform1f(
+			gl.getUniformLocation(program, 'iParticleBassHistoryDuration'),
+			BASS_HISTORY_FRAMES / ANALYSIS_FPS,
+		);
 		return {
 			gl,
 			program,
@@ -756,7 +766,6 @@ function AudioParticlesCanvas(frame: AudioParticlesFrame) {
 			state.current = setupAudioParticles(canvas);
 		} catch (error) {
 			cancelRender(error);
-			return;
 		}
 		const current = state.current;
 		const lost = (event: Event) => {
@@ -1179,6 +1188,7 @@ const AudioParticlesInner = forwardRef<
 				<div
 					ref={outlineRef}
 					style={{
+						position: 'relative',
 						boxSizing: 'border-box',
 						width,
 						height,

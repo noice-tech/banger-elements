@@ -53,6 +53,7 @@ type FerrofluidOptions = {
 };
 type FerrofluidProps = InteractiveBaseProps & InteractiveTransformProps & FerrofluidOptions;
 const ANALYSIS_FPS = 60;
+const MOMENTUM_HISTORY_FRAMES = 240;
 const ferrofluidSchema = {
 	...Interactive.baseSchema,
 	audioSrc: {
@@ -250,9 +251,12 @@ function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, 
 }
 
 function useVisualizerAudio(src: string, time: number, fps: number) {
+	// Request the oldest needed history, even on a direct seek past audio EOF.
+	// Include one analysis frame for rounding at the history boundary.
+	const analysisTime = Math.max(0, time - (MOMENTUM_HISTORY_FRAMES + 1) / ANALYSIS_FPS);
 	const result = useWindowedAudioData({
 		src,
-		frame: Math.max(0, time) * fps,
+		frame: analysisTime * fps,
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
@@ -269,7 +273,8 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		[result.audioData, instanceId],
 	);
 	const complete =
-		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
+		audioData === null ||
+		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, analysisTime);
 	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (complete) return;
@@ -307,9 +312,6 @@ function computeBars({
 				binIndex < Math.floor(outputBarsCount * 0.334415584415584)
 					? allVisualizationValues[index] * 1.3
 					: allVisualizationValues[index];
-			if (outputBarsCount !== 308 && binIndex >= Math.floor(outputBarsCount * 0.9845)) {
-				bars[binIndex] = defaultFill;
-			}
 		}
 	}
 	return bars.filter((b) => b !== defaultFill && !Number.isNaN(b));
@@ -356,7 +358,7 @@ function createFerrofluidAudio(input: AudioInput, inputGainDb: number) {
 	}
 	const last = Math.round(input.sourceTime * ANALYSIS_FPS);
 	let momentum = 0;
-	for (let f = Math.max(0, last - 240); f <= last; f++) {
+	for (let f = Math.max(0, last - MOMENTUM_HISTORY_FRAMES); f <= last; f++) {
 		const bass = barsAt(input, f / ANALYSIS_FPS)[11] ?? 0;
 		momentum = (momentum + bass * gain) * 0.95;
 	}
@@ -501,7 +503,7 @@ vec2 voronoi3d(vec3 p, float density) {
   return vec2(minDist, cellHash);
 }
 
-float sampleAudio(vec3 pos, vec3 norm, float cellHash) {
+float sampleAudio(vec3 norm, float cellHash) {
   float texCoord;
 
   #if MAPPING_MODE == 0
@@ -542,9 +544,6 @@ float computeDisplacement(vec3 pos, vec3 norm) {
   #if NOISE_OCTAVES >= 3
     base += (amp * 0.25) * snoise(pos * freq * 4.0 + vec3(time * baseSpeed * 2.0));
   #endif
-  #if NOISE_OCTAVES >= 4
-    base += (amp * 0.125) * snoise(pos * freq * 8.0 + vec3(time * baseSpeed * 2.8));
-  #endif
 
   float lowEnergy = iLowFreq;
   float midEnergy = iMidFreq;
@@ -556,7 +555,7 @@ float computeDisplacement(vec3 pos, vec3 norm) {
   float distToCenter = vor.x;
   float cellHash = vor.y;
 
-  float audioEnergy = sampleAudio(pos, norm, cellHash);
+  float audioEnergy = sampleAudio(norm, cellHash);
   float spikeRaw = 1.0 - clamp(distToCenter / 0.5, 0.0, 1.0);
   float spikeSharpness = 3.0 + intensity * 2.0;
   float spike = pow(spikeRaw, spikeSharpness);
@@ -1017,7 +1016,14 @@ const FerrofluidInner = forwardRef<
 			>
 				<div
 					ref={outlineRef}
-					style={{boxSizing: 'border-box', width, height, overflow: 'hidden', ...style}}
+					style={{
+						position: 'relative',
+						boxSizing: 'border-box',
+						width,
+						height,
+						overflow: 'hidden',
+						...style,
+					}}
 				>
 					<FerrofluidContent
 						key={audioSrc}

@@ -311,7 +311,7 @@ function getRawMagnitudes({
 
 type AnalysisTrace = {
 	magnitudes: Float32Array[];
-	gains: Map<number, {bass: number[]; phase: number[]}>;
+	gains: Map<number, number[]>;
 };
 // Owned by the decoded audio, not by playback. Seeking can only extend a trace;
 // it never changes previously computed values. No finite-window smoothing reset.
@@ -370,40 +370,27 @@ function bassFromSpectrum(values: Float32Array) {
 	return clamp((sum / 8 - 0.75) / 0.25, 0, 1);
 }
 
-function getHaloSourceBass(parameters: AnalysisParameters) {
-	if (
-		parameters.frame < 0 ||
-		parameters.frame / parameters.fps >= parameters.audioData.durationInSeconds
-	)
-		return 0;
-	const trace = getAnalysisTrace(parameters);
-	return bassFromSpectrum(
-		normalizedSpectrum(trace.magnitudes[parameters.frame], parameters.inputGainDb),
-	);
-}
-
 function getBassPhase(parameters: AnalysisParameters) {
 	if (parameters.frame < 0) return 0;
 	const trace = getAnalysisTrace(parameters);
 	let gainTrace = trace.gains.get(parameters.inputGainDb);
 	if (!gainTrace) {
 		if (trace.gains.size >= 4) trace.gains.delete(trace.gains.keys().next().value!);
-		gainTrace = {bass: [], phase: [0]};
+		gainTrace = [0];
 		trace.gains.set(parameters.inputGainDb, gainTrace);
 	}
 	const endFrame = Math.min(
 		parameters.frame,
 		Math.ceil(parameters.audioData.durationInSeconds * parameters.fps),
 	);
-	for (let next = gainTrace.bass.length; next < endFrame; next++) {
+	for (let next = gainTrace.length - 1; next < endFrame; next++) {
 		const bass = bassFromSpectrum(
 			normalizedSpectrum(trace.magnitudes[next], parameters.inputGainDb),
 		);
-		gainTrace.bass.push(bass);
 		// Accumulate previous-frame bass in Float32 for stable GPU phase values.
-		gainTrace.phase.push(Math.fround(gainTrace.phase[next] + bass));
+		gainTrace.push(Math.fround(gainTrace[next] + bass));
 	}
-	return gainTrace.phase[endFrame];
+	return gainTrace[endFrame];
 }
 
 type DataTexture = {width: number; height: number; data: Float32Array};
@@ -412,8 +399,6 @@ type HistoryInput = {
 	dataOffsetInSeconds: number;
 	sourceTime: number;
 	inputGainDb: number;
-	trailDepth: number;
-	waveDelay: boolean;
 	width?: number;
 };
 
@@ -458,7 +443,6 @@ function createHaloHistory(input: HistoryInput) {
 		}
 	}
 	return {
-		bass: getHaloSourceBass(parameters(headFrame)),
 		history: {width, height: HISTORY_ROWS, data} satisfies DataTexture,
 	};
 }
@@ -469,7 +453,6 @@ type HaloFrame = Omit<
 > & {
 	readonly sourceTime: number;
 	readonly history: DataTexture;
-	readonly bass: number;
 	readonly image: HTMLImageElement | null;
 };
 
@@ -659,7 +642,6 @@ function HaloCanvas(frame: HaloFrame) {
 			state.current = setupHalo(canvas);
 		} catch (error) {
 			cancelRender(error);
-			return;
 		}
 		const current = state.current;
 		const lost = (event: Event) => {
@@ -940,11 +922,9 @@ const HaloContent: React.FC<Required<HaloOptions>> = (props) => {
 				dataOffsetInSeconds: 0,
 				sourceTime,
 				inputGainDb: props.inputGainDb,
-				trailDepth,
-				waveDelay: props.waveDelay,
 				width: props.width,
 			}),
-		[audioData, sourceTime, props.inputGainDb, trailDepth, props.waveDelay, props.width],
+		[audioData, sourceTime, props.inputGainDb, props.width],
 	);
 	return (
 		<>
@@ -955,7 +935,6 @@ const HaloContent: React.FC<Required<HaloOptions>> = (props) => {
 				{...props}
 				sourceTime={sourceTime}
 				history={data.history}
-				bass={data.bass}
 				image={image}
 				trailDepth={trailDepth}
 			/>
@@ -1008,7 +987,14 @@ const HaloInner = forwardRef<
 			>
 				<div
 					ref={outlineRef}
-					style={{boxSizing: 'border-box', width, height, overflow: 'hidden', ...style}}
+					style={{
+						position: 'relative',
+						boxSizing: 'border-box',
+						width,
+						height,
+						overflow: 'hidden',
+						...style,
+					}}
 				>
 					<HaloContent
 						key={`${audioSrc}-${artworkSrc}`}

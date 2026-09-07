@@ -1,13 +1,6 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {forwardRef, useRef, useImperativeHandle, useLayoutEffect} from 'react';
 import {
 	Interactive,
 	Sequence,
@@ -141,19 +134,7 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId; distinguish decoded buffer revisions.
-	const instanceId = useId();
-	const revision = useRef(0);
-	const audioData = useMemo(
-		() =>
-			result.audioData
-				? {
-						...result.audioData,
-						resultId: `${instanceId}:${revision.current++}`,
-					}
-				: null,
-		[result.audioData, instanceId],
-	);
+	const {audioData} = result;
 	// The current chunk can arrive before its retained neighbors.
 	const complete =
 		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);

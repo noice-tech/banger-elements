@@ -227,9 +227,6 @@ function computeBars({
 				binIndex < Math.floor(outputBarsCount * 0.334415584415584)
 					? allVisualizationValues[index] * 1.3
 					: allVisualizationValues[index];
-			if (outputBarsCount !== 308 && binIndex >= Math.floor(outputBarsCount * 0.9845)) {
-				bars[binIndex] = defaultFill;
-			}
 		}
 	}
 	return bars.filter((b) => b !== defaultFill && !Number.isNaN(b));
@@ -264,7 +261,6 @@ uniform float iDotSize;
 
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
-uniform vec3 iMiddleColor;
 
 uniform float iIntensity;
 uniform float iOpacity;
@@ -301,12 +297,6 @@ vec3 getBaseColor(float t) {
     if (iColorMode == 2) {
         float hue = t + iGlobalTime * iRainbowSpeed * 0.1;
         return hsv2rgb(vec3(fract(hue), iRainbowSaturation, iRainbowBrightness));
-    }
-    if (iColorMode == 1) {
-        if (t < 0.5) {
-            return mix(iStartColor, iMiddleColor, t * 2.0);
-        }
-        return mix(iMiddleColor, iEndColor, (t - 0.5) * 2.0);
     }
     return mix(iStartColor, iEndColor, t);
 }
@@ -363,7 +353,6 @@ uniform float iLineThickness;
 
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
-uniform vec3 iMiddleColor;
 
 uniform float iIntensity;
 uniform float iOpacity;
@@ -400,12 +389,6 @@ vec3 getBaseColor(float t) {
     if (iColorMode == 2) {
         float hue = t + iGlobalTime * iRainbowSpeed * 0.1;
         return hsv2rgb(vec3(fract(hue), iRainbowSaturation, iRainbowBrightness));
-    }
-    if (iColorMode == 1) {
-        if (t < 0.5) {
-            return mix(iStartColor, iMiddleColor, t * 2.0);
-        }
-        return mix(iMiddleColor, iEndColor, (t - 0.5) * 2.0);
     }
     return mix(iStartColor, iEndColor, t);
 }
@@ -459,7 +442,6 @@ uniform float iRadius;
 
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
-uniform vec3 iMiddleColor;
 
 uniform float iIntensity;
 uniform bool iSmooth;
@@ -500,12 +482,6 @@ vec3 getBaseColor(float t) {
     if (iColorMode == 2) {
         float hue = t + iGlobalTime * iRainbowSpeed * 0.1;
         return hsv2rgb(vec3(fract(hue), iRainbowSaturation, iRainbowBrightness));
-    }
-    if (iColorMode == 1) {
-        if (t < 0.5) {
-            return mix(iStartColor, iMiddleColor, t * 2.0);
-        }
-        return mix(iMiddleColor, iEndColor, (t - 0.5) * 2.0);
     }
     return mix(iStartColor, iEndColor, t);
 }
@@ -666,11 +642,8 @@ type DataTexture = {
 function shaderSource(source: string, fragment: boolean) {
 	let code = source
 		.replace(/\bvarying\b/g, fragment ? 'in' : 'out')
-		.replace(/\battribute\b/g, 'in')
-		.replace(/\btexture2D\b/g, 'texture')
 		.replace(/\bgl_FragColor\b/g, 'outColor')
-		.replace('vec2 iResolution = vec2(1920.0, 1080.0);', 'uniform vec2 iResolution;')
-		.replace('point.x *= 16.0 / 9.0;', 'point.x *= iAspect;');
+		.replace('vec2 iResolution = vec2(1920.0, 1080.0);', 'uniform vec2 iResolution;');
 	if (fragment)
 		code =
 			code.replace(/void main\(\)/, 'void renderEffect()') +
@@ -771,7 +744,6 @@ function setupCircle(canvas: HTMLCanvasElement, fragment: string): CircleState {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		// These treatment constants do not change between frames.
-		gl.uniform3f(gl.getUniformLocation(program, 'iMiddleColor'), 1, 1, 1);
 		gl.uniform1f(gl.getUniformLocation(program, 'iRainbowSpeed'), 1);
 		gl.uniform1f(gl.getUniformLocation(program, 'iRainbowSaturation'), 0.85);
 		gl.uniform1f(gl.getUniformLocation(program, 'iRainbowBrightness'), 0.85);
@@ -871,7 +843,6 @@ function CircleCanvas(frame: CircleFrame) {
 			state.current = setupCircle(canvas, fragment);
 		} catch (error) {
 			cancelRender(error);
-			return;
 		}
 		const current = state.current;
 		const lost = (event: Event) => {
@@ -1041,6 +1012,7 @@ const CircleInner = forwardRef<
 				<div
 					ref={outlineRef}
 					style={{
+						position: 'relative',
 						boxSizing: 'border-box',
 						width,
 						height,

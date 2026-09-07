@@ -6,7 +6,6 @@ import ts from 'typescript';
 import {catalog} from '../src/catalog';
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const repository = path.resolve(workspace, '../..');
 const dist = path.join(workspace, 'dist');
 
 await rm(dist, {recursive: true, force: true});

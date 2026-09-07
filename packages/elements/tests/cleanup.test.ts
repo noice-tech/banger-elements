@@ -380,7 +380,7 @@ for (const [element, helper] of [
 ] as const) {
 	test(`${element}: source history is independent of cache/render order`, () => {
 		type History = {
-			bass: number;
+			bass?: number;
 			history: {data: Uint8Array | Float32Array};
 			bassHistory?: {data: Uint8Array};
 		};
@@ -430,7 +430,7 @@ for (const [element, helper] of [
 			);
 		}
 		const silent = warm({...input, sourceTime: 48});
-		assert.equal(silent.bass, 0);
+		if (element === 'audio-particles') assert.equal(silent.bass, 0);
 		assert.ok(
 			silent.history.data.every(
 				(value, index) => (element === 'halo' && index % 4 === 2) || value === 0,
