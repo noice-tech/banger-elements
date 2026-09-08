@@ -13,6 +13,9 @@ import {
 	AudioParticles,
 	Ferrofluid,
 	Trip,
+	Space,
+	Synthwave,
+	Mushrooms,
 } from '../../../../../packages/elements/dist/components';
 
 type PreviewExample<C extends ComponentType<Props>> = {
@@ -70,6 +73,89 @@ const HaloAndParticles = (props: Props) => {
 	);
 };
 export const examples = {
+	space: {
+		component: Space,
+		width: 1280,
+		height: 720,
+		props: {
+			baseColor: '#ff00ff',
+			zoom: 0.8,
+			stellarDensity: 17,
+			pattern: 0.54,
+			speed: 0.01,
+			responsive: 1,
+			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
+		},
+		controls: [
+			color('baseColor', 'Base color'),
+			range('zoom', 'Zoom', 0.1, 3, 0.1),
+			range('stellarDensity', 'Stellar density', 5, 25, 1),
+			range('pattern', 'Pattern', 0.46, 0.58, 0.005),
+			range('speed', 'Speed', 0.001, 0.04, 0.001),
+			range('responsive', 'Audio reactivity', 0.5, 3, 0.25),
+			numberControl('timeOffsetInSeconds', 'Animation offset (s)', 0, 86400, 0.01),
+			gain,
+		],
+	} satisfies PreviewExample<typeof Space>,
+	synthwave: {
+		component: Synthwave,
+		width: 1280,
+		height: 720,
+		props: {
+			startColor: '#9333ea',
+			endColor: '#ff00ff',
+			sphereColor: '#4b9dc3',
+			hideSphere: false,
+			mountainsPattern: 1,
+			mountainsHeight: 4,
+			mountainsSmoothness: 1,
+			mountainsDistance: 0,
+			responsive: 1,
+			bpm: 120,
+			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
+		},
+		controls: [
+			color('startColor', 'Base color'),
+			color('endColor', 'Mountain outline'),
+			color('sphereColor', 'Sphere color'),
+			booleanControl('hideSphere', 'Hide sphere'),
+			range('mountainsPattern', 'Mountains pattern', 1, 100, 0.5),
+			range('mountainsHeight', 'Mountains height', 1, 10, 0.5),
+			range('mountainsSmoothness', 'Mountains smoothness', 1, 10, 0.5),
+			range('mountainsDistance', 'Mountains distance', -10, 10, 0.5),
+			range('responsive', 'Audio reactivity', 1, 10, 1),
+			range('bpm', 'Tempo (BPM)', 1, 300, 1),
+			numberControl('timeOffsetInSeconds', 'Animation offset (s)', 0, 86400, 0.01),
+			gain,
+		],
+	} satisfies PreviewExample<typeof Synthwave>,
+	mushrooms: {
+		component: Mushrooms,
+		width: 1280,
+		height: 720,
+		props: {
+			baseColor: '#ff00ff',
+			mixColor: '#9333ea',
+			colorful: 0,
+			contrast: 6,
+			cubeScale: 1,
+			responsive: 0,
+			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
+		},
+		controls: [
+			color('baseColor', 'Base color'),
+			color('mixColor', 'Mix color'),
+			range('colorful', 'Colorful', -2, 12, 0.5),
+			range('contrast', 'Contrast', 1, 9, 0.5),
+			range('cubeScale', 'Cube scale', 0.5, 2, 0.25),
+			range('responsive', 'Audio reactivity', -10, 30, 0.5),
+			numberControl('timeOffsetInSeconds', 'Animation offset (s)', 0, 86400, 0.01),
+			gain,
+		],
+	} satisfies PreviewExample<typeof Mushrooms>,
 	trip: {
 		component: Trip,
 		width: 1280,
@@ -412,7 +498,8 @@ export const examples = {
 } as const;
 export type PreviewKind = keyof typeof examples;
 export const defaultAudioFor = (kind: PreviewKind) => {
-	if (kind === 'halo' || kind === 'ferrofluid' || kind === 'trip') return HALO_AUDIO;
+	if (['halo', 'ferrofluid', 'trip', 'space', 'synthwave', 'mushrooms'].includes(kind))
+		return HALO_AUDIO;
 	if (kind === 'audio-particles' || kind === 'combined') return AUDIO_PARTICLES_AUDIO;
 	return DEFAULT_AUDIO;
 };

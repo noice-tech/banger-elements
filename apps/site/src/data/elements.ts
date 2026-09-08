@@ -6,6 +6,55 @@ export const elementCategories = [
 ] as const;
 
 const details = {
+	space: {
+		title: 'Space',
+		renderer: 'WebGL2',
+		tagline: 'Drift through an audio-reactive star field.',
+		description:
+			'A full-frame fractal cosmos with glowing clouds and stars. Customize its color, density and drift speed, or layer a visualizer on top.',
+		controls: [
+			'baseColor — star field tint',
+			'zoom / stellarDensity / pattern — fractal structure; stellar density uses whole iterations',
+			'speed — animation speed; changing it changes phase rather than accumulating speed',
+			'responsive / inputGainDb — audio response and visual gain, without changing playback volume',
+			'timeOffsetInSeconds — animation phase, independent of audioOffsetInSeconds',
+		],
+		limitation:
+			'Requires WebGL2. Higher stellar density costs more GPU time. Opaque inside its bounds, with the original fixed camera and spherical projection. Motion continues in silence; analysis runs at a fixed 60 Hz.',
+	},
+	synthwave: {
+		title: 'Synthwave',
+		renderer: 'WebGL2',
+		tagline: 'Neon mountains, a mirrored grid and a cosmic skyline.',
+		description:
+			'A retro-futuristic procedural landscape that reacts to your music. Shape the mountains, customize the neon palette and set the animation tempo.',
+		controls: [
+			'startColor / endColor / sphereColor — landscape, outline and sphere colors',
+			'hideSphere — hide the sphere inside the triangle, not the background',
+			'mountainsPattern / mountainsHeight / mountainsSmoothness / mountainsDistance — terrain shape',
+			'bpm — animation tempo; changing it changes phase rather than accumulating speed',
+			'responsive / inputGainDb — audio response and visual gain, without changing playback volume',
+			'timeOffsetInSeconds — animation phase, independent of audioOffsetInSeconds',
+		],
+		limitation:
+			'Requires WebGL2. Procedural reflections can be GPU-intensive. Opaque inside its bounds, with the original fixed camera and spherical projection. Motion continues in silence; analysis runs at a fixed 60 Hz.',
+	},
+	mushrooms: {
+		title: 'Mushrooms',
+		renderer: 'WebGL2',
+		tagline: 'A swirling kaleidoscope of luminous fractals.',
+		description:
+			'A psychedelic procedural background, adapted from banger.show’s Shrooms shader. Mix colors, reshape the fractals and tune their response to your music.',
+		controls: [
+			'baseColor / mixColor — fractal palette',
+			'colorful / contrast / cubeScale — pattern, contrast and scale',
+			'responsive — extra audio modulation; zero retains the original baseline bass response',
+			'inputGainDb — visual audio gain, without changing playback volume',
+			'timeOffsetInSeconds — animation phase, independent of audioOffsetInSeconds',
+		],
+		limitation:
+			'Requires WebGL2. Fractal raymarching can be GPU-intensive. Opaque inside its bounds, with the original fixed camera and spherical projection. Motion continues in silence; analysis runs at a fixed 60 Hz.',
+	},
 	trip: {
 		title: 'Trip',
 		renderer: 'WebGL2',

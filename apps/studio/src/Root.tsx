@@ -9,10 +9,16 @@ import {
 	Halo,
 	Waveform,
 	Trip,
+	Space,
+	Synthwave,
+	Mushrooms,
 } from '../../../packages/elements/dist/components';
 import {compositions} from './fixtures/compositions';
 
 const components = {
+	Space,
+	Synthwave,
+	Mushrooms,
 	Trip,
 	TripCustom: () => (
 		<Trip
