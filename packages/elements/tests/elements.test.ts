@@ -14,7 +14,17 @@ test('catalog: stable identities and explicit purpose-based categories', () => {
 	assert.equal(catalog.filter((entry) => entry.category === 'visualizers').length, 8);
 	assert.deepEqual(
 		catalog.filter((entry) => entry.category === 'shaders').map((entry) => entry.slug),
-		['trip', 'space', 'synthwave', 'mushrooms'],
+		[
+			'trip',
+			'space',
+			'synthwave',
+			'mushrooms',
+			'fractals',
+			'hyperloop',
+			'downfall',
+			'rail',
+			'rain',
+		],
 	);
 });
 

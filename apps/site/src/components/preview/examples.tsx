@@ -16,6 +16,11 @@ import {
 	Space,
 	Synthwave,
 	Mushrooms,
+	Fractals,
+	Hyperloop,
+	Downfall,
+	Rail,
+	Rain,
 } from '../../../../../packages/elements/dist/components';
 
 type PreviewExample<C extends ComponentType<Props>> = {
@@ -73,6 +78,123 @@ const HaloAndParticles = (props: Props) => {
 	);
 };
 export const examples = {
+	fractals: {
+		component: Fractals,
+		width: 1280,
+		height: 720,
+		props: {
+			baseColor: '#ff00ff',
+			mixColor: '#9333ea',
+			pulsating: 6.28318,
+			zoom: 1.5,
+			pattern: 8,
+			responsive: 1,
+			inputGainDb: 0,
+		},
+		controls: [
+			color('baseColor', 'Base color'),
+			color('mixColor', 'Mix color'),
+			range('pulsating', 'Pulsating', 2, 60, 0.5),
+			range('zoom', 'Zoom', 0.25, 3.5, 0.25),
+			range('pattern', 'Pattern', 0.5, 50, 0.5),
+			range('responsive', 'Audio reactivity', 0, 10, 0.1),
+			gain,
+		],
+	} satisfies PreviewExample<typeof Fractals>,
+	hyperloop: {
+		component: Hyperloop,
+		width: 1280,
+		height: 720,
+		props: {
+			baseColor: '#9333ea',
+			volume: 0.15,
+			depth: 4,
+			speed: 2,
+			rotationSpeed: 2.3,
+			pattern: 1,
+			responsive: 2,
+			inputGainDb: 0,
+		},
+		controls: [
+			color('baseColor', 'Base color'),
+			range('volume', 'Volume', 0.05, 10.5, 0.1),
+			range('depth', 'Depth', 1, 50, 0.5),
+			range('speed', 'Speed', 0.5, 4, 0.25),
+			range('rotationSpeed', 'Rotation speed', 1, 20, 0.25),
+			range('pattern', 'Pattern', 1, 3, 0.01),
+			range('responsive', 'Audio reactivity', 0, 50, 0.5),
+			gain,
+		],
+	} satisfies PreviewExample<typeof Hyperloop>,
+	downfall: {
+		component: Downfall,
+		width: 1280,
+		height: 720,
+		props: {
+			startColor: '#9333ea',
+			endColor: '#ff00ff',
+			textureScale: 1,
+			textureRotation: 1,
+			variant: 1,
+			bloating: 1,
+			intensity: 1,
+			bpm: 120,
+			inputGainDb: 0,
+		},
+		controls: [
+			color('startColor', 'Base color'),
+			color('endColor', 'Mix color'),
+			range('textureScale', 'Texture scale', 0.5, 20, 0.5),
+			range('textureRotation', 'Texture rotation', 0, 180, 1),
+			range('variant', 'Variant', 1, 3, 1),
+			range('bloating', 'Bloating', 1, 10, 0.5),
+			range('intensity', 'Intensity', 1, 50, 0.5),
+			range('bpm', 'Tempo (BPM)', 1, 300, 1),
+			gain,
+		],
+	} satisfies PreviewExample<typeof Downfall>,
+	rail: {
+		component: Rail,
+		width: 1280,
+		height: 720,
+		props: {
+			startColor: '#877d87',
+			endColor: '#c800ff',
+			sunPosition: 0.02,
+			sunSize: 0,
+			volume: 0.25,
+			sides: 35,
+			waves: 0.15,
+			intensity: 20,
+			stroke: 0.001,
+			inputGainDb: 0,
+		},
+		controls: [
+			color('startColor', 'Theme'),
+			color('endColor', 'Sky color'),
+			range('sunPosition', 'Sun position', 0, 0.5, 0.01),
+			range('sunSize', 'Sun size', -4, 2, 0.25),
+			range('volume', 'Volume', 0.1, 0.5, 0.01),
+			range('sides', 'Sides', 1, 50, 0.5),
+			range('waves', 'Waves', 0, 0.35, 0.01),
+			range('intensity', 'Intensity', 1, 50, 0.5),
+			range('stroke', 'Stroke', 0.001, 0.005, 0.0001),
+			gain,
+		],
+	} satisfies PreviewExample<typeof Rail>,
+	rain: {
+		component: Rain,
+		width: 1280,
+		height: 720,
+		props: {textureScale: 3.5, distancing: 2.5, blur: 0.9, intensity: 3, inputGainDb: 0},
+		controls: [
+			range('textureScale', 'Background scale', 0.5, 20, 0.5),
+			range('distancing', 'Distancing', 0, 3, 0.1),
+			range('blur', 'Blur', 0.2, 1, 0.1),
+			range('intensity', 'Thunderstorm', 0, 7, 0.5),
+			gain,
+		],
+	} satisfies PreviewExample<typeof Rain>,
 	space: {
 		component: Space,
 		width: 1280,
@@ -498,7 +620,21 @@ export const examples = {
 } as const;
 export type PreviewKind = keyof typeof examples;
 export const defaultAudioFor = (kind: PreviewKind) => {
-	if (['halo', 'ferrofluid', 'trip', 'space', 'synthwave', 'mushrooms'].includes(kind))
+	if (
+		[
+			'halo',
+			'ferrofluid',
+			'trip',
+			'space',
+			'synthwave',
+			'mushrooms',
+			'fractals',
+			'hyperloop',
+			'downfall',
+			'rail',
+			'rain',
+		].includes(kind)
+	)
 		return HALO_AUDIO;
 	if (kind === 'audio-particles' || kind === 'combined') return AUDIO_PARTICLES_AUDIO;
 	return DEFAULT_AUDIO;

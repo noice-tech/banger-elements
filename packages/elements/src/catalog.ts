@@ -93,4 +93,9 @@ export const catalog = [
 		width: 1280,
 		height: 720,
 	},
+	{slug: 'fractals', name: 'Fractals', category: 'shaders', width: 1280, height: 720},
+	{slug: 'hyperloop', name: 'Hyperloop', category: 'shaders', width: 1280, height: 720},
+	{slug: 'downfall', name: 'Downfall', category: 'shaders', width: 1280, height: 720},
+	{slug: 'rail', name: 'Rail', category: 'shaders', width: 1280, height: 720},
+	{slug: 'rain', name: 'Rain', category: 'shaders', width: 1280, height: 720},
 ] as const satisfies readonly CatalogEntry[];

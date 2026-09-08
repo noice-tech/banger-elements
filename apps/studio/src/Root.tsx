@@ -12,10 +12,20 @@ import {
 	Space,
 	Synthwave,
 	Mushrooms,
+	Fractals,
+	Hyperloop,
+	Downfall,
+	Rail,
+	Rain,
 } from '../../../packages/elements/dist/components';
 import {compositions} from './fixtures/compositions';
 
 const components = {
+	Fractals,
+	Hyperloop,
+	Downfall,
+	Rail,
+	Rain,
 	Space,
 	Synthwave,
 	Mushrooms,

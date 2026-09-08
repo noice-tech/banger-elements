@@ -6,6 +6,84 @@ export const elementCategories = [
 ] as const;
 
 const details = {
+	fractals: {
+		title: 'Fractals',
+		renderer: 'WebGL2',
+		tagline: 'Pulsating layers of luminous fractal patterns.',
+		description:
+			'A colorful procedural background with repeating shapes and audio-reactive pulses.',
+		controls: [
+			'baseColor / mixColor — palette',
+			'pulsating / zoom / pattern — fractal structure',
+			'responsive / inputGainDb — audio response; responsive defaults to zero',
+			'timeOffsetInSeconds — animation phase, independent of audio trim',
+		],
+		limitation:
+			'Requires WebGL2. Opaque within its bounds. Fractal layers are capped at 64 for extreme audio gain.',
+	},
+	hyperloop: {
+		title: 'Hyperloop',
+		renderer: 'WebGL2',
+		tagline: 'Race through a twisting tunnel of light.',
+		description:
+			'A swirling noise tunnel with adjustable depth, rotation and bass-reactive highlights.',
+		controls: [
+			'baseColor — tunnel tint',
+			'volume / depth / pattern — tunnel structure',
+			'speed / rotationSpeed — motion; changes alter phase rather than accumulating speed',
+			'responsive / inputGainDb — audio response',
+			'timeOffsetInSeconds — animation phase, independent of audio trim',
+		],
+		limitation:
+			'Requires WebGL2. Opaque within its bounds. Volume changes the tunnel, not playback loudness.',
+	},
+	downfall: {
+		title: 'Downfall',
+		renderer: 'WebGL2',
+		tagline: 'Dive through an intricate metallic labyrinth.',
+		description:
+			'A raymarched lattice with reflective surfaces, a looping camera path and audio-reactive lighting.',
+		controls: [
+			'startColor / endColor — surface palette',
+			'textureSrc / textureScale / textureRotation — optional image surface; empty uses a procedural pattern',
+			'variant / bloating / intensity — lattice shape',
+			'bpm — camera tempo; changes alter phase',
+			'inputGainDb / timeOffsetInSeconds — audio gain and animation phase',
+		],
+		limitation:
+			'Requires WebGL2. Raymarching and textured reflections are GPU-intensive. Image URLs need CORS access. Opaque within its bounds.',
+	},
+	rail: {
+		title: 'Rail',
+		renderer: 'WebGL2',
+		tagline: 'Ride through a colorful fractal landscape.',
+		description:
+			'A cartoon-shaded journey with dark outlines, rolling geometry and an audio-reactive sun.',
+		controls: [
+			'startColor / endColor — theme and sky',
+			'sunPosition / sunSize / intensity — sun placement and audio response',
+			'volume / sides / waves / stroke — landscape shape and outlines',
+			'textureSrc / textureScale / textureSize / textureRounded — optional flying image',
+			'inputGainDb / timeOffsetInSeconds — audio gain and animation phase',
+		],
+		limitation:
+			'Requires WebGL2. Raymarching can be GPU-intensive. Image URLs need CORS access. Opaque within its bounds.',
+	},
+	rain: {
+		title: 'Rain',
+		renderer: 'WebGL2',
+		tagline: 'Raindrops on glass with bass-driven lightning.',
+		description:
+			'Animated droplets distort and blur a background image while thunderstorm flashes follow your audio.',
+		controls: [
+			'textureSrc / textureScale — background image and scale',
+			'distancing / blur — droplet scale and coverage; blur 0.8 animates coverage',
+			'intensity / inputGainDb — lightning response and visual gain',
+			'timeOffsetInSeconds — animation phase, independent of audio trim',
+		],
+		limitation:
+			'Requires WebGL2 and a CORS-accessible background image. Opaque within its bounds. High audio gain can produce bright flashes.',
+	},
 	space: {
 		title: 'Space',
 		renderer: 'WebGL2',
