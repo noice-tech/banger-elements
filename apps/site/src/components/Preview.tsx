@@ -57,6 +57,9 @@ export default function Preview({
 	const durationInSeconds =
 		selected === 'ferrofluid' ||
 		selected === 'trip' ||
+		selected === 'space' ||
+		selected === 'synthwave' ||
+		selected === 'mushrooms' ||
 		selected === 'halo' ||
 		selected === 'audio-particles' ||
 		selected === 'combined'

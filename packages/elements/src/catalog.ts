@@ -72,4 +72,25 @@ export const catalog = [
 		width: 1280,
 		height: 720,
 	},
+	{
+		slug: 'space',
+		name: 'Space',
+		category: 'shaders',
+		width: 1280,
+		height: 720,
+	},
+	{
+		slug: 'synthwave',
+		name: 'Synthwave',
+		category: 'shaders',
+		width: 1280,
+		height: 720,
+	},
+	{
+		slug: 'mushrooms',
+		name: 'Mushrooms',
+		category: 'shaders',
+		width: 1280,
+		height: 720,
+	},
 ] as const satisfies readonly CatalogEntry[];
