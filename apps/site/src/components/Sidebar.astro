@@ -1,6 +1,6 @@
 ---
 import MobileMenuFooter from '@astrojs/starlight/components/MobileMenuFooter.astro';
-import {elements} from '../data/elements';
+import {elements, elementCategories} from '../data/elements';
 const current = Astro.url.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
 const isCurrent = (href: string) => current === href.replace(/\.html$/, '');
 ---
@@ -8,12 +8,15 @@ const isCurrent = (href: string) => current === href.replace(/\.html$/, '');
 	<a class="overview-link" href="/" aria-current={current === '/' || current === '/index' ? 'page' : undefined}>
 		Browse collection <span aria-hidden="true">↗</span>
 	</a>
-	<ul class="element-nav-list">
-		{elements.map(entry => <li><a href={`/${entry.slug}.html`} aria-current={isCurrent(`/${entry.slug}`) ? 'page' : undefined}>
-			<span>{entry.title}</span>
-			<span class="nav-active-dot" aria-hidden="true"></span>
-		</a></li>)}
-	</ul>
+	{elementCategories.map(category => <div class="nav-category">
+		<p class="nav-label" id={`nav-${category.id}`}>{category.title}</p>
+		<ul class="element-nav-list" aria-labelledby={`nav-${category.id}`}>
+			{elements.filter(entry => entry.category === category.id).map(entry => <li><a href={`/${entry.slug}.html`} aria-current={isCurrent(`/${entry.slug}`) ? 'page' : undefined}>
+				<span>{entry.title}</span>
+				<span class="nav-active-dot" aria-hidden="true"></span>
+			</a></li>)}
+		</ul>
+	</div>)}
 	<div class="nav-resources">
 		<p class="nav-label">RESOURCES</p>
 		<a href="/getting-started.html" aria-current={isCurrent('/getting-started') ? 'page' : undefined}>Getting started <span aria-hidden="true">↗</span></a>

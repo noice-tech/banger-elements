@@ -30,8 +30,12 @@ export default function Preview({
 		let frame = 0;
 		let settledFrames = 0;
 		let buffering = false;
-		const onWaiting = () => { buffering = true; };
-		const onResume = () => { buffering = false; };
+		const onWaiting = () => {
+			buffering = true;
+		};
+		const onResume = () => {
+			buffering = false;
+		};
 		player.addEventListener('waiting', onWaiting);
 		player.addEventListener('resume', onResume);
 		const revealWhenReady = () => {
@@ -52,6 +56,7 @@ export default function Preview({
 	const example = examples[selected];
 	const durationInSeconds =
 		selected === 'ferrofluid' ||
+		selected === 'trip' ||
 		selected === 'halo' ||
 		selected === 'audio-particles' ||
 		selected === 'combined'

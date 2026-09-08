@@ -15,4 +15,7 @@ export const compositions = [
 	{id: 'Halo', slug: 'halo'},
 	{id: 'AudioParticles', slug: 'audio-particles'},
 	{id: 'HaloAndParticles', slug: null},
+	{id: 'Trip', slug: 'trip'},
+	{id: 'TripCustom', slug: null},
+	{id: 'TripAndCircle', slug: null},
 ] as const;

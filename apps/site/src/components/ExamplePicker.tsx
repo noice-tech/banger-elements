@@ -77,7 +77,7 @@ export default function ExamplePicker({
 				</div>
 				{active.id !== 'combined' && (
 					<p className="example-code-note">
-						This snippet selects the variant. The preview uses curated colors and audio settings.
+						This snippet sets up the element. The preview may use curated colors and audio settings.
 					</p>
 				)}
 				<pre tabIndex={0} aria-label={`${active.label} code`}>

@@ -9,6 +9,22 @@ const circleCode = (variant: string, props = '') => `import {Circle} from './cir
 
 export const examplePresets = [
 	{
+		id: 'trip',
+		group: 'Shaders',
+		label: 'Trip',
+		description:
+			'A full-frame psychedelic background. Change its tempo and colors, then layer a visualizer on top with playback enabled on only one element.',
+		code: `import {Trip} from './trip.element';
+
+// Inside your Remotion composition:
+<Trip
+  baseColor="#ff00ff" intensifyColor="#9333ea"
+  thickness={1} pattern={0.7} intensity={10}
+  bpm={120} timeOffsetInSeconds={0}
+/>`,
+		links: [{label: 'Open Trip', href: '/trip.html'}],
+	},
+	{
 		id: 'spectre',
 		group: 'Spectre',
 		label: 'Frequency bars',
@@ -97,4 +113,4 @@ export const HaloAndParticles = () => {
 ] as const;
 
 export type ExampleId = (typeof examplePresets)[number]['id'];
-export const exampleGroups = ['Spectre', 'Circle', 'Combined'] as const;
+export const exampleGroups = ['Shaders', 'Spectre', 'Circle', 'Combined'] as const;

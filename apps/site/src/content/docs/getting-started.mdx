@@ -27,6 +27,17 @@ Use **Add Library to Studio** at the bottom of a page. Confirm in Studio and res
 import { Config } from "@remotion/cli/config";
 ```
 
+## Visualizers and shaders
+
+**Visualizers** draw your audio as shapes, spectra and particles. **Shaders** are full-frame procedural backgrounds; start with [Trip](/trip.html).
+
+Trip preserves banger.show's five controls: `baseColor`, `intensifyColor`, `thickness`, `pattern` and `intensity`. Its `intensity` changes the raymarch iteration count, **not audio gain**; fractional values truncate to whole iterations. Use `inputGainDb` for audio response.
+
+- `bpm` sets the animation tempo (default 120). It is not automatic beat detection or a keyframable speed ramp.
+- `timeOffsetInSeconds` selects animation phase independently of the audio trim. Motion uses the element's local frame, so use this offset to align separately placed instances.
+- Trip is opaque within its bounds. Place it behind other elements and enable audio playback on only one layer.
+- The original spherical projection uses a fixed camera; actual width/height determine perspective framing. Higher intensity costs more GPU time. Animation continues in silence and after audio ends.
+
 ## Audio setup
 
 No props are required: `audioSrc` defaults to Remotion’s hosted example audio. Choose an asset with the Studio control, or supply an HTTPS URL that allows CORS. For an asset in your own Remotion project's `public/` directory:
@@ -84,4 +95,4 @@ Replace the entry point, composition ID and output path with those from your pro
 
 ## Renderer compatibility
 
-Waveform and Oscilloscope use SVG. Spectre, Circle, Pulsar, Halo, Audio Particles and Ferrofluid require WebGL2 with graphics acceleration. Unsupported shaders report failure rather than switching to a different visual. Avoid running many WebGL previews at once.
+Waveform and Oscilloscope use SVG. Spectre, Circle, Pulsar, Halo, Audio Particles, Ferrofluid and Trip require WebGL2 with graphics acceleration. Unsupported shaders report failure rather than switching to a different visual. Avoid running many WebGL previews at once.

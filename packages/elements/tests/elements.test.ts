@@ -9,6 +9,15 @@ const manifest = JSON.parse(fs.readFileSync('package.json', 'utf8')) as {
 	dependencies: Record<string, string>;
 };
 
+test('catalog: stable identities and explicit purpose-based categories', () => {
+	assert.equal(new Set(catalog.map((entry) => entry.slug)).size, catalog.length);
+	assert.equal(catalog.filter((entry) => entry.category === 'visualizers').length, 8);
+	assert.deepEqual(
+		catalog.filter((entry) => entry.category === 'shaders').map((entry) => entry.slug),
+		['trip'],
+	);
+});
+
 for (const entry of catalog) {
 	test(`${entry.name}: standalone Element contract`, () => {
 		const sourceCode = fs.readFileSync(`dist/elements/${entry.slug}.tsx`, 'utf8');

@@ -1,9 +1,9 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-import {elements} from '../data/elements';
+import {elements, elementCategories} from '../data/elements';
 const svgCount = elements.filter(entry => entry.renderer === 'SVG').length;
 ---
-<StarlightPage frontmatter={{title: 'Give your sound a shape.', description: `${elements.length} source-installable audio visualizers for Remotion.`, tableOfContents: false}}>
+<StarlightPage frontmatter={{title: 'Give your sound a shape.', description: `${elements.length} source-installable audio visualizers and shaders for Remotion.`, tableOfContents: false}}>
 	<div class="collection-page not-content">
 		<header class="collection-hero">
 			<h1 id="_top">Give your sound<br /><span>a shape.</span></h1>
@@ -12,16 +12,19 @@ const svgCount = elements.filter(entry => entry.renderer === 'SVG').length;
 			<div class="hero-meta"><span>Open source</span><span>Audio-reactive</span><span>Made for Remotion</span></div>
 		</header>
 		<div class="collection-heading"><h2 id="collection">Elements <span class="collection-count">{String(elements.length).padStart(2, '0')}</span></h2><span>{svgCount} SVG · {elements.length - svgCount} WebGL2</span></div>
+		{elementCategories.map(category => <section class="collection-category" aria-labelledby={category.id}>
+			<div class="collection-heading"><h3 id={category.id}>{category.title} <span class="collection-count">{String(elements.filter(entry => entry.category === category.id).length).padStart(2, '0')}</span></h3></div>
 		<div class="element-grid">
-			{elements.map((entry, index) => <a class="element-card" href={`/${entry.slug}.html`}>
+			{elements.filter(entry => entry.category === category.id).map(entry => <a class="element-card" href={`/${entry.slug}.html`}>
 				<div class="card-art">
 					<video muted loop playsinline preload="none" poster={`/posters/${entry.slug}.webp`} aria-hidden="true"><source src={`/previews/${entry.slug}.webm`} type="video/webm" /></video>
-					<span class="card-number">{String(index + 1).padStart(2, '0')}</span>
+					<span class="card-number">{String(elements.indexOf(entry) + 1).padStart(2, '0')}</span>
 					<span class="card-open" aria-hidden="true">↗</span>
 				</div>
-				<div class="card-copy"><div class="card-title"><h3>{entry.title}</h3><span class="renderer-label">{entry.renderer}</span></div><p>{entry.tagline}</p></div>
+				<div class="card-copy"><div class="card-title"><h4>{entry.title}</h4><span class="renderer-label">{entry.renderer}</span></div><p>{entry.tagline}</p></div>
 			</a>)}
 		</div>
+		</section>)}
 	</div>
 </StarlightPage>
 <script>

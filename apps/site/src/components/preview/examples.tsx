@@ -2,7 +2,7 @@ import {AbsoluteFill} from 'remotion';
 import type {ComponentProps, ComponentType} from 'react';
 import type {Control} from './controls';
 import type {PreviewProps as Props} from './types';
-import {range, color, select, booleanControl} from './controls';
+import {range, color, select, booleanControl, numberControl} from './controls';
 import {
 	Waveform,
 	Spectre,
@@ -12,6 +12,7 @@ import {
 	Halo,
 	AudioParticles,
 	Ferrofluid,
+	Trip,
 } from '../../../../../packages/elements/dist/components';
 
 type PreviewExample<C extends ComponentType<Props>> = {
@@ -69,6 +70,32 @@ const HaloAndParticles = (props: Props) => {
 	);
 };
 export const examples = {
+	trip: {
+		component: Trip,
+		width: 1280,
+		height: 720,
+		props: {
+			baseColor: '#ff00ff',
+			intensifyColor: '#9333ea',
+			thickness: 1,
+			pattern: 0.7,
+			intensity: 10,
+			bpm: 120,
+			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
+		},
+		controls: [
+			color('baseColor', 'Base color'),
+			color('intensifyColor', 'Intensify color'),
+			// A native range with min 0.01 / step 0.05 silently snaps the source default 1 to 1.01.
+			range('thickness', 'Thickness', 0.01, 1.5, 0.01),
+			range('pattern', 'Pattern', 0.7, 9, 0.25),
+			range('intensity', 'Raymarch intensity', 0, 25, 0.5),
+			range('bpm', 'Tempo (BPM)', 1, 300, 1),
+			numberControl('timeOffsetInSeconds', 'Animation offset (s)', 0, 86400, 0.01),
+			gain,
+		],
+	} satisfies PreviewExample<typeof Trip>,
 	ferrofluid: {
 		component: Ferrofluid,
 		width: 1280,
@@ -385,7 +412,7 @@ export const examples = {
 } as const;
 export type PreviewKind = keyof typeof examples;
 export const defaultAudioFor = (kind: PreviewKind) => {
-	if (kind === 'halo' || kind === 'ferrofluid') return HALO_AUDIO;
+	if (kind === 'halo' || kind === 'ferrofluid' || kind === 'trip') return HALO_AUDIO;
 	if (kind === 'audio-particles' || kind === 'combined') return AUDIO_PARTICLES_AUDIO;
 	return DEFAULT_AUDIO;
 };

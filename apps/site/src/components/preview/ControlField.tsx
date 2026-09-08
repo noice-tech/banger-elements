@@ -96,7 +96,7 @@ export const ControlField = ({
 			<span>
 				{control.label}
 				<output>
-					{Number(value).toFixed((control.step ?? 1) <= 0.01 ? 2 : (control.step ?? 1) < 1 ? 1 : 0)}
+					{Number(value).toFixed(String(control.step ?? 1).split('.')[1]?.length ?? 0)}
 				</output>
 			</span>
 			<input
