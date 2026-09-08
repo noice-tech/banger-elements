@@ -615,7 +615,6 @@ function SynthwaveCanvas(frame: SynthwaveFrame) {
 	);
 }
 
-// Ported from banger.show; retain the original shader projection and color output.
 const fragmentShader = `#version 300 es
 precision highp float;
 precision highp int;
