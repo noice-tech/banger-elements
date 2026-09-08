@@ -1,4 +1,6 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
+import {configuredPayload, type SourcePayload} from './configured-source';
+import type {PreviewProps} from './preview/types';
 import {
 	addElementLibraryToStudio,
 	installInStudio,
@@ -7,18 +9,37 @@ import {
 	type StudioElementPayload,
 } from '@remotion/studio-protocol';
 
-export default function StudioActions({slug}: {slug?: string}) {
-	const [payload, setPayload] = useState<StudioElementPayload | null>(null);
+export default function StudioActions({
+	slug,
+	previewProps,
+	assetPending = false,
+}: {
+	slug?: string;
+	previewProps?: PreviewProps;
+	assetPending?: boolean;
+}) {
+	const [template, setTemplate] = useState<SourcePayload | null>(null);
+	const {payload, error} = useMemo<{payload: StudioElementPayload | null; error: string}>(() => {
+		if (!template || !previewProps) return {payload: null, error: ''};
+		if (assetPending)
+			return {payload: null, error: 'Use a hosted image URL before you install this element.'};
+		try {
+			return {payload: configuredPayload(template, previewProps), error: ''};
+		} catch (error) {
+			return {payload: null, error: error instanceof Error ? error.message : String(error)};
+		}
+	}, [template, previewProps, assetPending]);
 	const [message, setMessage] = useState('');
 	const [busy, setBusy] = useState(false);
 	useEffect(() => {
 		if (!slug) return;
+		setTemplate(null);
 		const controller = new AbortController();
 		fetch(`/elements/${slug}.json`, {signal: controller.signal})
 			.then(async (response) => {
 				if (!response.ok)
 					throw new Error(`Payload request failed (${response.status}). Reload to retry.`);
-				setPayload((await response.json()) as StudioElementPayload);
+				setTemplate((await response.json()) as SourcePayload);
 			})
 			.catch((error: Error) => {
 				if (!controller.signal.aborted) setMessage(error.message);
@@ -77,7 +98,7 @@ export default function StudioActions({slug}: {slug?: string}) {
 				) : null}
 			</div>
 			<p role="status" aria-live="polite">
-				{message}
+				{error || message}
 			</p>
 		</div>
 	);

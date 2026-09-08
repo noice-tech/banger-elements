@@ -3,7 +3,6 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import Preview from '../components/Preview';
 import type {PreviewKind} from '../components/Preview';
 import GitHubIcon from '../components/GitHubIcon.astro';
-import StudioActions from '../components/StudioActions';
 import {elements, elementCategories} from '../data/elements';
 export function getStaticPaths() {
 	return elements.map(entry => ({params: {element: entry.slug}, props: {entry}}));
@@ -22,22 +21,22 @@ const related = elements.filter(element => element.slug !== entry.slug).sort((a,
 		<div class="element-workbench not-content">
 			<div class="element-preview">
 				<div class="stage-heading"><span><span class="status-dot" aria-hidden="true"></span> LIVE PREVIEW</span></div>
-				<Preview slug={entry.slug as PreviewKind} editable controlsTargetId={`${entry.slug}-preview-controls`} client:only="react">
+				<Preview slug={entry.slug as PreviewKind} editable installTargetId={`${entry.slug}-studio-actions`} controlsTargetId={`${entry.slug}-preview-controls`} client:only="react">
 					<div slot="fallback" class="preview-block not-content">
 						<div class="preview-stage"><div class="preview-placeholder" role="status" aria-label="Loading preview"></div></div>
 						<div class="preview-caption" aria-hidden="true">
 							<span>60 FPS · {['ferrofluid', 'trip', 'fractals', 'hyperloop', 'downfall', 'rail', 'rain', 'space', 'synthwave', 'mushrooms', 'halo', 'audio-particles', 'combined'].includes(entry.slug) ? 16 : 9} seconds · Press play to hear audio</span>
-							<span>Curated preview settings — downloaded source defaults are unchanged</span>
+							<span>Studio uses your preview settings. Download TSX uses the original defaults.</span>
 						</div>
 					</div>
 				</Preview>
 				<section class="preview-install" aria-label={`${entry.title} installation`}>
-					<StudioActions slug={entry.slug} client:load />
+					<div id={`${entry.slug}-studio-actions`}></div>
 					<div class="source-links">
 						<a href={`/elements/${entry.slug}.tsx`} download={`${entry.slug}.element.tsx`}>Download TSX <span aria-hidden="true">↓</span></a>
 						<a href={`https://github.com/noice-tech/banger-elements/blob/main/packages/elements/src/elements/${entry.slug}/${entry.slug}.tsx`} target="_blank" rel="noreferrer"><GitHubIcon /> GitHub source</a>
 					</div>
-					<p class="install-note">Installs original source defaults, not preview changes. Confirm installation in Studio.</p>
+					<p class="install-note">Install or drag to use your preview settings. Confirm the request in Studio.</p>
 					<details class="install-help"><summary>Need help connecting?</summary><p>Open a composition in a compatible Remotion Studio first. Install and drag both require confirmation. On touch devices, use Install in Studio.</p></details>
 				</section>
 				<p class="preview-description">{entry.description}</p>
@@ -49,7 +48,7 @@ const related = elements.filter(element => element.slug !== entry.slug).sort((a,
 		<div class="element-documentation">
 			<h2 id="after-installation">After installation</h2>
 			<p>The Studio protocol handles source installation and insertion, so this workflow does not require a manual import. Confirm the request in Studio, then select the inserted Element to adjust its Interactive controls.</p>
-			<p>No props are required. The installed default references Remotion’s hosted example audio; no audio is bundled here. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track, or copy the configured JSX from the preview controls to reproduce these settings in code.</p>
+			<p>No props are required. The installed source uses the audio URL from your preview. Local files need a hosted URL before installation. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track, or copy the configured JSX from the preview controls for use with the original source.</p>
 			<details class="reference-section" open><summary id="controls">Key controls</summary><ul>{entry.controls.map(control => <li>{control}</li>)}</ul><p>All Elements expose <code>audioSrc</code>, <code>audioOffsetInSeconds</code>, <code>playAudio</code>, <code>inputGainDb</code>, <code>width</code> and <code>height</code>. Select the Element itself in Studio to see its Interactive controls.</p></details>
 			<details class="reference-section" open><summary id="limitations">Before you render</summary><aside class="limitation">{entry.limitation}</aside>{entry.renderer === 'WebGL2' && <p>Depending on your rendering environment, you may need to enable ANGLE when rendering with Remotion. If the element renders blank or reports a WebGL error, try adding <code>--gl=angle</code> to your <code>remotion render</code> command. See <a href="/getting-started.html#rendering-with-angle">Rendering with ANGLE</a>.</p>}<p>Playback is enabled by default. Stacking elements? Enable only one audio track. Analysis gain affects visuals, not playback volume. Each instance decodes its own fixed audio windows, so stacked instances use more memory.</p></details>
 		</div>
