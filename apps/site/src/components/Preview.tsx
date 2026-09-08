@@ -57,6 +57,11 @@ export default function Preview({
 	const durationInSeconds =
 		selected === 'ferrofluid' ||
 		selected === 'trip' ||
+		selected === 'fractals' ||
+		selected === 'hyperloop' ||
+		selected === 'downfall' ||
+		selected === 'rail' ||
+		selected === 'rain' ||
 		selected === 'space' ||
 		selected === 'synthwave' ||
 		selected === 'mushrooms' ||
