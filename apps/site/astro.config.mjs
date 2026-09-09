@@ -24,6 +24,7 @@ export default defineConfig({
 			favicon: '/brand/banger-icon.png',
 			customCss: ['./src/style.css'],
 			components: {
+				SocialIcons: './src/components/HeaderActions.astro',
 				Footer: './src/components/Footer.astro',
 				SiteTitle: './src/components/SiteTitle.astro',
 				Sidebar: './src/components/Sidebar.astro',

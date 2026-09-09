@@ -1,7 +1,9 @@
 ---
 import DefaultPageTitle from '@astrojs/starlight/components/PageTitle.astro';
-import {elements} from '../data/elements';
+import {elements, elementCategories} from '../data/elements';
 const path = Astro.url.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
-const showcase = path === '/' || path === '/index' || elements.some(entry => path === `/${entry.slug}`);
+const showcase = path === '/' || path === '/index'
+	|| elementCategories.some(category => path === `/${category.id}`)
+	|| elements.some(entry => path === `/${entry.slug}`);
 ---
 {showcase ? <span class="showcase-title-placeholder" hidden /> : <DefaultPageTitle />}
