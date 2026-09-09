@@ -1,8 +1,18 @@
 import catalog from '../../../../packages/elements/dist/catalog.json';
 
 export const elementCategories = [
-	{id: 'visualizers', title: 'Visualizers'},
-	{id: 'shaders', title: 'Shaders'},
+	{
+		id: 'visualizers',
+		title: 'Visualizers',
+		description: 'Waveforms, spectrums and reactive forms.',
+		featured: ['ferrofluid', 'halo', 'spectre', 'circle', 'waveform', 'audio-particles'],
+	},
+	{
+		id: 'shaders',
+		title: 'Shaders',
+		description: 'Immersive backgrounds, procedural worlds and evolving textures.',
+		featured: ['space', 'synthwave', 'hyperloop', 'rain', 'mushrooms', 'downfall'],
+	},
 ] as const;
 
 const details = {

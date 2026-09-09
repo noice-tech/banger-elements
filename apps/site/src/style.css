@@ -282,7 +282,7 @@ a[aria-current='page'] .nav-active-dot {
 	color: var(--sl-color-accent-high);
 }
 .collection-hero {
-	padding: 1.5rem 0 3rem;
+	padding: 0.5rem 0 2.5rem;
 	position: relative;
 	isolation: isolate;
 }
@@ -399,7 +399,165 @@ a[aria-current='page'] .nav-active-dot {
 	padding-bottom: 1.2rem;
 }
 .collection-category + .collection-category {
-	margin-top: 3rem;
+	margin-top: 3.5rem;
+}
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+.collection-toolbar {
+	scroll-margin-top: calc(var(--sl-nav-height) + 1rem);
+	margin-bottom: 2.5rem;
+	border-bottom: 1px solid var(--sl-color-gray-5);
+}
+.collection-toolbar-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 1rem;
+	margin-bottom: 1.25rem;
+}
+.collection-toolbar h2 {
+	margin: 0;
+	font-size: 1.15rem;
+	font-weight: 650;
+}
+.collection-search {
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	padding: 0 0.85rem;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 8px;
+	color: var(--sl-color-gray-3);
+	background: var(--sl-color-gray-6);
+	width: min(100%, 19rem);
+	box-sizing: border-box;
+}
+.collection-search:focus-within {
+	border-color: var(--sl-color-accent-high);
+}
+.collection-search input {
+	width: 100%;
+	min-width: 0;
+	min-height: 44px;
+	border: 0;
+	background: transparent;
+	color: var(--sl-color-white);
+	font: inherit;
+	font-size: 0.8rem;
+}
+.collection-search input::placeholder {
+	color: var(--sl-color-gray-3);
+}
+.collection-filters {
+	display: flex;
+	gap: 1.5rem;
+	overflow-x: auto;
+}
+.collection-filters a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-height: 44px;
+	border-bottom: 2px solid transparent;
+	color: var(--sl-color-gray-2);
+	text-decoration: none;
+	font-size: 0.8rem;
+	white-space: nowrap;
+}
+.collection-filters a[aria-current] {
+	border-color: var(--sl-color-accent-high);
+	color: var(--sl-color-white);
+}
+.collection-filters a:hover {
+	color: var(--sl-color-accent-high);
+}
+.collection-filters a:focus-visible {
+	outline-offset: -3px;
+}
+.collection-filters a span {
+	font-size: 0.65rem;
+	color: var(--sl-color-gray-3);
+}
+.category-heading {
+	margin-bottom: 1.4rem;
+}
+.category-eyebrow {
+	color: var(--sl-color-accent-high);
+	font-size: 1rem;
+	font-weight: 600;
+	margin: 0 0 0.6rem;
+	scroll-margin-top: calc(var(--sl-nav-height) + 1rem);
+}
+.category-heading p {
+	color: var(--sl-color-gray-2);
+	font-size: 0.8rem;
+	line-height: 1.7;
+	margin: 0;
+}
+.category-view-all {
+	margin-top: 1rem;
+	color: var(--sl-color-accent-high);
+}
+.category-view-all:hover {
+	text-decoration: underline;
+}
+.collection-empty {
+	padding: 3rem 1rem;
+	text-align: center;
+	border: 1px dashed var(--sl-color-gray-5);
+	border-radius: 12px;
+}
+.collection-empty h3 {
+	font-size: 1.4rem;
+	margin: 0;
+}
+.collection-empty p {
+	font-size: 0.85rem;
+	color: var(--sl-color-gray-2);
+}
+.nav-category summary.nav-label {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-height: 44px;
+	margin: 0.65rem 0 0.2rem;
+	padding: 0 0.7rem;
+	cursor: pointer;
+	list-style: none;
+}
+.nav-category summary::-webkit-details-marker {
+	display: none;
+}
+.nav-category summary:hover,
+.nav-category[open] summary {
+	color: var(--sl-color-gray-1);
+}
+.nav-category-count {
+	margin-left: auto;
+	font:
+		0.6rem ui-monospace,
+		monospace;
+	color: var(--sl-color-gray-3);
+	letter-spacing: 0;
+}
+.nav-category summary::after {
+	content: '›';
+	font-size: 1rem;
+	line-height: 1;
+	transform: rotate(0deg);
+}
+.nav-category[open] summary::after {
+	transform: rotate(90deg);
 }
 .collection-heading h2,
 .collection-heading h3 {
@@ -446,7 +604,7 @@ a[aria-current='page'] .nav-active-dot {
 .card-art {
 	position: relative;
 	background: #09090d;
-	aspect-ratio: 1.65;
+	aspect-ratio: 16 / 9;
 	overflow: hidden;
 }
 .card-art video {
@@ -1218,6 +1376,12 @@ a[aria-current='page'] .nav-active-dot {
 	.hero-description {
 		font-size: 0.8rem;
 	}
+	.collection-search {
+		width: 100%;
+	}
+	.collection-search input {
+		font-size: 16px;
+	}
 	.hero-meta {
 		gap: 0.8rem;
 		font-size: 0.58rem;
@@ -1227,9 +1391,6 @@ a[aria-current='page'] .nav-active-dot {
 	}
 	.element-grid {
 		grid-template-columns: 1fr;
-	}
-	.card-art {
-		aspect-ratio: 1.9;
 	}
 	.card-title h4 {
 		font-size: 1rem;
