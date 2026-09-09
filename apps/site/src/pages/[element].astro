@@ -14,7 +14,7 @@ const related = elements.filter(element => element.slug !== entry.slug).sort((a,
 <StarlightPage frontmatter={{title: entry.title, description: entry.description, tableOfContents: false}}>
 	<div class="element-page">
 		<header class="element-heading not-content">
-			<a class="back-link" href={`/#${category.id}`}>← {category.title}</a>
+			<a class="back-link" href={`/${category.id}`}>← {category.title}</a>
 			<div class="element-title-row"><h1 id="_top">{entry.title}</h1><div class="tags"><span>{category.title}</span><span>{entry.renderer}</span></div></div>
 			<p>{entry.tagline}</p>
 		</header>

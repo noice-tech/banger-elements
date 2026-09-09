@@ -8,15 +8,16 @@ const isCurrent = (href: string) => current === href.replace(/\.html$/, '');
 	<a class="overview-link" href="/" aria-current={current === '/' || current === '/index' ? 'page' : undefined}>
 		Browse collection <span aria-hidden="true">↗</span>
 	</a>
-	{elementCategories.map(category => <div class="nav-category">
-		<p class="nav-label" id={`nav-${category.id}`}>{category.title}</p>
+	{elementCategories.map(category => <details class="nav-category" open={isCurrent(`/${category.id}`) || elements.some(entry => entry.category === category.id && isCurrent(`/${entry.slug}`))}>
+		<summary class="nav-label" id={`nav-${category.id}`}><span>{category.title}</span><span class="nav-category-count">{elements.filter(entry => entry.category === category.id).length}</span></summary>
 		<ul class="element-nav-list" aria-labelledby={`nav-${category.id}`}>
+			<li><a href={`/${category.id}`} aria-current={isCurrent(`/${category.id}`) ? 'page' : undefined}>All {category.title.toLowerCase()} <span aria-hidden="true">↗</span></a></li>
 			{elements.filter(entry => entry.category === category.id).map(entry => <li><a href={`/${entry.slug}.html`} aria-current={isCurrent(`/${entry.slug}`) ? 'page' : undefined}>
 				<span>{entry.title}</span>
 				<span class="nav-active-dot" aria-hidden="true"></span>
 			</a></li>)}
 		</ul>
-	</div>)}
+	</details>)}
 	<div class="nav-resources">
 		<p class="nav-label">RESOURCES</p>
 		<a href="/getting-started.html" aria-current={isCurrent('/getting-started') ? 'page' : undefined}>Getting started <span aria-hidden="true">↗</span></a>

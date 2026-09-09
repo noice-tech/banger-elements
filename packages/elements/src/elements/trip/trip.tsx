@@ -1,9 +1,9 @@
-import { Audio } from "@remotion/media";
+import {Audio} from '@remotion/media';
 import {
 	useWindowedAudioData,
 	visualizeAudio,
 	type MediaUtilsAudioData,
-} from "@remotion/media-utils";
+} from '@remotion/media-utils';
 import React, {
 	forwardRef,
 	useRef,
@@ -11,7 +11,7 @@ import React, {
 	useId,
 	useMemo,
 	useLayoutEffect,
-} from "react";
+} from 'react';
 import {
 	Interactive,
 	Sequence,
@@ -23,7 +23,7 @@ import {
 	type InteractiveTransformProps,
 	type SequenceControls,
 	type InteractivitySchema,
-} from "remotion";
+} from 'remotion';
 
 type TripOptions = {
 	readonly width?: number;
@@ -46,109 +46,107 @@ type TripProps = InteractiveBaseProps & InteractiveTransformProps & TripOptions;
 const tripSchema = {
 	...Interactive.baseSchema,
 	audioSrc: {
-		type: "asset",
-		default:
-			"https://remotion.media/elements/remotion-made-this-picture-move.mp3",
-		description: "Audio source",
+		type: 'asset',
+		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
+		description: 'Audio source',
 		keyframable: false,
 	},
 	audioOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description: "Audio source offset in seconds",
+		description: 'Audio source offset in seconds',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	playAudio: {
-		type: "boolean",
+		type: 'boolean',
 		default: true,
-		description: "Play audio (disable when stacking)",
+		description: 'Play audio (disable when stacking)',
 		keyframable: false,
 	},
 
 	width: {
-		type: "number",
+		type: 'number',
 		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Width",
+		description: 'Width',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	height: {
-		type: "number",
+		type: 'number',
 		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Height",
+		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	baseColor: { type: "color", default: "#ff00ff", description: "Base color" },
+	baseColor: {type: 'color', default: '#ff00ff', description: 'Base color'},
 	intensifyColor: {
-		type: "color",
-		default: "#9333ea",
-		description: "Intensify color",
+		type: 'color',
+		default: '#9333ea',
+		description: 'Intensify color',
 	},
 	inputGainDb: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: -30,
 		max: 30,
 		step: 1,
-		description: "Visual gain in dB",
+		description: 'Visual gain in dB',
 		hiddenFromList: false,
 	},
 	thickness: {
-		type: "number",
+		type: 'number',
 		default: 1,
 		min: 0.01,
 		max: 1.5,
 		step: 0.05,
-		description: "Thickness",
+		description: 'Thickness',
 		hiddenFromList: false,
 	},
 	pattern: {
-		type: "number",
+		type: 'number',
 		default: 0.7,
 		min: 0.7,
 		max: 9,
 		step: 0.25,
-		description: "Pattern",
+		description: 'Pattern',
 		hiddenFromList: false,
 	},
 	intensity: {
-		type: "number",
+		type: 'number',
 		default: 10,
 		min: 0,
 		max: 25,
 		step: 0.5,
-		description: "Raymarch intensity (whole iterations; not audio gain)",
+		description: 'Raymarch intensity (whole iterations; not audio gain)',
 		hiddenFromList: false,
 	},
 	bpm: {
-		type: "number",
+		type: 'number',
 		default: 120,
 		min: 1,
 		max: 300,
 		step: 1,
-		description: "Animation tempo in BPM",
+		description: 'Animation tempo in BPM',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	timeOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description:
-			"Animation phase offset in seconds (independent of audio trim)",
+		description: 'Animation phase offset in seconds (independent of audio trim)',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -157,17 +155,10 @@ const tripSchema = {
 
 const decodeWindowSeconds = 20;
 
-function hasCompleteAudioWindow(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
+function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, time: number) {
 	const chunk = Math.floor(time / decodeWindowSeconds);
 	const expectedStart = Math.max(0, (chunk - 1) * decodeWindowSeconds);
-	const expectedEnd = Math.min(
-		audioData.durationInSeconds,
-		(chunk + 2) * decodeWindowSeconds,
-	);
+	const expectedEnd = Math.min(audioData.durationInSeconds, (chunk + 2) * decodeWindowSeconds);
 	return (
 		Math.abs(offset - expectedStart) < 1 / audioData.sampleRate &&
 		audioData.channelWaveforms[0].length >=
@@ -197,15 +188,14 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 	);
 	// The current chunk can arrive before its retained neighbors.
 	const complete =
-		audioData === null ||
-		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
-	const { delayRender, continueRender } = useDelayRender();
+		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (complete) return;
-		const handle = delayRender("Waiting for complete visualizer audio history");
+		const handle = delayRender('Waiting for complete visualizer audio history');
 		return () => continueRender(handle);
 	}, [complete, delayRender, continueRender]);
-	return { ...result, audioData: complete ? audioData : null };
+	return {...result, audioData: complete ? audioData : null};
 }
 
 type AudioInput = {
@@ -226,22 +216,18 @@ function computeBars({
 	const maxFreq = 22000;
 	const defaultFill = 0.0025;
 	const freqStep = (maxFreq - minFreq) / allVisualizationValues.length;
-	const bars = Array.from({ length: outputBarsCount }, () => defaultFill);
+	const bars = Array.from({length: outputBarsCount}, () => defaultFill);
 	const binSize = 1 / outputBarsCount;
 	for (let index = 0; index < allVisualizationValues.length; index++) {
 		const frequency = minFreq + index * freqStep;
-		const logFrequency =
-			Math.log10(frequency / minFreq) / Math.log10(maxFreq / minFreq);
+		const logFrequency = Math.log10(frequency / minFreq) / Math.log10(maxFreq / minFreq);
 		const binIndex = Math.floor(logFrequency / binSize);
 		if (binIndex < outputBarsCount) {
 			bars[binIndex] +=
 				binIndex < Math.floor(outputBarsCount * 0.334415584415584)
 					? allVisualizationValues[index] * 1.3
 					: allVisualizationValues[index];
-			if (
-				outputBarsCount !== 308 &&
-				binIndex >= Math.floor(outputBarsCount * 0.9845)
-			) {
+			if (outputBarsCount !== 308 && binIndex >= Math.floor(outputBarsCount * 0.9845)) {
 				bars[binIndex] = defaultFill;
 			}
 		}
@@ -250,10 +236,7 @@ function computeBars({
 }
 
 function spectrumBars(input: AudioInput, count = 308) {
-	if (
-		input.sourceTime < 0 ||
-		input.sourceTime >= input.audioData.durationInSeconds
-	)
+	if (input.sourceTime < 0 || input.sourceTime >= input.audioData.durationInSeconds)
 		return Array(count).fill(0) as number[];
 	const frequencies = visualizeAudio({
 		audioData: input.audioData,
@@ -261,7 +244,7 @@ function spectrumBars(input: AudioInput, count = 308) {
 		frame: input.sourceTime * 60,
 		fps: 60,
 		numberOfSamples: 4096,
-		optimizeFor: "speed",
+		optimizeFor: 'speed',
 		smoothing: true,
 	});
 	return computeBars({
@@ -272,17 +255,10 @@ function spectrumBars(input: AudioInput, count = 308) {
 
 // All numeric entry points are bounded, including direct JSX and non-finite values.
 function bounded(value: number, min: number, max: number, fallback: number) {
-	return Number.isFinite(value)
-		? Math.min(max, Math.max(min, value))
-		: fallback;
+	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
 
-function tripTiming(
-	frame: number,
-	fps: number,
-	audioOffset: number,
-	timeOffset: number,
-) {
+function tripTiming(frame: number, fps: number, audioOffset: number, timeOffset: number) {
 	const offsetFrames = Math.round(bounded(audioOffset, 0, 86400, 0) * fps);
 	return {
 		offsetFrames,
@@ -353,15 +329,15 @@ void main() {
 
 type TripFrame = Pick<
 	Required<TripOptions>,
-	| "width"
-	| "height"
-	| "baseColor"
-	| "intensifyColor"
-	| "thickness"
-	| "pattern"
-	| "intensity"
-	| "bpm"
-> & { readonly time: number; readonly bands: readonly number[] };
+	| 'width'
+	| 'height'
+	| 'baseColor'
+	| 'intensifyColor'
+	| 'thickness'
+	| 'pattern'
+	| 'intensity'
+	| 'bpm'
+> & {readonly time: number; readonly bands: readonly number[]};
 
 type TripState = {
 	readonly gl: WebGL2RenderingContext;
@@ -369,23 +345,23 @@ type TripState = {
 	readonly buffer: WebGLBuffer;
 	readonly vertexCount: number;
 	readonly uniforms: Record<
-		| "iGlobalTime"
-		| "iBpm"
-		| "iLowFreq"
-		| "iMidFreq"
-		| "iHighFreq"
-		| "iBaseColor"
-		| "iIntensifyColor"
-		| "iThickness"
-		| "iPattern"
-		| "iIntensity"
-		| "iAspect",
+		| 'iGlobalTime'
+		| 'iBpm'
+		| 'iLowFreq'
+		| 'iMidFreq'
+		| 'iHighFreq'
+		| 'iBaseColor'
+		| 'iIntensifyColor'
+		| 'iThickness'
+		| 'iPattern'
+		| 'iIntensity'
+		| 'iAspect',
 		WebGLUniformLocation | null
 	>;
 };
 
 function setupTrip(canvas: HTMLCanvasElement): TripState {
-	const gl = canvas.getContext("webgl2", {
+	const gl = canvas.getContext('webgl2', {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
@@ -393,10 +369,10 @@ function setupTrip(canvas: HTMLCanvasElement): TripState {
 	});
 	if (!gl)
 		throw new Error(
-			"Trip requires WebGL2. Enable browser graphics acceleration and reload Studio.",
+			'Trip requires WebGL2. Enable browser graphics acceleration and reload Studio.',
 		);
 	const program = gl.createProgram();
-	if (!program) throw new Error("Trip could not create a program.");
+	if (!program) throw new Error('Trip could not create a program.');
 	const shaders: WebGLShader[] = [];
 	let buffer: WebGLBuffer | null = null;
 	try {
@@ -405,32 +381,28 @@ function setupTrip(canvas: HTMLCanvasElement): TripState {
 			[gl.FRAGMENT_SHADER, fragmentShader],
 		] as const) {
 			const shader = gl.createShader(type);
-			if (!shader) throw new Error("Trip could not create a shader.");
+			if (!shader) throw new Error('Trip could not create a shader.');
 			shaders.push(shader);
 			gl.shaderSource(shader, source);
 			gl.compileShader(shader);
 			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-				throw new Error(
-					`Trip shader compilation failed: ${gl.getShaderInfoLog(shader)}`,
-				);
+				throw new Error(`Trip shader compilation failed: ${gl.getShaderInfoLog(shader)}`);
 			}
 			gl.attachShader(program, shader);
 		}
 		gl.linkProgram(program);
 		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-			throw new Error(
-				`Trip shader linking failed: ${gl.getProgramInfoLog(program)}`,
-			);
+			throw new Error(`Trip shader linking failed: ${gl.getProgramInfoLog(program)}`);
 		}
 		gl.useProgram(program);
 		buffer = gl.createBuffer();
-		if (!buffer) throw new Error("Trip could not create a vertex buffer.");
+		if (!buffer) throw new Error('Trip could not create a vertex buffer.');
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		const geometry = tripGeometry();
 		gl.bufferData(gl.ARRAY_BUFFER, geometry, gl.STATIC_DRAW);
 		for (const [name, size, offset] of [
-			["position", 3, 0],
-			["uv", 2, 12],
+			['position', 3, 0],
+			['uv', 2, 12],
 		] as const) {
 			const attribute = gl.getAttribLocation(program, name);
 			gl.enableVertexAttribArray(attribute);
@@ -442,17 +414,17 @@ function setupTrip(canvas: HTMLCanvasElement): TripState {
 			buffer,
 			vertexCount: geometry.length / 5,
 			uniforms: {
-				iGlobalTime: gl.getUniformLocation(program, "iGlobalTime"),
-				iBpm: gl.getUniformLocation(program, "iBpm"),
-				iLowFreq: gl.getUniformLocation(program, "iLowFreq"),
-				iMidFreq: gl.getUniformLocation(program, "iMidFreq"),
-				iHighFreq: gl.getUniformLocation(program, "iHighFreq"),
-				iBaseColor: gl.getUniformLocation(program, "iBaseColor"),
-				iIntensifyColor: gl.getUniformLocation(program, "iIntensifyColor"),
-				iThickness: gl.getUniformLocation(program, "iThickness"),
-				iPattern: gl.getUniformLocation(program, "iPattern"),
-				iIntensity: gl.getUniformLocation(program, "iIntensity"),
-				iAspect: gl.getUniformLocation(program, "iAspect"),
+				iGlobalTime: gl.getUniformLocation(program, 'iGlobalTime'),
+				iBpm: gl.getUniformLocation(program, 'iBpm'),
+				iLowFreq: gl.getUniformLocation(program, 'iLowFreq'),
+				iMidFreq: gl.getUniformLocation(program, 'iMidFreq'),
+				iHighFreq: gl.getUniformLocation(program, 'iHighFreq'),
+				iBaseColor: gl.getUniformLocation(program, 'iBaseColor'),
+				iIntensifyColor: gl.getUniformLocation(program, 'iIntensifyColor'),
+				iThickness: gl.getUniformLocation(program, 'iThickness'),
+				iPattern: gl.getUniformLocation(program, 'iPattern'),
+				iIntensity: gl.getUniformLocation(program, 'iIntensity'),
+				iAspect: gl.getUniformLocation(program, 'iAspect'),
 			},
 		};
 	} catch (error) {
@@ -464,10 +436,7 @@ function setupTrip(canvas: HTMLCanvasElement): TripState {
 	}
 }
 
-function drawTrip(
-	{ gl, program, uniforms, vertexCount }: TripState,
-	frame: TripFrame,
-) {
+function drawTrip({gl, program, uniforms, vertexCount}: TripState, frame: TripFrame) {
 	gl.useProgram(program);
 	gl.viewport(0, 0, frame.width, frame.height);
 	gl.clearColor(0, 0, 0, 1);
@@ -480,10 +449,7 @@ function drawTrip(
 	gl.uniform1f(uniforms.iHighFreq, frame.bands[2] ?? 0);
 	gl.uniform1f(uniforms.iThickness, bounded(frame.thickness, 0.01, 1.5, 1));
 	gl.uniform1f(uniforms.iPattern, bounded(frame.pattern, 0.7, 9, 0.7));
-	gl.uniform1f(
-		uniforms.iIntensity,
-		Math.trunc(bounded(frame.intensity, 0, 25, 10)),
-	);
+	gl.uniform1f(uniforms.iIntensity, Math.trunc(bounded(frame.intensity, 0, 25, 10)));
 	// Three's original Color uniforms are linear even though Trip's final output is display RGB.
 	gl.uniform3fv(uniforms.iBaseColor, linearColor(frame.baseColor));
 	gl.uniform3fv(uniforms.iIntensifyColor, linearColor(frame.intensifyColor));
@@ -494,11 +460,10 @@ function drawTrip(
 	gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 	gl.finish();
 	const error = gl.getError();
-	if (error !== gl.NO_ERROR)
-		throw new Error(`Trip WebGL draw failed: ${error}`);
+	if (error !== gl.NO_ERROR) throw new Error(`Trip WebGL draw failed: ${error}`);
 }
 
-function cleanupTrip({ gl, program, buffer }: TripState) {
+function cleanupTrip({gl, program, buffer}: TripState) {
 	gl.deleteBuffer(buffer);
 	gl.deleteProgram(program);
 }
@@ -506,7 +471,7 @@ function cleanupTrip({ gl, program, buffer }: TripState) {
 function TripCanvas(frame: TripFrame) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const state = useRef<TripState | null>(null);
-	const { delayRender, continueRender } = useDelayRender();
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current!;
 		try {
@@ -517,22 +482,21 @@ function TripCanvas(frame: TripFrame) {
 		const current = state.current;
 		const lost = (event: Event) => {
 			event.preventDefault();
-			cancelRender(new Error("Trip WebGL context was lost."));
+			cancelRender(new Error('Trip WebGL context was lost.'));
 		};
-		canvas.addEventListener("webglcontextlost", lost);
+		canvas.addEventListener('webglcontextlost', lost);
 		return () => {
-			canvas.removeEventListener("webglcontextlost", lost);
+			canvas.removeEventListener('webglcontextlost', lost);
 			cleanupTrip(current);
 			state.current = null;
 			queueMicrotask(() => {
-				if (!canvas.isConnected)
-					current.gl.getExtension("WEBGL_lose_context")?.loseContext();
+				if (!canvas.isConnected) current.gl.getExtension('WEBGL_lose_context')?.loseContext();
 			});
 		};
 	}, []);
 	useLayoutEffect(() => {
 		if (!state.current) return;
-		const handle = delayRender("Drawing Trip");
+		const handle = delayRender('Drawing Trip');
 		try {
 			drawTrip(state.current, frame);
 		} catch (error) {
@@ -546,7 +510,7 @@ function TripCanvas(frame: TripFrame) {
 			ref={canvasRef}
 			width={frame.width}
 			height={frame.height}
-			style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+			style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
 		/>
 	);
 }
@@ -683,19 +647,15 @@ function linearColor(color: string): number[] {
 	let bytes: number[];
 	const hex = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(color)?.[1];
 	if (hex) {
-		const expanded =
-			hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex;
-		bytes = [0, 2, 4].map((index) =>
-			parseInt(expanded.slice(index, index + 2), 16),
-		);
+		const expanded = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex;
+		bytes = [0, 2, 4].map((index) => parseInt(expanded.slice(index, index + 2), 16));
 	} else {
-		if (!CSS.supports("color", color))
-			throw new Error(`Invalid visualizer color: ${color}`);
+		if (!CSS.supports('color', color)) throw new Error(`Invalid visualizer color: ${color}`);
 		if (!colorParser) {
-			const canvas = document.createElement("canvas");
+			const canvas = document.createElement('canvas');
 			canvas.width = 1;
 			canvas.height = 1;
-			colorParser = canvas.getContext("2d", { willReadFrequently: true })!;
+			colorParser = canvas.getContext('2d', {willReadFrequently: true})!;
 		}
 		colorParser.clearRect(0, 0, 1, 1);
 		colorParser.fillStyle = color;
@@ -716,24 +676,20 @@ const silentAudio: MediaUtilsAudioData = {
 	sampleRate: 44100,
 	durationInSeconds: 0,
 	numberOfChannels: 1,
-	resultId: "banger-elements-silence",
+	resultId: 'banger-elements-silence',
 	isRemote: false,
 };
 
 const TripContent: React.FC<Required<TripOptions>> = (props) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
-	const { offsetFrames, sourceTime, time } = tripTiming(
+	const {fps} = useVideoConfig();
+	const {offsetFrames, sourceTime, time} = tripTiming(
 		frame,
 		fps,
 		props.audioOffsetInSeconds,
 		props.timeOffsetInSeconds,
 	);
-	const { audioData, dataOffsetInSeconds } = useVisualizerAudio(
-		props.audioSrc,
-		sourceTime,
-		fps,
-	);
+	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
 	const bars = spectrumBars({
 		audioData: audioData ?? silentAudio,
 		dataOffsetInSeconds,
@@ -743,24 +699,16 @@ const TripContent: React.FC<Required<TripOptions>> = (props) => {
 	return (
 		<>
 			{props.playAudio ? (
-				<Audio
-					src={props.audioSrc}
-					trimBefore={offsetFrames}
-					showInTimeline={false}
-				/>
+				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
-			<TripCanvas
-				{...props}
-				time={time}
-				bands={tripBands(bars, props.inputGainDb)}
-			/>
+			<TripCanvas {...props} time={time} bands={tripBands(bars, props.inputGainDb)} />
 		</>
 	);
 };
 
 const TripInner = forwardRef<
 	HTMLDivElement,
-	TripProps & { readonly controls: SequenceControls | undefined }
+	TripProps & {readonly controls: SequenceControls | undefined}
 >(
 	(
 		{
@@ -793,17 +741,17 @@ const TripInner = forwardRef<
 				layout="none"
 				{...sequenceProps}
 				controls={controls}
-				name={name ?? "Trip"}
+				name={name ?? 'Trip'}
 				outlineRef={outlineRef}
 			>
 				<div
 					ref={outlineRef}
 					style={{
-						position: "relative",
-						boxSizing: "border-box",
+						position: 'relative',
+						boxSizing: 'border-box',
 						width: drawingWidth,
 						height: drawingHeight,
-						overflow: "hidden",
+						overflow: 'hidden',
 						...style,
 					}}
 				>
@@ -831,7 +779,7 @@ const TripInner = forwardRef<
 
 export const Trip = Interactive.withSchema({
 	Component: TripInner,
-	componentName: "<Trip>",
+	componentName: '<Trip>',
 	componentIdentity: null,
 	schema: tripSchema,
 	supportsEffects: false,

@@ -1,9 +1,9 @@
-import { Audio } from "@remotion/media";
+import {Audio} from '@remotion/media';
 import {
 	useWindowedAudioData,
 	visualizeAudio,
 	type MediaUtilsAudioData,
-} from "@remotion/media-utils";
+} from '@remotion/media-utils';
 import React, {
 	forwardRef,
 	useRef,
@@ -11,7 +11,7 @@ import React, {
 	useId,
 	useMemo,
 	useLayoutEffect,
-} from "react";
+} from 'react';
 import {
 	Interactive,
 	Sequence,
@@ -23,7 +23,7 @@ import {
 	type InteractiveTransformProps,
 	type SequenceControls,
 	type InteractivitySchema,
-} from "remotion";
+} from 'remotion';
 
 type MushroomsOptions = {
 	readonly width?: number;
@@ -41,111 +41,107 @@ type MushroomsOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type MushroomsProps = InteractiveBaseProps &
-	InteractiveTransformProps &
-	MushroomsOptions;
+type MushroomsProps = InteractiveBaseProps & InteractiveTransformProps & MushroomsOptions;
 
 const mushroomsSchema = {
 	...Interactive.baseSchema,
 	audioSrc: {
-		type: "asset",
-		default:
-			"https://remotion.media/elements/remotion-made-this-picture-move.mp3",
-		description: "Audio source",
+		type: 'asset',
+		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
+		description: 'Audio source',
 		keyframable: false,
 	},
 	audioOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description: "Audio source offset in seconds",
+		description: 'Audio source offset in seconds',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	playAudio: {
-		type: "boolean",
+		type: 'boolean',
 		default: true,
-		description: "Play audio (disable when stacking)",
+		description: 'Play audio (disable when stacking)',
 		keyframable: false,
 	},
 
 	width: {
-		type: "number",
+		type: 'number',
 		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Width",
+		description: 'Width',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	height: {
-		type: "number",
+		type: 'number',
 		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Height",
+		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	inputGainDb: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: -30,
 		max: 30,
 		step: 1,
-		description: "Visual gain in dB",
+		description: 'Visual gain in dB',
 		hiddenFromList: false,
 	},
-	baseColor: { type: "color", default: "#ff00ff", description: "Base color" },
-	mixColor: { type: "color", default: "#9333ea", description: "Mix color" },
+	baseColor: {type: 'color', default: '#ff00ff', description: 'Base color'},
+	mixColor: {type: 'color', default: '#9333ea', description: 'Mix color'},
 	colorful: {
-		type: "number",
+		type: 'number',
 		default: 0,
-		description: "Colorful",
+		description: 'Colorful',
 		min: -2,
 		max: 12,
 		step: 0.5,
 		hiddenFromList: false,
 	},
 	contrast: {
-		type: "number",
+		type: 'number',
 		default: 6,
-		description: "Contrast",
+		description: 'Contrast',
 		min: 1,
 		max: 9,
 		step: 0.5,
 		hiddenFromList: false,
 	},
 	cubeScale: {
-		type: "number",
+		type: 'number',
 		default: 1,
-		description: "Cube scale",
+		description: 'Cube scale',
 		min: 0.5,
 		max: 2,
 		step: 0.25,
 		hiddenFromList: false,
 	},
 	responsive: {
-		type: "number",
+		type: 'number',
 		default: 0,
-		description: "Audio reactivity",
+		description: 'Audio reactivity',
 		min: -10,
 		max: 30,
 		step: 0.5,
 		hiddenFromList: false,
 	},
 	timeOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description:
-			"Animation phase offset in seconds (independent of audio trim)",
+		description: 'Animation phase offset in seconds (independent of audio trim)',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -154,17 +150,10 @@ const mushroomsSchema = {
 
 const decodeWindowSeconds = 20;
 
-function hasCompleteAudioWindow(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
+function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, time: number) {
 	const chunk = Math.floor(time / decodeWindowSeconds);
 	const expectedStart = Math.max(0, (chunk - 1) * decodeWindowSeconds);
-	const expectedEnd = Math.min(
-		audioData.durationInSeconds,
-		(chunk + 2) * decodeWindowSeconds,
-	);
+	const expectedEnd = Math.min(audioData.durationInSeconds, (chunk + 2) * decodeWindowSeconds);
 	return (
 		Math.abs(offset - expectedStart) < 1 / audioData.sampleRate &&
 		audioData.channelWaveforms[0].length >=
@@ -194,15 +183,14 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 	);
 	// The current chunk can arrive before its retained neighbors.
 	const complete =
-		audioData === null ||
-		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
-	const { delayRender, continueRender } = useDelayRender();
+		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (complete) return;
-		const handle = delayRender("Waiting for complete visualizer audio history");
+		const handle = delayRender('Waiting for complete visualizer audio history');
 		return () => continueRender(handle);
 	}, [complete, delayRender, continueRender]);
-	return { ...result, audioData: complete ? audioData : null };
+	return {...result, audioData: complete ? audioData : null};
 }
 
 type AudioInput = {
@@ -223,22 +211,18 @@ function computeBars({
 	const maxFreq = 22000;
 	const defaultFill = 0.0025;
 	const freqStep = (maxFreq - minFreq) / allVisualizationValues.length;
-	const bars = Array.from({ length: outputBarsCount }, () => defaultFill);
+	const bars = Array.from({length: outputBarsCount}, () => defaultFill);
 	const binSize = 1 / outputBarsCount;
 	for (let index = 0; index < allVisualizationValues.length; index++) {
 		const frequency = minFreq + index * freqStep;
-		const logFrequency =
-			Math.log10(frequency / minFreq) / Math.log10(maxFreq / minFreq);
+		const logFrequency = Math.log10(frequency / minFreq) / Math.log10(maxFreq / minFreq);
 		const binIndex = Math.floor(logFrequency / binSize);
 		if (binIndex < outputBarsCount) {
 			bars[binIndex] +=
 				binIndex < Math.floor(outputBarsCount * 0.334415584415584)
 					? allVisualizationValues[index] * 1.3
 					: allVisualizationValues[index];
-			if (
-				outputBarsCount !== 308 &&
-				binIndex >= Math.floor(outputBarsCount * 0.9845)
-			) {
+			if (outputBarsCount !== 308 && binIndex >= Math.floor(outputBarsCount * 0.9845)) {
 				bars[binIndex] = defaultFill;
 			}
 		}
@@ -247,10 +231,7 @@ function computeBars({
 }
 
 function spectrumBars(input: AudioInput, count = 308) {
-	if (
-		input.sourceTime < 0 ||
-		input.sourceTime >= input.audioData.durationInSeconds
-	)
+	if (input.sourceTime < 0 || input.sourceTime >= input.audioData.durationInSeconds)
 		return Array(count).fill(0) as number[];
 	const frequencies = visualizeAudio({
 		audioData: input.audioData,
@@ -258,7 +239,7 @@ function spectrumBars(input: AudioInput, count = 308) {
 		frame: input.sourceTime * 60,
 		fps: 60,
 		numberOfSamples: 4096,
-		optimizeFor: "speed",
+		optimizeFor: 'speed',
 		smoothing: true,
 	});
 	return computeBars({
@@ -269,17 +250,10 @@ function spectrumBars(input: AudioInput, count = 308) {
 
 // All numeric entry points are bounded, including direct JSX and non-finite values.
 function bounded(value: number, min: number, max: number, fallback: number) {
-	return Number.isFinite(value)
-		? Math.min(max, Math.max(min, value))
-		: fallback;
+	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
 
-function mushroomsTiming(
-	frame: number,
-	fps: number,
-	audioOffset: number,
-	timeOffset: number,
-) {
+function mushroomsTiming(frame: number, fps: number, audioOffset: number, timeOffset: number) {
 	const offsetFrames = Math.round(bounded(audioOffset, 0, 86400, 0) * fps);
 	return {
 		offsetFrames,
@@ -350,15 +324,15 @@ void main() {
 
 type MushroomsFrame = Pick<
 	Required<MushroomsOptions>,
-	| "width"
-	| "height"
-	| "baseColor"
-	| "mixColor"
-	| "colorful"
-	| "contrast"
-	| "cubeScale"
-	| "responsive"
-> & { readonly time: number; readonly bands: readonly number[] };
+	| 'width'
+	| 'height'
+	| 'baseColor'
+	| 'mixColor'
+	| 'colorful'
+	| 'contrast'
+	| 'cubeScale'
+	| 'responsive'
+> & {readonly time: number; readonly bands: readonly number[]};
 
 type MushroomsState = {
 	readonly gl: WebGL2RenderingContext;
@@ -366,23 +340,23 @@ type MushroomsState = {
 	readonly buffer: WebGLBuffer;
 	readonly vertexCount: number;
 	readonly uniforms: Record<
-		| "iGlobalTime"
-		| "iLowFreq"
-		| "iMidFreq"
-		| "iHighFreq"
-		| "iBaseColor"
-		| "iMixColor"
-		| "iColorful"
-		| "iContrast"
-		| "iCubeScale"
-		| "iResponsive"
-		| "iAspect",
+		| 'iGlobalTime'
+		| 'iLowFreq'
+		| 'iMidFreq'
+		| 'iHighFreq'
+		| 'iBaseColor'
+		| 'iMixColor'
+		| 'iColorful'
+		| 'iContrast'
+		| 'iCubeScale'
+		| 'iResponsive'
+		| 'iAspect',
 		WebGLUniformLocation | null
 	>;
 };
 
 function setupMushrooms(canvas: HTMLCanvasElement): MushroomsState {
-	const gl = canvas.getContext("webgl2", {
+	const gl = canvas.getContext('webgl2', {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
@@ -390,10 +364,10 @@ function setupMushrooms(canvas: HTMLCanvasElement): MushroomsState {
 	});
 	if (!gl)
 		throw new Error(
-			"Mushrooms requires WebGL2. Enable browser graphics acceleration and reload Studio.",
+			'Mushrooms requires WebGL2. Enable browser graphics acceleration and reload Studio.',
 		);
 	const program = gl.createProgram();
-	if (!program) throw new Error("Mushrooms could not create a program.");
+	if (!program) throw new Error('Mushrooms could not create a program.');
 	const shaders: WebGLShader[] = [];
 	let buffer: WebGLBuffer | null = null;
 	try {
@@ -402,32 +376,28 @@ function setupMushrooms(canvas: HTMLCanvasElement): MushroomsState {
 			[gl.FRAGMENT_SHADER, fragmentShader],
 		] as const) {
 			const shader = gl.createShader(type);
-			if (!shader) throw new Error("Mushrooms could not create a shader.");
+			if (!shader) throw new Error('Mushrooms could not create a shader.');
 			shaders.push(shader);
 			gl.shaderSource(shader, source);
 			gl.compileShader(shader);
 			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-				throw new Error(
-					`Mushrooms shader compilation failed: ${gl.getShaderInfoLog(shader)}`,
-				);
+				throw new Error(`Mushrooms shader compilation failed: ${gl.getShaderInfoLog(shader)}`);
 			}
 			gl.attachShader(program, shader);
 		}
 		gl.linkProgram(program);
 		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-			throw new Error(
-				`Mushrooms shader linking failed: ${gl.getProgramInfoLog(program)}`,
-			);
+			throw new Error(`Mushrooms shader linking failed: ${gl.getProgramInfoLog(program)}`);
 		}
 		gl.useProgram(program);
 		buffer = gl.createBuffer();
-		if (!buffer) throw new Error("Mushrooms could not create a vertex buffer.");
+		if (!buffer) throw new Error('Mushrooms could not create a vertex buffer.');
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		const geometry = mushroomsGeometry();
 		gl.bufferData(gl.ARRAY_BUFFER, geometry, gl.STATIC_DRAW);
 		for (const [name, size, offset] of [
-			["position", 3, 0],
-			["uv", 2, 12],
+			['position', 3, 0],
+			['uv', 2, 12],
 		] as const) {
 			const attribute = gl.getAttribLocation(program, name);
 			gl.enableVertexAttribArray(attribute);
@@ -439,17 +409,17 @@ function setupMushrooms(canvas: HTMLCanvasElement): MushroomsState {
 			buffer,
 			vertexCount: geometry.length / 5,
 			uniforms: {
-				iGlobalTime: gl.getUniformLocation(program, "iGlobalTime"),
-				iLowFreq: gl.getUniformLocation(program, "iLowFreq"),
-				iMidFreq: gl.getUniformLocation(program, "iMidFreq"),
-				iHighFreq: gl.getUniformLocation(program, "iHighFreq"),
-				iBaseColor: gl.getUniformLocation(program, "iBaseColor"),
-				iMixColor: gl.getUniformLocation(program, "iMixColor"),
-				iColorful: gl.getUniformLocation(program, "iColorful"),
-				iContrast: gl.getUniformLocation(program, "iContrast"),
-				iCubeScale: gl.getUniformLocation(program, "iCubeScale"),
-				iResponsive: gl.getUniformLocation(program, "iResponsive"),
-				iAspect: gl.getUniformLocation(program, "iAspect"),
+				iGlobalTime: gl.getUniformLocation(program, 'iGlobalTime'),
+				iLowFreq: gl.getUniformLocation(program, 'iLowFreq'),
+				iMidFreq: gl.getUniformLocation(program, 'iMidFreq'),
+				iHighFreq: gl.getUniformLocation(program, 'iHighFreq'),
+				iBaseColor: gl.getUniformLocation(program, 'iBaseColor'),
+				iMixColor: gl.getUniformLocation(program, 'iMixColor'),
+				iColorful: gl.getUniformLocation(program, 'iColorful'),
+				iContrast: gl.getUniformLocation(program, 'iContrast'),
+				iCubeScale: gl.getUniformLocation(program, 'iCubeScale'),
+				iResponsive: gl.getUniformLocation(program, 'iResponsive'),
+				iAspect: gl.getUniformLocation(program, 'iAspect'),
 			},
 		};
 	} catch (error) {
@@ -462,7 +432,7 @@ function setupMushrooms(canvas: HTMLCanvasElement): MushroomsState {
 }
 
 function drawMushrooms(
-	{ gl, program, uniforms, vertexCount }: MushroomsState,
+	{gl, program, uniforms, vertexCount}: MushroomsState,
 	frame: MushroomsFrame,
 ) {
 	gl.useProgram(program);
@@ -488,11 +458,10 @@ function drawMushrooms(
 	gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 	gl.finish();
 	const error = gl.getError();
-	if (error !== gl.NO_ERROR)
-		throw new Error(`Mushrooms WebGL draw failed: ${error}`);
+	if (error !== gl.NO_ERROR) throw new Error(`Mushrooms WebGL draw failed: ${error}`);
 }
 
-function cleanupMushrooms({ gl, program, buffer }: MushroomsState) {
+function cleanupMushrooms({gl, program, buffer}: MushroomsState) {
 	gl.deleteBuffer(buffer);
 	gl.deleteProgram(program);
 }
@@ -500,7 +469,7 @@ function cleanupMushrooms({ gl, program, buffer }: MushroomsState) {
 function MushroomsCanvas(frame: MushroomsFrame) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const state = useRef<MushroomsState | null>(null);
-	const { delayRender, continueRender } = useDelayRender();
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current!;
 		try {
@@ -511,22 +480,21 @@ function MushroomsCanvas(frame: MushroomsFrame) {
 		const current = state.current;
 		const lost = (event: Event) => {
 			event.preventDefault();
-			cancelRender(new Error("Mushrooms WebGL context was lost."));
+			cancelRender(new Error('Mushrooms WebGL context was lost.'));
 		};
-		canvas.addEventListener("webglcontextlost", lost);
+		canvas.addEventListener('webglcontextlost', lost);
 		return () => {
-			canvas.removeEventListener("webglcontextlost", lost);
+			canvas.removeEventListener('webglcontextlost', lost);
 			cleanupMushrooms(current);
 			state.current = null;
 			queueMicrotask(() => {
-				if (!canvas.isConnected)
-					current.gl.getExtension("WEBGL_lose_context")?.loseContext();
+				if (!canvas.isConnected) current.gl.getExtension('WEBGL_lose_context')?.loseContext();
 			});
 		};
 	}, []);
 	useLayoutEffect(() => {
 		if (!state.current) return;
-		const handle = delayRender("Drawing Mushrooms");
+		const handle = delayRender('Drawing Mushrooms');
 		try {
 			drawMushrooms(state.current, frame);
 		} catch (error) {
@@ -540,7 +508,7 @@ function MushroomsCanvas(frame: MushroomsFrame) {
 			ref={canvasRef}
 			width={frame.width}
 			height={frame.height}
-			style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+			style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
 		/>
 	);
 }
@@ -701,19 +669,15 @@ function linearColor(color: string): number[] {
 	let bytes: number[];
 	const hex = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(color)?.[1];
 	if (hex) {
-		const expanded =
-			hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex;
-		bytes = [0, 2, 4].map((index) =>
-			parseInt(expanded.slice(index, index + 2), 16),
-		);
+		const expanded = hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex;
+		bytes = [0, 2, 4].map((index) => parseInt(expanded.slice(index, index + 2), 16));
 	} else {
-		if (!CSS.supports("color", color))
-			throw new Error(`Invalid visualizer color: ${color}`);
+		if (!CSS.supports('color', color)) throw new Error(`Invalid visualizer color: ${color}`);
 		if (!colorParser) {
-			const canvas = document.createElement("canvas");
+			const canvas = document.createElement('canvas');
 			canvas.width = 1;
 			canvas.height = 1;
-			colorParser = canvas.getContext("2d", { willReadFrequently: true })!;
+			colorParser = canvas.getContext('2d', {willReadFrequently: true})!;
 		}
 		colorParser.clearRect(0, 0, 1, 1);
 		colorParser.fillStyle = color;
@@ -734,24 +698,20 @@ const silentAudio: MediaUtilsAudioData = {
 	sampleRate: 44100,
 	durationInSeconds: 0,
 	numberOfChannels: 1,
-	resultId: "banger-elements-silence",
+	resultId: 'banger-elements-silence',
 	isRemote: false,
 };
 
 const MushroomsContent: React.FC<Required<MushroomsOptions>> = (props) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
-	const { offsetFrames, sourceTime, time } = mushroomsTiming(
+	const {fps} = useVideoConfig();
+	const {offsetFrames, sourceTime, time} = mushroomsTiming(
 		frame,
 		fps,
 		props.audioOffsetInSeconds,
 		props.timeOffsetInSeconds,
 	);
-	const { audioData, dataOffsetInSeconds } = useVisualizerAudio(
-		props.audioSrc,
-		sourceTime,
-		fps,
-	);
+	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
 	const bars = spectrumBars({
 		audioData: audioData ?? silentAudio,
 		dataOffsetInSeconds,
@@ -761,24 +721,16 @@ const MushroomsContent: React.FC<Required<MushroomsOptions>> = (props) => {
 	return (
 		<>
 			{props.playAudio ? (
-				<Audio
-					src={props.audioSrc}
-					trimBefore={offsetFrames}
-					showInTimeline={false}
-				/>
+				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
-			<MushroomsCanvas
-				{...props}
-				time={time}
-				bands={mushroomsBands(bars, props.inputGainDb)}
-			/>
+			<MushroomsCanvas {...props} time={time} bands={mushroomsBands(bars, props.inputGainDb)} />
 		</>
 	);
 };
 
 const MushroomsInner = forwardRef<
 	HTMLDivElement,
-	MushroomsProps & { readonly controls: SequenceControls | undefined }
+	MushroomsProps & {readonly controls: SequenceControls | undefined}
 >(
 	(
 		{
@@ -811,17 +763,17 @@ const MushroomsInner = forwardRef<
 				layout="none"
 				{...sequenceProps}
 				controls={controls}
-				name={name ?? "Mushrooms"}
+				name={name ?? 'Mushrooms'}
 				outlineRef={outlineRef}
 			>
 				<div
 					ref={outlineRef}
 					style={{
-						position: "relative",
-						boxSizing: "border-box",
+						position: 'relative',
+						boxSizing: 'border-box',
 						width: drawingWidth,
 						height: drawingHeight,
-						overflow: "hidden",
+						overflow: 'hidden',
 						...style,
 					}}
 				>
@@ -849,7 +801,7 @@ const MushroomsInner = forwardRef<
 
 export const Mushrooms = Interactive.withSchema({
 	Component: MushroomsInner,
-	componentName: "<Mushrooms>",
+	componentName: '<Mushrooms>',
 	componentIdentity: null,
 	schema: mushroomsSchema,
 	supportsEffects: false,

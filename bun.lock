@@ -17,7 +17,7 @@
     },
     "apps/site": {
       "name": "@banger-elements/site",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@astrojs/mdx": "4.3.14",
         "@astrojs/react": "4.4.2",
@@ -44,7 +44,7 @@
     },
     "apps/studio": {
       "name": "@banger-elements/studio",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@remotion/cli": "4.0.520",
         "@remotion/media": "4.0.520",
@@ -63,7 +63,7 @@
     },
     "packages/elements": {
       "name": "@banger-elements/collection",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@remotion/media": "4.0.520",
         "@remotion/media-utils": "4.0.520",

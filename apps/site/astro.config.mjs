@@ -5,6 +5,7 @@ import react from '@astrojs/react';
 
 export default defineConfig({
 	output: 'static',
+	site: 'https://banger-elements.dev',
 	server: {host: '127.0.0.1', port: Number(process.env.PORT ?? 3300)},
 	publicDir: './static',
 	build: {format: 'file'},
