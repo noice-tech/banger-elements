@@ -1,4 +1,4 @@
-type ElementCategory = 'visualizers' | 'shaders';
+type ElementCategory = 'visualizers' | 'shaders' | 'effects';
 
 type CatalogEntry = {
 	readonly slug: string;
@@ -9,6 +9,7 @@ type CatalogEntry = {
 };
 
 export const catalog = [
+	{slug: 'vhs', name: 'Vhs', category: 'effects', width: 1280, height: 720},
 	{
 		slug: 'ferrofluid',
 		name: 'Ferrofluid',

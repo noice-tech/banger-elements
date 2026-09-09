@@ -73,7 +73,7 @@ export default function StudioActions({
 				{slug ? (
 					<>
 						<button className="primary" disabled={!payload || busy} onClick={() => request(false)}>
-							Install in Studio
+							{slug === 'vhs' ? 'Install wrapper in Studio' : 'Install in Studio'}
 						</button>
 						<button
 							disabled={!payload}

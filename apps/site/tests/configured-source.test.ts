@@ -6,8 +6,8 @@ import {examples, defaultAudioFor} from '../src/components/preview/examples';
 import {sourceSettings} from '../../../packages/elements/scripts/source-settings';
 import {catalog} from '../../../packages/elements/src/catalog';
 
-test('each element generates source defaults from its preview without a wrapper', () => {
-	for (const {slug} of catalog) {
+test('each element generates source defaults directly from its preview settings', () => {
+	for (const {slug, category} of catalog) {
 		const example = examples[slug as keyof typeof examples];
 		const template: SourcePayload = JSON.parse(
 			readFileSync(
@@ -19,8 +19,12 @@ test('each element generates source defaults from its preview without a wrapper'
 			...example.props,
 			width: example.width,
 			height: example.height,
-			audioSrc: defaultAudioFor(slug as keyof typeof examples),
-			playAudio: false,
+			...(category === 'effects'
+				? {}
+				: {
+						audioSrc: defaultAudioFor(slug as keyof typeof examples),
+						playAudio: false,
+					}),
 		};
 		for (const key of Object.keys(props))
 			assert.ok(template.sourceSettings[key], `${slug}: ${key}`);
@@ -34,6 +38,17 @@ test('each element generates source defaults from its preview without a wrapper'
 				.element.sourceCode,
 			result.element.sourceCode,
 		);
-		assert.throws(() => configuredPayload(template, {...props, audioSrc: 'blob:local'}), /hosted/);
+		if (category === 'effects') {
+			assert.equal(
+				configuredPayload(template, {...props, audioSrc: 'blob:local', playAudio: true}).element
+					.sourceCode,
+				result.element.sourceCode,
+			);
+		} else {
+			assert.throws(
+				() => configuredPayload(template, {...props, audioSrc: 'blob:local'}),
+				/hosted/,
+			);
+		}
 	}
 });

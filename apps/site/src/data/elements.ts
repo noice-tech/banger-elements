@@ -8,6 +8,12 @@ export const elementCategories = [
 		featured: ['ferrofluid', 'halo', 'spectre', 'circle', 'waveform', 'audio-particles'],
 	},
 	{
+		id: 'effects',
+		title: 'Effects',
+		description: 'Wrap your elements with analog distortion and texture.',
+		featured: ['vhs'],
+	},
+	{
 		id: 'shaders',
 		title: 'Shaders',
 		description: 'Immersive backgrounds, procedural worlds and evolving textures.',
@@ -16,6 +22,21 @@ export const elementCategories = [
 ] as const;
 
 const details = {
+	vhs: {
+		title: 'VHS',
+		renderer: 'SVG filter',
+		tagline: 'Tape distortion for everything inside the frame.',
+		description:
+			'Wrap text, visualizers and backgrounds in horizontal jitter, grain and moving tracking bands. The preview combines Space, Halo and text; the downloaded source is just the reusable VHS wrapper.',
+		controls: [
+			'strength — overall treatment; zero bypasses the filter and tracking overlays',
+			'horizontalDistortion / glitch — broad horizontal displacement and fine tape jitter',
+			'line / period — tracking band strength and speed',
+			'timeOffsetInSeconds — effect phase, independent of child media timing',
+		],
+		limitation:
+			'Filters children only, never sibling layers or content portaled outside the wrapper. A browser-native adaptation, not a pixel-identical GLSL port. Clips to its bounds; tracking overlays can mark transparent areas. Tested in Remotion Chromium; large filtered groups cost more rendering time. Child WebGL Elements still need graphics acceleration.',
+	},
 	fractals: {
 		title: 'Fractals',
 		renderer: 'WebGL2',

@@ -8,6 +8,7 @@ export function getStaticPaths() {
 	return elements.map(entry => ({params: {element: entry.slug}, props: {entry}}));
 }
 const {entry} = Astro.props;
+const isWrapper = entry.category === 'effects';
 const category = elementCategories.find(category => category.id === entry.category)!;
 const related = elements.filter(element => element.slug !== entry.slug).sort((a, b) => Number(b.category === entry.category) - Number(a.category === entry.category)).slice(0, 2);
 ---
@@ -25,8 +26,8 @@ const related = elements.filter(element => element.slug !== entry.slug).sort((a,
 					<div slot="fallback" class="preview-block not-content">
 						<div class="preview-stage"><div class="preview-placeholder" role="status" aria-label="Loading preview"></div></div>
 						<div class="preview-caption" aria-hidden="true">
-							<span>60 FPS · {['ferrofluid', 'trip', 'fractals', 'hyperloop', 'downfall', 'rail', 'rain', 'space', 'synthwave', 'mushrooms', 'halo', 'audio-particles', 'combined'].includes(entry.slug) ? 16 : 9} seconds · Press play to hear audio</span>
-							<span>Studio uses your preview settings. Download TSX uses the original defaults.</span>
+							<span>60 FPS · {['vhs', 'ferrofluid', 'trip', 'fractals', 'hyperloop', 'downfall', 'rail', 'rain', 'space', 'synthwave', 'mushrooms', 'halo', 'audio-particles', 'combined'].includes(entry.slug) ? 16 : 9} seconds · Press play to hear audio</span>
+							<span>{isWrapper ? 'Demo children are not included. Wrap your own JSX after installation.' : 'Studio uses your preview settings. Download TSX uses the original defaults.'}</span>
 						</div>
 					</div>
 				</Preview>
@@ -36,7 +37,7 @@ const related = elements.filter(element => element.slug !== entry.slug).sort((a,
 						<a href={`/elements/${entry.slug}.tsx`} download={`${entry.slug}.element.tsx`}>Download TSX <span aria-hidden="true">↓</span></a>
 						<a href={`https://github.com/noice-tech/banger-elements/blob/main/packages/elements/src/elements/${entry.slug}/${entry.slug}.tsx`} target="_blank" rel="noreferrer"><GitHubIcon /> GitHub source</a>
 					</div>
-					<p class="install-note">Install or drag to use your preview settings. Confirm the request in Studio.</p>
+					<p class="install-note">{isWrapper ? 'Installs the wrapper only, not the demo. After confirming in Studio, move your existing JSX inside <Vhs> in code. Inserting it as a sibling does not apply the effect.' : 'Install or drag to use your preview settings. Confirm the request in Studio.'}</p>
 					<details class="install-help"><summary>Need help connecting?</summary><p>Open a composition in a compatible Remotion Studio first. Install and drag both require confirmation. On touch devices, use Install in Studio.</p></details>
 				</section>
 				<p class="preview-description">{entry.description}</p>
@@ -47,10 +48,16 @@ const related = elements.filter(element => element.slug !== entry.slug).sort((a,
 		</div>
 		<div class="element-documentation">
 			<h2 id="after-installation">After installation</h2>
-			<p>The Studio protocol handles source installation and insertion, so this workflow does not require a manual import. Confirm the request in Studio, then select the inserted Element to adjust its Interactive controls.</p>
-			<p>No props are required. The installed source uses the audio URL from your preview. Local files need a hosted URL before installation. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track, or copy the configured JSX from the preview controls for use with the original source.</p>
-			<details class="reference-section" open><summary id="controls">Key controls</summary><ul>{entry.controls.map(control => <li>{control}</li>)}</ul><p>All Elements expose <code>audioSrc</code>, <code>audioOffsetInSeconds</code>, <code>playAudio</code>, <code>inputGainDb</code>, <code>width</code> and <code>height</code>. Select the Element itself in Studio to see its Interactive controls.</p></details>
-			<details class="reference-section" open><summary id="limitations">Before you render</summary><aside class="limitation">{entry.limitation}</aside>{entry.renderer === 'WebGL2' && <p>Depending on your rendering environment, you may need to enable ANGLE when rendering with Remotion. If the element renders blank or reports a WebGL error, try adding <code>--gl=angle</code> to your <code>remotion render</code> command. See <a href="/getting-started.html#rendering-with-angle">Rendering with ANGLE</a>.</p>}<p>Playback is enabled by default. Stacking elements? Enable only one audio track. Analysis gain affects visuals, not playback volume. Each instance decodes its own fixed audio windows, so stacked instances use more memory.</p></details>
+			{isWrapper ? <>
+				<p>Download the TSX or confirm installation in Studio, then wrap the Elements you want to affect in <code>&lt;Vhs&gt;…&lt;/Vhs&gt;</code>. The wrapper is empty until you add children; it does not automatically wrap selected layers. The preview's Space, Halo and title are demo content, not bundled dependencies.</p>
+				<pre><code>{`import {Vhs} from './vhs.element';\nimport {Space} from './space.element';\nimport {Halo} from './halo.element';\n\n// Install Space and Halo separately, or use your existing content.\n<Vhs width={1280} height={720} strength={1}>\n  <Space playAudio={false} style={{position: 'absolute', inset: 0}} />\n  <Halo playAudio style={{position: 'absolute', inset: 0}} />\n</Vhs>`}</code></pre>
+				<p>Match child dimensions to the wrapper and position stacked layers absolutely. Each Element keeps its own Sequence; moving VHS moves the group. Select the wrapper in Studio for effect controls. Set <code>strength</code> to zero for a clean bypass.</p>
+			</> : <>
+				<p>The Studio protocol handles source installation and insertion, so this workflow does not require a manual import. Confirm the request in Studio, then select the inserted Element to adjust its Interactive controls.</p>
+				<p>No props are required. The installed source uses the audio URL from your preview. Local files need a hosted URL before installation. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track, or copy the configured JSX from the preview controls for use with the original source.</p>
+			</>}
+			<details class="reference-section" open><summary id="controls">Key controls</summary><ul>{entry.controls.map(control => <li>{control}</li>)}</ul>{isWrapper ? <p>VHS exposes size, timing and transform controls, but no audio controls. The Demo audio tab changes only the preview children. Copy configured JSX to reuse your effect settings around your own content.</p> : <p>Visualizers and shaders expose <code>audioSrc</code>, <code>audioOffsetInSeconds</code>, <code>playAudio</code>, <code>inputGainDb</code>, <code>width</code> and <code>height</code>. Select the Element itself in Studio to see its Interactive controls.</p>}</details>
+			<details class="reference-section" open><summary id="limitations">Before you render</summary><aside class="limitation">{entry.limitation}</aside>{entry.renderer === 'WebGL2' && <p>Depending on your rendering environment, you may need to enable ANGLE when rendering with Remotion. If the element renders blank or reports a WebGL error, try adding <code>--gl=angle</code> to your <code>remotion render</code> command. See <a href="/getting-started.html#rendering-with-angle">Rendering with ANGLE</a>.</p>}{isWrapper ? <p>VHS does not play or analyze audio. Enable audio on only one child when stacking visualizers. Motion uses the wrapper's local frame, not wall-clock time.</p> : <p>Playback is enabled by default. Stacking elements? Enable only one audio track. Analysis gain affects visuals, not playback volume. Each instance decodes its own fixed audio windows, so stacked instances use more memory.</p>}</details>
 		</div>
 		<section class="related-elements not-content"><div class="collection-heading"><h2>Explore more elements</h2><a href="/examples.html">Explore examples ↗</a></div><div class="related-grid">{related.map(element => <a href={`/${element.slug}.html`}><img src={`/posters/${element.slug}.webp`} alt="" width="100" height="64" loading="lazy" /><span><strong>{element.title}</strong><small>{element.tagline}</small></span><span aria-hidden="true">↗</span></a>)}</div></section>
 	</div>

@@ -58,6 +58,7 @@ export default function Preview({
 	}, [selected]);
 	const example = examples[selected];
 	const durationInSeconds =
+		selected === 'vhs' ||
 		selected === 'ferrofluid' ||
 		selected === 'trip' ||
 		selected === 'fractals' ||
@@ -151,7 +152,11 @@ export default function Preview({
 			</div>
 			<div className="preview-caption">
 				<span>60 FPS · {durationInSeconds} seconds · Press play to hear audio</span>
-				<span>Studio uses your preview settings. Download TSX uses the original defaults.</span>
+				<span>
+					{selected === 'vhs'
+						? 'Demo children are not included. Wrap your own JSX after installation.'
+						: 'Studio uses your preview settings. Download TSX uses the original defaults.'}
+				</span>
 			</div>
 			{variants ? <ExamplePicker selected={selected} onSelect={setSelected} /> : null}
 			{editable && controlsTarget

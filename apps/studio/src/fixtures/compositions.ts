@@ -1,6 +1,7 @@
 // Shared by Studio and render scripts. Only catalog entries need static
 // posters and gallery loops; the remaining fixtures are smoke-rendered only.
 export const compositions = [
+	{id: 'Vhs', slug: 'vhs'},
 	{id: 'Ferrofluid', slug: 'ferrofluid'},
 	{id: 'FerrofluidFluid', slug: null},
 	{id: 'Waveform', slug: 'waveform'},

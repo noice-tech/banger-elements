@@ -29,7 +29,7 @@ Use **Add Library to Studio** in the desktop header or at the bottom of a page. 
 import { Config } from "@remotion/cli/config";
 ```
 
-## Visualizers and shaders
+## Visualizers, shaders and effects
 
 **Visualizers** draw your audio as shapes, spectra and particles. **Shaders** are full-frame procedural backgrounds: try [Trip](/trip.html), [Space](/space.html), [Synthwave](/synthwave.html), [Mushrooms](/mushrooms.html), [Fractals](/fractals.html), [Hyperloop](/hyperloop.html), [Downfall](/downfall.html), [Rail](/rail.html), or [Rain](/rain.html).
 
@@ -40,9 +40,23 @@ Trip preserves banger.show's five controls: `baseColor`, `intensifyColor`, `thic
 - Trip is opaque within its bounds. Place it behind other elements and enable audio playback on only one layer.
 - The original spherical projection uses a fixed camera; actual width/height determine perspective framing. Higher intensity costs more GPU time. Animation continues in silence and after audio ends.
 
+### Effects wrap your content
+
+[VHS](/vhs.html) is a wrapper, not an overlay over sibling layers. Install or download it, then move your existing Elements and text inside `<Vhs>…</Vhs>` in code. Installation does not automatically wrap selected Studio layers. The site's Space/Halo demo is not included in the source.
+
+```tsx
+import {Vhs} from './vhs.element';
+
+<Vhs width={1280} height={720} strength={1}>
+  {/* Your existing Elements and text go here. */}
+</Vhs>
+```
+
+Match child drawing dimensions and use absolute positioning to stack layers. VHS owns its Sequence and moves the group; children retain their own timing. Set `strength={0}` for a clean bypass. VHS does not play or analyze audio: the preview's **Demo audio** controls affect only the demo children. The wrapper uses browser-native SVG filters; it is a VHS-style adaptation rather than an identical port of the original GLSL shader.
+
 ## Audio setup
 
-No props are required: `audioSrc` defaults to Remotion’s hosted example audio. Choose an asset with the Studio control, or supply an HTTPS URL that allows CORS. For an asset in your own Remotion project's `public/` directory:
+For visualizers and shaders, no props are required: `audioSrc` defaults to Remotion’s hosted example audio. Choose an asset with the Studio control, or supply an HTTPS URL that allows CORS. For an asset in your own Remotion project's `public/` directory:
 
 ```tsx
 import { staticFile } from "remotion";
@@ -69,7 +83,7 @@ Use audio you have permission to use. No user-provided audio or artwork is distr
 
 ## Timing and sizing
 
-Every Element owns its Sequence. **Do not wrap it in another `<Sequence>`**: selecting the outer Sequence would show its controls instead of the Element schema. Use the Element’s Studio timing controls.
+Every Element owns its Sequence. VHS intentionally contains child Elements with their own Sequences. Otherwise, **do not add an extra `<Sequence>` around an Element**: selecting the outer Sequence would show its controls instead of the Element schema. Use the Element’s Studio timing controls.
 
 Insertion starts at **480 frames**; its duration in seconds depends on the target FPS. Site previews using the default Remotion track are 540 frames at 60 FPS; Ferrofluid, Halo and particle previews remain 960 frames. Use `width` and `height` for drawing bounds and Studio transforms for positioning or scaling.
 

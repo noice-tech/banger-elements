@@ -1,0 +1,33 @@
+---
+import SocialIcons from '@astrojs/starlight/components/SocialIcons.astro';
+import StudioActions from './StudioActions';
+---
+<div class="header-studio-actions">
+	<StudioActions client:only="react" />
+</div>
+<SocialIcons />
+
+<style>
+	.header-studio-actions {
+		position: relative;
+	}
+	.header-studio-actions :global(.actions) {
+		margin: 0;
+		flex-wrap: nowrap;
+	}
+	.header-studio-actions :global(button) {
+		white-space: nowrap;
+	}
+	.header-studio-actions :global([role='status']:not(:empty)) {
+		position: absolute;
+		top: 100%;
+		right: 0;
+		width: min(22rem, calc(100vw - 2rem));
+		padding: 1rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 8px;
+		background: var(--sl-color-bg-nav);
+		color: var(--sl-color-white);
+		box-shadow: 0 8px 24px #0003;
+	}
+</style>
