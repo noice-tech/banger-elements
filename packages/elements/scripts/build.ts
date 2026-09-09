@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {createElementPayload} from '@remotion/studio-protocol';
 import ts from 'typescript';
 import {catalog} from '../src/catalog';
+import {sourceSettings} from './source-settings';
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(workspace, 'dist');
@@ -30,7 +31,10 @@ for (const entry of catalog) {
 		installationMode: 'component-owned-sequence',
 	});
 	await writeFile(path.join(dist, 'elements', `${entry.slug}.tsx`), sourceCode);
-	await writeFile(path.join(dist, 'payloads', `${entry.slug}.json`), JSON.stringify(payload));
+	await writeFile(
+		path.join(dist, 'payloads', `${entry.slug}.json`),
+		JSON.stringify({...payload, sourceSettings: sourceSettings(sourceCode)}),
+	);
 	console.log(`${entry.name}: ${sourceCode.length.toLocaleString()} characters`);
 }
 

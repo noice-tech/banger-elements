@@ -2,6 +2,7 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {Player, type PlayerRef} from '@remotion/player';
 import {createPortal} from 'react-dom';
 import ExamplePicker from './ExamplePicker';
+import StudioActions from './StudioActions';
 import {examples, type PreviewKind} from './preview/examples';
 import {PreviewRenderer, PREVIEW_WIDTH, PREVIEW_HEIGHT} from './preview/PreviewRenderer';
 import {PreviewControls} from './preview/PreviewControls';
@@ -15,11 +16,13 @@ export default function Preview({
 	variants = false,
 	editable = false,
 	controlsTargetId,
+	installTargetId,
 }: {
 	slug: PreviewKind;
 	variants?: boolean;
 	editable?: boolean;
 	controlsTargetId?: string;
+	installTargetId?: string;
 }) {
 	const [selected, setSelected] = useState<PreviewKind>(slug);
 	const playerRef = useRef<PlayerRef>(null);
@@ -107,8 +110,23 @@ export default function Preview({
 			? document.getElementById(controlsTargetId)
 			: null;
 
+	const installTarget =
+		installTargetId && typeof document !== 'undefined'
+			? document.getElementById(installTargetId)
+			: null;
+
 	return (
 		<div className="preview-block not-content">
+			{installTarget
+				? createPortal(
+						<StudioActions
+							slug={selected}
+							previewProps={inputProps}
+							assetPending={Boolean(artworkFile)}
+						/>,
+						installTarget,
+					)
+				: null}
 			<div className="preview-stage" data-ready={readyKind === selected}>
 				<Player
 					ref={playerRef}
@@ -133,7 +151,7 @@ export default function Preview({
 			</div>
 			<div className="preview-caption">
 				<span>60 FPS · {durationInSeconds} seconds · Press play to hear audio</span>
-				<span>Curated preview settings — downloaded source defaults are unchanged</span>
+				<span>Studio uses your preview settings. Download TSX uses the original defaults.</span>
 			</div>
 			{variants ? <ExamplePicker selected={selected} onSelect={setSelected} /> : null}
 			{editable && controlsTarget
