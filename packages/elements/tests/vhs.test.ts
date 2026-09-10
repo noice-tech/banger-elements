@@ -3,17 +3,39 @@ import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {StudioProtocolInternals} from '@remotion/studio-protocol';
 import ts from 'typescript';
-import {loadHelpers} from './helpers';
+import {loadHelpers, mockCanvas} from './helpers';
 
 type Timing = {grainSeed: number; warpSeed: number; tracking: number};
-const {vhsTiming, bounded, vhsSchema} = loadHelpers('vhs', [
+const {
+	vhsTiming,
+	bounded,
+	vhsSchema,
+	createVhsWebGl,
+	drawVhsWebGl,
+	cleanupVhsWebGl,
+	fragmentShader,
+} = loadHelpers('vhs', [
 	'vhsTiming',
 	'bounded',
 	'vhsSchema',
+	'createVhsWebGl',
+	'drawVhsWebGl',
+	'cleanupVhsWebGl',
+	'fragmentShader',
 ]) as {
 	vhsTiming: (time: number, period: number) => Timing;
 	bounded: (value: number, min: number, max: number, fallback: number) => number;
 	vhsSchema: Record<string, {default: unknown; min?: number; max?: number}>;
+	createVhsWebGl: (canvas: OffscreenCanvas) => unknown;
+	drawVhsWebGl: (
+		state: unknown,
+		image: unknown,
+		props: Record<string, number>,
+		time: number,
+		density: number,
+	) => void;
+	cleanupVhsWebGl: (state: unknown) => void;
+	fragmentShader: string;
 };
 
 test('VHS timing is independent of render order and composition FPS', () => {
@@ -47,6 +69,44 @@ test('VHS numeric controls clamp non-finite and out-of-range values', () => {
 	}
 	assert.ok(!('dateText' in vhsSchema));
 	assert.equal(vhsSchema.strength.default, 1);
+});
+
+test('VHS faithful path uploads captured children and disposes WebGL resources', () => {
+	const {canvas, calls} = mockCanvas();
+	const state = createVhsWebGl(canvas as unknown as OffscreenCanvas);
+	drawVhsWebGl(
+		state,
+		{},
+		{
+			width: 1280,
+			height: 720,
+			strength: 1,
+			horizontalDistortion: 0.02,
+			glitch: 0.07,
+			line: 0.28,
+			period: 1.2,
+			timeOffsetInSeconds: 0,
+		},
+		1.5,
+		1,
+	);
+	cleanupVhsWebGl(state);
+	for (const name of [
+		'texElementImage2D',
+		'drawArrays',
+		'deleteTexture',
+		'deleteBuffer',
+		'deleteVertexArray',
+		'deleteProgram',
+	]) {
+		assert.ok(
+			calls.some((call) => call.name === name),
+			name,
+		);
+	}
+	assert.match(fragmentShader, /vec2 getVhsUv/);
+	assert.match(fragmentShader, /uvn\.y \+= snPhase \* 0\.3/);
+	assert.match(fragmentShader, /mix\(sourceColor\.rgb, treated, strength\)/);
 });
 
 test('VHS ships standalone without demo children or audio dependencies', () => {

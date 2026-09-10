@@ -1,13 +1,14 @@
 # VHS
 
-A standalone wrapper that applies VHS-style displacement, grain and tracking bands
-to its children. The browser composites the group and
-filters it with SVG primitives. This is a browser-native adaptation of
-banger.show's VHS effect, not a pixel-identical GLSL port.
+A standalone wrapper that applies Banger’s VHS shader to its children. On supported
+Chromium, Remotion’s experimental HTML-in-canvas API captures HTML, SVG and canvas
+children as one image and the wrapper processes that texture with WebGL2. Other
+browsers receive a deterministic SVG approximation.
 
 ## Use
 
-Install or download `vhs.tsx`, then move your existing JSX inside the wrapper:
+Requires Remotion 4.0.523 or newer. Install or download `vhs.tsx`, then move your
+existing JSX inside the wrapper:
 
 ```tsx
 import {Vhs} from './vhs.element';
@@ -23,13 +24,13 @@ import {Halo} from './halo.element';
 Space and Halo are optional, separately installed demo children. The delivered
 wrapper imports only React and Remotion. Installing it as a sibling does **not**
 affect other layers: the wrapper is empty until you give it children. Studio does
-not automatically wrap selected layers. The site exports configured wrapper JSX;
-demo audio settings are never exported as VHS props.
+not automatically wrap selected layers. Demo audio settings are never exported
+as VHS props.
 
-Only descendants are filtered. Portals outside the wrapper and sibling layers
-are unaffected. Set child dimensions explicitly and use absolute positioning to
-stack them. The wrapper clips to its drawing bounds. `strength={0}` bypasses the
-filter and tracking overlays completely.
+Only descendants are filtered. Portals outside the wrapper and sibling layers are
+unaffected. Set child dimensions explicitly and use absolute positioning to stack
+them. The wrapper clips to its drawing bounds. `strength={0}` bypasses both paths
+and returns the children untouched.
 
 ## Timing and controls
 
@@ -39,27 +40,56 @@ the effect phase without trimming child media. `period` changes tracking phase,
 not accumulated playback speed. Select the wrapper for its Interactive controls.
 
 - `horizontalDistortion`: broad horizontal displacement.
-- `glitch`: fine row jitter.
-- `line` / `period`: tracking band strength and speed.
-- `strength`: overall effect amount, including complete bypass.
+- `glitch`: fine tape jitter.
+- `line` / `period`: tracking tear strength and speed.
+- `strength`: overall treatment, including exact bypass at zero.
 
 VHS never plays or analyzes audio. Enable playback on only one child when stacking
-visualizers. No required font, shared runtime, wall-clock animation, asynchronous
-capture or manual GPU resource allocation is introduced by the wrapper.
+visualizers. It has no shared Banger runtime and no wall-clock animation.
 
-## Rendering and limitations
+## Faithful shader path
 
-SVG turbulence replaces the original shader noise. This implementation does not
-reproduce the upstream color pipeline, edge sampling or bottom-edge UV distortion.
-Grain is masked to displaced content. Tracking and bottom-edge overlays may mark
-otherwise transparent areas within the wrapper.
+The primary path ports the current layered shader from
+`banger.show/packages/visual-engine/src/components/effects/layered/passes/vhs.ts`.
+HTML-in-canvas supplies the composited child pixels as an `ElementImage`; the
+wrapper uploads it to a WebGL texture and runs the original UV distortion, tracking
+tear, bottom head-switch distortion, grain, brightness and color treatment. The
+only shader addition is `strength`, which mixes the treated pixels with the source.
+GPU programs, buffers, textures and vertex arrays are released on unmount.
 
-Validated in Remotion 4.0.520 with Chromium ANGLE. Child WebGL Elements still need
-graphics acceleration. Filtering large groups increases rendering cost; test your
-actual output dimensions. No broad browser-compatibility claim is made.
+Browser preview requires Chrome 149+ and the experimental flag:
 
-Reference: `banger.show/packages/visual-engine/src/components/effects/layered/passes/vhs.ts`.
-The reference repository is not modified or imported.
+1. Open `chrome://flags/#canvas-draw-element`.
+2. Set **HTML-in-Canvas** to Enabled.
+3. Restart Chrome.
+
+Nested `<HtmlInCanvas>` wrappers are unsupported. Standard canvas children require
+a sufficiently recent Chrome; update Chrome if nested child canvases do not paint.
+The component automatically uses its SVG fallback when the API is unavailable.
+That fallback preserves wrapper behavior and a VHS-like look, but is not shader
+identical.
+
+## Rendering
+
+Remotion’s bundled render browser enables HTML-in-canvas automatically. WebGL needs
+ANGLE or Swangle:
+
+```sh
+npx remotion render --gl=angle
+# On a machine without a GPU:
+npx remotion render --gl=swangle
+```
+
+Or set the local default:
+
+```ts
+Config.setChromiumOpenGlRenderer('angle');
+```
+
+HTML-in-canvas is an unstable browser API and may change or be removed. Rendering
+large captured groups increases GPU and paint cost. Test the actual output size.
+Transparent source regions have no pixels to distort, so prefer a full-bleed
+background inside the wrapper.
 
 ## Validation
 
@@ -68,16 +98,11 @@ bun run build:elements
 node apps/studio/scripts/vhs-regression.mjs
 ```
 
-Output: `out/vhs-regression/`. The isolated test root does not register temporary
-test compositions in the normal Studio workspace. It exercises generated source
-with locally generated silence, requiring no user media or network assets.
+Output goes to `out/vhs-regression/`. The isolated root exercises generated source
+with WebGL, SVG and HTML children. It asserts matching output for 30/60 FPS at the
+same time, exact bypass versus unwrapped content, local timing after a delayed
+start, direct versus sequential rendering, and concurrency 1 versus 4. Unit and
+source-contract tests live in `packages/elements/tests/vhs.test.ts`.
 
-The script renders mixed WebGL/SVG/HTML children and independent wrapper instances.
-It asserts identical PNGs for 30/60 FPS at matching times, bypass versus unwrapped
-content, delayed wrapper local timing, direct versus sequential rendering, and
-concurrency 1 versus 4. Unit and source-contract tests are in
-`packages/elements/tests/vhs.test.ts`.
-
-The maintained `Vhs` gallery composition renders the same demo used by the site;
-its children live outside the standalone Element. The temporary `VHSTest`
-composition has been removed.
+The maintained `Vhs` gallery composition uses the same demo as the site; its demo
+children live outside the standalone Element.

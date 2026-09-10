@@ -58,9 +58,6 @@ export const VhsPreview = ({
 				<div style={{fontSize: w * 0.014, letterSpacing: w * 0.004}}>
 					BANGER ELEMENTS / TAPE 001
 				</div>
-				<div style={{fontSize: w * 0.055, fontWeight: 900, letterSpacing: -w * 0.002}}>
-					LATE NIGHT SIGNAL
-				</div>
 			</div>
 		</Vhs>
 	);

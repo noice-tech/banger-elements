@@ -1,6 +1,6 @@
 {
 	"name": "banger-elements",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"private": true,
 	"description": "Audio-reactive elements for Remotion.",
 	"license": "MIT",
@@ -41,8 +41,8 @@
 		"clean": "node scripts/clean.mjs"
 	},
 	"devDependencies": {
-		"@remotion/cli": "4.0.520",
-		"@remotion/eslint-config-flat": "4.0.520",
+		"@remotion/cli": "4.0.523",
+		"@remotion/eslint-config-flat": "4.0.523",
 		"@types/node": "22.18.0",
 		"eslint": "9.39.1",
 		"globals": "16.5.0",

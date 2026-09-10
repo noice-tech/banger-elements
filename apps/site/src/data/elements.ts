@@ -8,26 +8,26 @@ export const elementCategories = [
 		featured: ['ferrofluid', 'halo', 'spectre', 'circle', 'waveform', 'audio-particles'],
 	},
 	{
-		id: 'effects',
-		title: 'Effects',
-		description: 'Wrap your elements with analog distortion and texture.',
-		featured: ['vhs'],
-	},
-	{
 		id: 'shaders',
 		title: 'Shaders',
 		description: 'Immersive backgrounds, procedural worlds and evolving textures.',
 		featured: ['space', 'synthwave', 'hyperloop', 'rain', 'mushrooms', 'downfall'],
+	},
+	{
+		id: 'effects',
+		title: 'Effects',
+		description: 'Wrap your elements with analog distortion and texture.',
+		featured: ['vhs'],
 	},
 ] as const;
 
 const details = {
 	vhs: {
 		title: 'VHS',
-		renderer: 'SVG filter',
+		renderer: 'WebGL2',
 		tagline: 'Tape distortion for everything inside the frame.',
 		description:
-			'Wrap text, visualizers and backgrounds in horizontal jitter, grain and moving tracking bands. The preview combines Space, Halo and text; the downloaded source is just the reusable VHS wrapper.',
+			'Wrap text, visualizers and backgrounds in horizontal distortion, tracking tears, grain and color treatment. Supported Chromium captures the whole group into the shader; other browsers use an SVG approximation. The preview combines Space, Halo and text, while the downloaded source is just the reusable wrapper.',
 		controls: [
 			'strength — overall treatment; zero bypasses the filter and tracking overlays',
 			'horizontalDistortion / glitch — broad horizontal displacement and fine tape jitter',
@@ -35,7 +35,7 @@ const details = {
 			'timeOffsetInSeconds — effect phase, independent of child media timing',
 		],
 		limitation:
-			'Filters children only, never sibling layers or content portaled outside the wrapper. A browser-native adaptation, not a pixel-identical GLSL port. Clips to its bounds; tracking overlays can mark transparent areas. Tested in Remotion Chromium; large filtered groups cost more rendering time. Child WebGL Elements still need graphics acceleration.',
+			'The faithful shader path uses experimental HTML-in-canvas: Chrome 149+ with chrome://flags/#canvas-draw-element for browser preview, and Remotion 4.0.523+ with ANGLE or Swangle for rendering. Unsupported browsers receive an SVG approximation. Filters children only, never sibling layers or portals; HTML-in-canvas wrappers cannot be nested. Clips to its bounds, and large groups cost more rendering time.',
 	},
 	fractals: {
 		title: 'Fractals',

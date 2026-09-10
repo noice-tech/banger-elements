@@ -19,7 +19,7 @@ For local audio or image files, use a hosted URL before installation. Browser fi
 
 ### If Studio is not found
 
-Keep your intended Studio open and focused before sending the request. Check that it uses a compatible Remotion version, runs on a port between **3000 and 3009**, and that your browser allows local-network access when prompted. Tested with **Remotion 4.0.520**, React 19.1.1 and aligned `@remotion/*` versions. You can also [download the source](#download-instead) if the connection is unavailable.
+Keep your intended Studio open and focused before sending the request. Check that it uses a compatible Remotion version, runs on a port between **3000 and 3009**, and that your browser allows local-network access when prompted. Tested with **Remotion 4.0.523**, React 19.1.1 and aligned `@remotion/*` versions. You can also [download the source](#download-instead) if the connection is unavailable.
 
 ## Add the collection to Studio
 
@@ -52,7 +52,7 @@ import {Vhs} from './vhs.element';
 </Vhs>
 ```
 
-Match child drawing dimensions and use absolute positioning to stack layers. VHS owns its Sequence and moves the group; children retain their own timing. Set `strength={0}` for a clean bypass. VHS does not play or analyze audio: the preview's **Demo audio** controls affect only the demo children. The wrapper uses browser-native SVG filters; it is a VHS-style adaptation rather than an identical port of the original GLSL shader.
+Match child drawing dimensions and use absolute positioning to stack layers. VHS owns its Sequence and moves the group; children retain their own timing. Set `strength={0}` for a clean bypass. VHS does not play or analyze audio: the preview's **Demo audio** controls affect only the demo children. The faithful path uses Remotion’s experimental HTML-in-canvas support to process the group with Banger’s GLSL shader. Browser preview requires Chrome 149+ with `chrome://flags/#canvas-draw-element` enabled; unsupported browsers use an SVG approximation. Rendering uses Remotion’s bundled browser and requires `--gl=angle` or `--gl=swangle`. Do not nest HTML-in-canvas effects.
 
 ## Audio setup
 
