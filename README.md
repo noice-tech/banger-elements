@@ -2,15 +2,21 @@
 
 Audio-reactive elements for [Remotion](https://remotion.dev), from the makers of [banger.show](https://banger.show).
 
-Preview each element, adjust its settings, and use the source in your project.
+Preview each element, adjust its settings, and use the source in your project — no runtime component library required.
 
-![Animated previews of Spectre, Circle, Ferrofluid, and Audio Particles](docs/assets/preview.gif)
+![Animated previews of the Spectre visualizer, Trip shader, and VHS effect](docs/assets/preview.gif)
+
+## Explore the collection
+
+- [**Visualizers**](https://banger-elements.dev/visualizers) — waveforms, spectra, and audio-reactive forms.
+- [**Shaders**](https://banger-elements.dev/shaders) — procedural backgrounds, immersive worlds, and evolving textures.
+- [**Effects**](https://banger-elements.dev/effects) — wrappers that transform child content with treatments such as lens distortion and analog texture.
 
 ## Getting started
 
 1. Browse the [showcase](https://banger-elements.dev) and preview an element.
 2. Choose **Install in Studio** and confirm in Remotion Studio, or download the TSX source.
-3. Connect your audio and adjust the element’s settings in your composition.
+3. Connect audio for a visualizer or shader, or wrap existing content with an effect, then adjust its settings in your composition.
 
 See the [setup and usage guide](apps/site/src/content/docs/getting-started.mdx) for details.
 

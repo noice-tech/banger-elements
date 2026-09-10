@@ -29,6 +29,12 @@ test('catalog: stable identities and explicit purpose-based categories', () => {
 			'downfall',
 			'rail',
 			'rain',
+			'kaleidoscope',
+			'eye',
+			'flowers',
+			'moon',
+			'city',
+			'basic',
 		],
 	);
 });
