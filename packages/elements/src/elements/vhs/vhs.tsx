@@ -130,8 +130,7 @@ void main() {
   gl_Position = vec4(position, 0.0, 1.0);
 }`;
 
-// Ported from packages/visual-engine/src/components/effects/layered/passes/vhs.ts
-// in banger.show. The only addition is strength, used for an exact bypass.
+// The only addition is strength, used for an exact bypass.
 const fragmentShader = `#version 300 es
 precision highp float;
 uniform sampler2D inputTexture;
@@ -441,7 +440,12 @@ function VhsFallback(props: ResolvedVhsProps) {
 			{amount > 0 ? (
 				<div
 					aria-hidden
-					style={{position: 'absolute', inset: 0, pointerEvents: 'none', opacity: amount}}
+					style={{
+						position: 'absolute',
+						inset: 0,
+						pointerEvents: 'none',
+						opacity: amount,
+					}}
 				>
 					<div
 						style={{
