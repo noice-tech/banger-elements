@@ -10,6 +10,7 @@ type CatalogEntry = {
 
 export const catalog = [
 	{slug: 'vhs', name: 'Vhs', category: 'effects', width: 1280, height: 720},
+	{slug: 'fisheye', name: 'Fisheye', category: 'effects', width: 1280, height: 720},
 	{
 		slug: 'ferrofluid',
 		name: 'Ferrofluid',

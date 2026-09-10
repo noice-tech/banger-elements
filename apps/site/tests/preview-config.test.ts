@@ -103,6 +103,27 @@ test('VHS exports a children wrapper without preview-only audio props', () => {
 	}
 });
 
+test('Fisheye exports a children wrapper without preview-only audio props', () => {
+	const result = configuredJsx(
+		'fisheye',
+		{
+			...examples.fisheye.props,
+			audioSrc: 'blob:private-track',
+			audioOffsetInSeconds: 12,
+			playAudio: true,
+		},
+		true,
+	);
+	assert.ok(result.startsWith("import {Fisheye} from './fisheye.element';"));
+	assert.ok(result.includes('</Fisheye>'));
+	assert.ok(result.includes('Move your existing Elements'));
+	assert.ok(!result.includes('audioSrc'));
+	assert.ok(!result.includes('playAudio'));
+	assert.ok(!result.includes('blob:'));
+	assert.equal(examples.fisheye.props.strength, 0.75);
+	assert.equal(examples.fisheye.props.perspectiveFactor, 0.35);
+});
+
 test('VHS preview exposes no date option', () => {
 	assert.ok(!('dateText' in examples.vhs.props));
 	assert.ok(!examples.vhs.controls.some(({key}) => String(key) === 'dateText'));
