@@ -33,7 +33,7 @@ const details = {
 			'perspectiveFactor — compensates the apparent zoom as distortion increases',
 		],
 		limitation:
-			'Requires WebGL2 and HTML-in-canvas support: Chrome 149+ with chrome://flags/#canvas-draw-element for browser preview, and Remotion 4.0.523+ with ANGLE or Swangle for rendering. Filters children only, never sibling layers or portals; HTML-in-canvas wrappers cannot be nested. Clips to its bounds, and large groups cost more rendering time.',
+			'The faithful path uses WebGL2 and HTML-in-canvas: Chrome 149+ with chrome://flags/#canvas-draw-element for browser preview, and Remotion 4.0.523+ with ANGLE or Swangle for rendering. Other browsers use a deterministic SVG displacement fallback, which may look slightly softer near the edges. Filters children only, never sibling layers or portals; HTML-in-canvas wrappers cannot be nested. Clips to its bounds, and large groups cost more rendering time.',
 	},
 	vhs: {
 		title: 'VHS',

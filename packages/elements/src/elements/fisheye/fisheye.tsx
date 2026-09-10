@@ -1,4 +1,4 @@
-import React, {forwardRef, useCallback, useImperativeHandle, useRef} from 'react';
+import React, {forwardRef, useCallback, useId, useImperativeHandle, useMemo, useRef} from 'react';
 import {
 	HtmlInCanvas,
 	Interactive,
@@ -222,11 +222,146 @@ function FisheyeCanvas(props: ResolvedFisheyeProps) {
 	);
 }
 
+function setUint32(bytes: Uint8Array, offset: number, value: number) {
+	bytes[offset] = value & 255;
+	bytes[offset + 1] = (value >>> 8) & 255;
+	bytes[offset + 2] = (value >>> 16) & 255;
+	bytes[offset + 3] = (value >>> 24) & 255;
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+	const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+	let result = '';
+	for (let index = 0; index < bytes.length; index += 3) {
+		const first = bytes[index] ?? 0;
+		const second = bytes[index + 1] ?? 0;
+		const third = bytes[index + 2] ?? 0;
+		const value = (first << 16) | (second << 8) | third;
+		result += alphabet[(value >>> 18) & 63];
+		result += alphabet[(value >>> 12) & 63];
+		result += index + 1 < bytes.length ? alphabet[(value >>> 6) & 63] : '=';
+		result += index + 2 < bytes.length ? alphabet[value & 63] : '=';
+	}
+	return result;
+}
+
+function fisheyeDisplacementMap(
+	strength: number,
+	perspectiveFactor: number,
+	width: number,
+	height: number,
+) {
+	const resolution = 96;
+	const headerSize = 54;
+	const bytes = new Uint8Array(headerSize + resolution * resolution * 4);
+	bytes[0] = 0x42;
+	bytes[1] = 0x4d;
+	setUint32(bytes, 2, bytes.length);
+	setUint32(bytes, 10, headerSize);
+	setUint32(bytes, 14, 40);
+	setUint32(bytes, 18, resolution);
+	setUint32(bytes, 22, -resolution);
+	bytes[26] = 1;
+	bytes[28] = 32;
+	setUint32(bytes, 34, resolution * resolution * 4);
+	const amount = bounded(strength, 0, 2, 0.5);
+	const perspective = bounded(perspectiveFactor, 0, 1, 0.25);
+	let maximumDisplacement = 0;
+	for (let y = 0; y <= resolution; y++) {
+		for (let x = 0; x <= resolution; x++) {
+			const centeredX = x / resolution - 0.5;
+			const centeredY = y / resolution - 0.5;
+			const radiusSquared = centeredX * centeredX + centeredY * centeredY;
+			const factor = (1 + amount * radiusSquared) / (1 + amount * perspective);
+			maximumDisplacement = Math.max(
+				maximumDisplacement,
+				Math.abs(centeredX * (factor - 1) * width),
+				Math.abs(centeredY * (factor - 1) * height),
+			);
+		}
+	}
+	const scale = Math.max(1, maximumDisplacement * 2);
+	for (let y = 0; y < resolution; y++) {
+		for (let x = 0; x < resolution; x++) {
+			const u = (x + 0.5) / resolution;
+			const v = (y + 0.5) / resolution;
+			const centeredX = u - 0.5;
+			const centeredY = v - 0.5;
+			const radiusSquared = centeredX * centeredX + centeredY * centeredY;
+			const factor = (1 + amount * radiusSquared) / (1 + amount * perspective);
+			const red = Math.round(
+				bounded(0.5 + (centeredX * (factor - 1) * width) / scale, 0, 1, 0.5) * 255,
+			);
+			const green = Math.round(
+				bounded(0.5 + (centeredY * (factor - 1) * height) / scale, 0, 1, 0.5) * 255,
+			);
+			const offset = headerSize + (y * resolution + x) * 4;
+			bytes[offset] = 128;
+			bytes[offset + 1] = green;
+			bytes[offset + 2] = red;
+			bytes[offset + 3] = 255;
+		}
+	}
+	return {uri: `data:image/bmp;base64,${bytesToBase64(bytes)}`, scale};
+}
+
+function FisheyeSvgFallback(props: ResolvedFisheyeProps) {
+	const filterId = `fisheye-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+	const strength = bounded(props.strength, 0, 2, 0.5);
+	const perspectiveFactor = bounded(props.perspectiveFactor, 0, 1, 0.25);
+	const map = useMemo(
+		() => fisheyeDisplacementMap(strength, perspectiveFactor, props.width, props.height),
+		[strength, perspectiveFactor, props.width, props.height],
+	);
+	return (
+		<>
+			<svg width={0} height={0} aria-hidden style={{position: 'absolute', pointerEvents: 'none'}}>
+				<defs>
+					<filter
+						id={filterId}
+						x={0}
+						y={0}
+						width={props.width}
+						height={props.height}
+						filterUnits="userSpaceOnUse"
+						primitiveUnits="userSpaceOnUse"
+						colorInterpolationFilters="sRGB"
+					>
+						<feImage
+							href={map.uri}
+							x={0}
+							y={0}
+							width={props.width}
+							height={props.height}
+							preserveAspectRatio="none"
+							result="displacement"
+						/>
+						<feDisplacementMap
+							in="SourceGraphic"
+							in2="displacement"
+							scale={map.scale}
+							xChannelSelector="R"
+							yChannelSelector="G"
+							result="distorted"
+						/>
+						<feComposite in="distorted" in2="SourceGraphic" operator="over" />
+					</filter>
+				</defs>
+			</svg>
+			<div style={{position: 'absolute', inset: 0, filter: `url(#${filterId})`}}>
+				{props.children}
+			</div>
+		</>
+	);
+}
+
 function FisheyeContent(props: ResolvedFisheyeProps) {
 	if (bounded(props.strength, 0, 2, 0.5) === 0) return <>{props.children}</>;
-	if (!HtmlInCanvas.isSupported())
-		throw new Error('Fisheye requires HTML-in-canvas support in this browser or renderer.');
-	return <FisheyeCanvas {...props} />;
+	return HtmlInCanvas.isSupported() ? (
+		<FisheyeCanvas {...props} />
+	) : (
+		<FisheyeSvgFallback {...props} />
+	);
 }
 
 const FisheyeInner = forwardRef<

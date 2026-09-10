@@ -52,7 +52,7 @@ import {Fisheye} from './fisheye.element';
 </Fisheye>
 ```
 
-Match child drawing dimensions and use absolute positioning to stack layers. Each wrapper owns its Sequence and moves the group; children retain their own timing. Set `strength={0}` for a clean bypass. Effects do not play or analyze audio: the preview's **Demo audio** controls affect only the demo children. The WebGL path uses Remotion’s experimental HTML-in-canvas support to process the group. Browser preview requires Chrome 149+ with `chrome://flags/#canvas-draw-element` enabled. VHS provides an SVG approximation in unsupported browsers; Fisheye reports that HTML-in-canvas is unavailable rather than substituting another look. Rendering uses Remotion’s bundled browser and requires `--gl=angle` or `--gl=swangle`. Do not nest HTML-in-canvas effects.
+Match child drawing dimensions and use absolute positioning to stack layers. Each wrapper owns its Sequence and moves the group; children retain their own timing. Set `strength={0}` for a clean bypass. Effects do not play or analyze audio: the preview's **Demo audio** controls affect only the demo children. The WebGL path uses Remotion’s experimental HTML-in-canvas support to process the group. Browser preview requires Chrome 149+ with `chrome://flags/#canvas-draw-element` enabled. Unsupported browsers use deterministic SVG approximations; the Fisheye fallback follows the same lens equation through a sampled displacement map but may look slightly softer near the edges. Rendering uses Remotion’s bundled browser and requires `--gl=angle` or `--gl=swangle` for the faithful path. Do not nest HTML-in-canvas effects.
 
 ## Audio setup
 

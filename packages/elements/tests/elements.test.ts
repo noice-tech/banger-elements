@@ -4,6 +4,7 @@ import test from 'node:test';
 import {setStudioDragData, StudioProtocolInternals} from '@remotion/studio-protocol';
 import ts from 'typescript';
 import {catalog} from '../src/catalog';
+import {loadHelpers} from './helpers';
 
 const manifest = JSON.parse(fs.readFileSync('package.json', 'utf8')) as {
 	dependencies: Record<string, string>;
@@ -79,6 +80,22 @@ for (const entry of catalog) {
 		);
 	});
 }
+
+test('Fisheye SVG fallback produces a deterministic displacement bitmap', () => {
+	const {fisheyeDisplacementMap} = loadHelpers('fisheye', ['fisheyeDisplacementMap']) as {
+		fisheyeDisplacementMap: (
+			strength: number,
+			perspectiveFactor: number,
+			width: number,
+			height: number,
+		) => {uri: string; scale: number};
+	};
+	const first = fisheyeDisplacementMap(0.75, 0.35, 1280, 720);
+	assert.deepEqual(first, fisheyeDisplacementMap(0.75, 0.35, 1280, 720));
+	assert.notDeepEqual(first, fisheyeDisplacementMap(1.5, 0.35, 1280, 720));
+	assert.ok(first.uri.startsWith('data:image/bmp;base64,Qk'));
+	assert.ok(first.scale > 0);
+});
 
 test('drag transport round-trips through the Studio SDK', () => {
 	const payload = StudioProtocolInternals.parseStudioElementPayload(
