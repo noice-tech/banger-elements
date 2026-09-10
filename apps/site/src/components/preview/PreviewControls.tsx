@@ -71,7 +71,7 @@ export function PreviewControls({
 		try {
 			await navigator.clipboard.writeText(configuredJsx(slug, inputProps, Boolean(localAudio)));
 			setCopyMessage(
-				localAudio || localArtwork
+				slug !== 'vhs' && (localAudio || localArtwork)
 					? 'Copied. Replace local asset paths with your project files.'
 					: 'Configuration copied. Paste inside your composition.',
 			);
@@ -125,7 +125,13 @@ export function PreviewControls({
 							document.getElementById(`${slug}-tab-${tabs[next]}`)?.focus();
 						}}
 					>
-						{tab === 'look' ? 'Look' : tab === 'audio' ? 'Audio' : 'More'}
+						{tab === 'look'
+							? 'Look'
+							: tab === 'audio'
+								? slug === 'vhs'
+									? 'Demo audio'
+									: 'Audio'
+								: 'More'}
 					</button>
 				))}
 			</div>
@@ -136,6 +142,11 @@ export function PreviewControls({
 				hidden={panel !== 'audio'}
 				tabIndex={0}
 			>
+				{slug === 'vhs' ? (
+					<p className="control-note">
+						Audio drives the demo children only. VHS itself has no audio controls or analysis.
+					</p>
+				) : null}
 				<div className="audio-controls">
 					<label className="wide-control">
 						<span>Audio URL</span>

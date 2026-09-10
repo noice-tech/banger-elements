@@ -5,7 +5,7 @@ interface Props { category?: typeof elementCategories[number]['id'] }
 const {category: selectedCategory} = Astro.props;
 const activeCategory = elementCategories.find(category => category.id === selectedCategory);
 const pageTitle = activeCategory ? `${activeCategory.title} for Remotion` : 'Give your sound a shape.';
-const description = activeCategory ? `${activeCategory.description} Explore open-source ${activeCategory.title.toLowerCase()} for Remotion, preview and customize each element, and use the source in your project.` : `${elements.length} source-installable audio visualizers and shaders for Remotion.`;
+const description = activeCategory ? `${activeCategory.description} Explore open-source ${activeCategory.title.toLowerCase()} for Remotion, preview and customize each element, and use the source in your project.` : `${elements.length} source-installable visualizers, shaders and effects for Remotion.`;
 const categories = activeCategory ? [activeCategory] : elementCategories;
 const canonical = new URL(activeCategory ? `/${activeCategory.id}` : '/', Astro.site).href;
 ---
@@ -20,7 +20,7 @@ const canonical = new URL(activeCategory ? `/${activeCategory.id}` : '/', Astro.
 				<p class="hero-description">{activeCategory.description}<br class="desktop-break" /> Preview, customize, and make the source your own.</p>
 			</> : <>
 				<h1 id="_top">Give your sound<br /><span>a shape.</span></h1>
-				<p class="hero-description">Audio visualizers and shaders for Remotion.<br class="desktop-break" /> Find your look, tune the details, and make the source your own.</p>
+				<p class="hero-description">Visualizers, shaders and effects for Remotion.<br class="desktop-break" /> Find your look, tune the details, and make the source your own.</p>
 			</>}
 			<div class="hero-links"><a class="button primary" href="#collection">Explore the collection <span aria-hidden="true">↓</span></a><a class="text-link" href="/getting-started.html">How it works <span aria-hidden="true">↗</span></a></div>
 			<div class="hero-meta"><span>Open source</span><span>Audio-reactive</span><span>Made for Remotion</span></div>
@@ -60,7 +60,7 @@ const canonical = new URL(activeCategory ? `/${activeCategory.id}` : '/', Astro.
 	</div>
 </StarlightPage>
 <script>
-	const search = document.querySelector<HTMLInputElement>('.collection-search input')!;
+	const search = document.querySelector<HTMLInputElement>('.collection-search input');
 	const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-section]'));
 	const filters = Array.from(document.querySelectorAll<HTMLAnchorElement>('.collection-filters a'));
 	const status = document.querySelector<HTMLElement>('.collection-status')!;
@@ -75,7 +75,7 @@ const canonical = new URL(activeCategory ? `/${activeCategory.id}` : '/', Astro.
 		} else video.pause();
 	});
 	const render = () => {
-		const query = search.value.trim().toLowerCase();
+		const query = (search?.value ?? '').trim().toLowerCase();
 		const overview = category === 'all' && !query;
 		let count = 0;
 		sections.forEach(section => {
@@ -96,25 +96,27 @@ const canonical = new URL(activeCategory ? `/${activeCategory.id}` : '/', Astro.
 	};
 	const restore = () => {
 		const params = new URLSearchParams(location.search);
-		search.value = params.get('q') ?? '';
+		if (search) search.value = params.get('q') ?? '';
 		render();
 	};
 	const save = () => {
+		if (!search) return;
 		const url = new URL(location.href);
 		if (search.value.trim()) url.searchParams.set('q', search.value.trim());
 		else url.searchParams.delete('q');
 		history.replaceState(null, '', url);
 		render();
 	};
-	search.addEventListener('input', save);
+	search?.addEventListener('input', save);
 	empty.querySelector('button')!.addEventListener('click', () => {
-		search.value = '';
+		if (search) search.value = '';
 		save();
-		search.focus();
+		search?.focus();
 	});
 	window.addEventListener('popstate', restore);
 	window.addEventListener('pageshow', restore);
-	document.querySelector<HTMLElement>('.collection-search')!.hidden = false;
+	const searchContainer = document.querySelector<HTMLElement>('.collection-search');
+	if (searchContainer) searchContainer.hidden = false;
 	restore();
 	const observer = new IntersectionObserver(entries => {
 		entries.forEach(entry => {

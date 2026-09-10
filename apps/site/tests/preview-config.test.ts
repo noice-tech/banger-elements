@@ -78,6 +78,36 @@ test('Trip: native sliders represent defaults exactly and retain fractional disp
 	assert.ok(html.includes('<output>0.95</output>'));
 });
 
+test('VHS exports a children wrapper without preview-only audio props', () => {
+	const result = configuredJsx(
+		'vhs',
+		{
+			...examples.vhs.props,
+			audioSrc: 'blob:private-track',
+			audioOffsetInSeconds: 12,
+			playAudio: true,
+		},
+		true,
+	);
+	assert.ok(result.startsWith("import {Vhs} from './vhs.element';"));
+	assert.ok(result.includes('</Vhs>'));
+	assert.ok(result.includes('Move your existing Elements'));
+	assert.ok(!result.includes('audioSrc'));
+	assert.ok(!result.includes('playAudio'));
+	assert.ok(!result.includes('blob:'));
+	assert.ok(!result.includes('dateText'));
+	for (const control of examples.vhs.controls.filter((control) => control.type === 'range')) {
+		const value = Number(examples.vhs.props[control.key as keyof typeof examples.vhs.props]);
+		const steps = (value - control.min!) / control.step!;
+		assert.ok(Math.abs(steps - Math.round(steps)) < 1e-8, control.key);
+	}
+});
+
+test('VHS preview exposes no date option', () => {
+	assert.ok(!('dateText' in examples.vhs.props));
+	assert.ok(!examples.vhs.controls.some(({key}) => String(key) === 'dateText'));
+});
+
 test('Halo exports leadingColor and transparent center mode', () => {
 	const result = configuredJsx('halo', {leadingColor: '#eee6ff', centerMode: 'transparent'}, false);
 	assert.ok(result.includes('leadingColor={"#eee6ff"}'));

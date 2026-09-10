@@ -3,6 +3,7 @@ import type {ComponentProps, ComponentType} from 'react';
 import type {Control} from './controls';
 import type {PreviewProps as Props} from './types';
 import {range, color, select, booleanControl, numberControl} from './controls';
+import {VhsPreview, vhsPreviewDefaults} from './vhs';
 import {
 	Waveform,
 	Spectre,
@@ -78,6 +79,20 @@ const HaloAndParticles = (props: Props) => {
 	);
 };
 export const examples = {
+	vhs: {
+		component: VhsPreview,
+		width: 1280,
+		height: 720,
+		props: vhsPreviewDefaults,
+		controls: [
+			range('strength', 'Effect strength / bypass', 0, 1, 0.01),
+			range('horizontalDistortion', 'Horizontal distortion', 0.005, 0.07, 0.001),
+			range('glitch', 'Fine tape jitter', 0.01, 0.07, 0.01),
+			range('line', 'Tracking band', 0.01, 1, 0.01),
+			range('period', 'Tracking speed', 0.01, 2, 0.01),
+			numberControl('timeOffsetInSeconds', 'Effect phase (s)', -86400, 86400, 0.01),
+		],
+	} satisfies PreviewExample<typeof VhsPreview>,
 	fractals: {
 		component: Fractals,
 		width: 1280,
@@ -622,6 +637,7 @@ export type PreviewKind = keyof typeof examples;
 export const defaultAudioFor = (kind: PreviewKind) => {
 	if (
 		[
+			'vhs',
 			'halo',
 			'ferrofluid',
 			'trip',

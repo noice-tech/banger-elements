@@ -1,6 +1,6 @@
 {
 	"name": "@banger-elements/site",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"private": true,
 	"description": "Showcase and documentation for Banger Elements.",
 	"license": "MIT",
@@ -22,14 +22,14 @@
 		"@astrojs/mdx": "4.3.14",
 		"@astrojs/react": "4.4.2",
 		"@astrojs/starlight": "0.37.7",
-		"@remotion/media": "4.0.520",
-		"@remotion/media-utils": "4.0.520",
-		"@remotion/player": "4.0.520",
-		"@remotion/studio-protocol": "4.0.520",
+		"@remotion/media": "4.0.523",
+		"@remotion/media-utils": "4.0.523",
+		"@remotion/player": "4.0.523",
+		"@remotion/studio-protocol": "4.0.523",
 		"astro": "5.18.2",
 		"react": "19.1.1",
 		"react-dom": "19.1.1",
-		"remotion": "4.0.520"
+		"remotion": "4.0.523"
 	},
 	"devDependencies": {
 		"@astrojs/check": "0.9.10",

@@ -1,6 +1,6 @@
 {
 	"name": "@banger-elements/studio",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"private": true,
 	"description": "Remotion compositions for developing and testing Banger Elements.",
 	"license": "MIT",
@@ -17,12 +17,12 @@
 		"render": "remotion render src/fixtures/render-root.tsx HaloAndParticles ../../out/halo.mp4 --public-dir=../../public --gl=angle --concurrency=1"
 	},
 	"dependencies": {
-		"@remotion/cli": "4.0.520",
-		"@remotion/media": "4.0.520",
-		"@remotion/media-utils": "4.0.520",
+		"@remotion/cli": "4.0.523",
+		"@remotion/media": "4.0.523",
+		"@remotion/media-utils": "4.0.523",
 		"react": "19.1.1",
 		"react-dom": "19.1.1",
-		"remotion": "4.0.520"
+		"remotion": "4.0.523"
 	},
 	"devDependencies": {
 		"@banger-elements/collection": "workspace:*",

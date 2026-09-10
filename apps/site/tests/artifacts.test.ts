@@ -51,7 +51,7 @@ test('every catalog entry has a downloadable detail page, poster and gallery pre
 
 test('categories: gallery and sidebar group all elements without changing their URLs', async () => {
 	const overview = await readFile(path.join(dist, 'index.html'), 'utf8');
-	for (const category of ['visualizers', 'shaders']) {
+	for (const category of ['visualizers', 'shaders', 'effects']) {
 		const section = new RegExp(
 			`<section[^>]*aria-labelledby="${category}"[^>]*>([\\s\\S]*?)</section>`,
 		).exec(overview)?.[1];
@@ -63,6 +63,11 @@ test('categories: gallery and sidebar group all elements without changing their 
 	}
 	const trip = await readFile(path.join(dist, 'trip.html'), 'utf8');
 	assert.ok(trip.includes('href="/shaders"'));
+	const vhs = await readFile(path.join(dist, 'vhs.html'), 'utf8');
+	assert.ok(vhs.includes('href="/effects"'));
+	assert.ok(vhs.includes('does not automatically wrap selected layers'));
+	assert.ok(vhs.includes('wrapper is empty until you add children'));
+	assert.ok(!vhs.includes('No props are required.'));
 });
 
 test('static navigation, assets and fragment targets resolve without a backend', async () => {

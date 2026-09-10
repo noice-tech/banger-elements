@@ -13,9 +13,30 @@ export const elementCategories = [
 		description: 'Immersive backgrounds, procedural worlds and evolving textures.',
 		featured: ['space', 'synthwave', 'hyperloop', 'rain', 'mushrooms', 'downfall'],
 	},
+	{
+		id: 'effects',
+		title: 'Effects',
+		description: 'Wrap your elements with analog distortion and texture.',
+		featured: ['vhs'],
+	},
 ] as const;
 
 const details = {
+	vhs: {
+		title: 'VHS',
+		renderer: 'WebGL2',
+		tagline: 'Tape distortion for everything inside the frame.',
+		description:
+			'Wrap text, visualizers and backgrounds in horizontal distortion, tracking tears, grain and color treatment. Supported Chromium captures the whole group into the shader; other browsers use an SVG approximation. The preview combines Space, Halo and text, while the downloaded source is just the reusable wrapper.',
+		controls: [
+			'strength — overall treatment; zero bypasses the filter and tracking overlays',
+			'horizontalDistortion / glitch — broad horizontal displacement and fine tape jitter',
+			'line / period — tracking band strength and speed',
+			'timeOffsetInSeconds — effect phase, independent of child media timing',
+		],
+		limitation:
+			'The faithful shader path uses experimental HTML-in-canvas: Chrome 149+ with chrome://flags/#canvas-draw-element for browser preview, and Remotion 4.0.523+ with ANGLE or Swangle for rendering. Unsupported browsers receive an SVG approximation. Filters children only, never sibling layers or portals; HTML-in-canvas wrappers cannot be nested. Clips to its bounds, and large groups cost more rendering time.',
+	},
 	fractals: {
 		title: 'Fractals',
 		renderer: 'WebGL2',

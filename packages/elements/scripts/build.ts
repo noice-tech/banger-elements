@@ -19,13 +19,16 @@ for (const entry of catalog) {
 		'utf8',
 	);
 	const payload = createElementPayload({
-		displayName: entry.name.replace(/([a-z])([A-Z])/g, '$1 $2'),
+		displayName: entry.slug === 'vhs' ? 'VHS' : entry.name.replace(/([a-z])([A-Z])/g, '$1 $2'),
 		slug: `banger-elements/${entry.slug}`,
 		sourceCode,
-		dependencies: [
-			{name: '@remotion/media', version: null},
-			{name: '@remotion/media-utils', version: null},
-		],
+		dependencies:
+			entry.category === 'effects'
+				? []
+				: [
+						{name: '@remotion/media', version: null},
+						{name: '@remotion/media-utils', version: null},
+					],
 		dimensions: {width: entry.width, height: entry.height},
 		durationInFrames: 480,
 		installationMode: 'component-owned-sequence',

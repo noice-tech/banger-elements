@@ -9,6 +9,27 @@ const circleCode = (variant: string, props = '') => `import {Circle} from './cir
 
 export const examplePresets = [
 	{
+		id: 'vhs',
+		group: 'Effects',
+		label: 'VHS wrapper',
+		description:
+			'Apply tape distortion to a group of Elements. Install VHS and your child Elements separately, then wrap their JSX; sibling insertion does not apply the effect.',
+		code: `import {Vhs} from './vhs.element';
+import {Space} from './space.element';
+import {Halo} from './halo.element';
+
+// Inside a 1280 × 720 composition:
+<Vhs width={1280} height={720} strength={1} glitch={0.04}>
+  <Space playAudio={false} style={{position: 'absolute', inset: 0}} />
+  <Halo playAudio style={{position: 'absolute', inset: 0}} />
+</Vhs>`,
+		links: [
+			{label: 'Open VHS', href: '/vhs.html'},
+			{label: 'Open Space', href: '/space.html'},
+			{label: 'Open Halo', href: '/halo.html'},
+		],
+	},
+	{
 		id: 'trip',
 		group: 'Shaders',
 		label: 'Trip',
@@ -113,4 +134,4 @@ export const HaloAndParticles = () => {
 ] as const;
 
 export type ExampleId = (typeof examplePresets)[number]['id'];
-export const exampleGroups = ['Shaders', 'Spectre', 'Circle', 'Combined'] as const;
+export const exampleGroups = ['Effects', 'Shaders', 'Spectre', 'Circle', 'Combined'] as const;
