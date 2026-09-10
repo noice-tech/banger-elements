@@ -100,4 +100,16 @@ export const catalog = [
 	{slug: 'downfall', name: 'Downfall', category: 'shaders', width: 1280, height: 720},
 	{slug: 'rail', name: 'Rail', category: 'shaders', width: 1280, height: 720},
 	{slug: 'rain', name: 'Rain', category: 'shaders', width: 1280, height: 720},
+	{
+		slug: 'kaleidoscope',
+		name: 'Kaleidoscope',
+		category: 'shaders',
+		width: 1280,
+		height: 720,
+	},
+	{slug: 'eye', name: 'Eye', category: 'shaders', width: 1280, height: 720},
+	{slug: 'flowers', name: 'Flowers', category: 'shaders', width: 1280, height: 720},
+	{slug: 'moon', name: 'Moon', category: 'shaders', width: 1280, height: 720},
+	{slug: 'city', name: 'City', category: 'shaders', width: 1280, height: 720},
+	{slug: 'basic', name: 'Basic', category: 'shaders', width: 1280, height: 720},
 ] as const satisfies readonly CatalogEntry[];

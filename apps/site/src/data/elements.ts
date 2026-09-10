@@ -11,7 +11,7 @@ export const elementCategories = [
 		id: 'shaders',
 		title: 'Shaders',
 		description: 'Immersive backgrounds, procedural worlds and evolving textures.',
-		featured: ['space', 'synthwave', 'hyperloop', 'rain', 'mushrooms', 'downfall'],
+		featured: ['space', 'kaleidoscope', 'eye', 'moon', 'city', 'flowers'],
 	},
 	{
 		id: 'effects',
@@ -193,6 +193,96 @@ const details = {
 		],
 		limitation:
 			'Requires WebGL2. Higher intensity costs more GPU time. Opaque inside its bounds: place it behind other elements. Uses the original fixed camera and spherical projection; motion continues in silence. Analysis runs at a fixed 60 Hz.',
+	},
+
+	kaleidoscope: {
+		title: 'Kaleidoscope',
+		renderer: 'WebGL2',
+		tagline: 'Fold luminous geometry into a constantly evolving mirrored pattern.',
+		description:
+			'A layered kaleidoscopic field with configurable symmetry, motion and bass-reactive color.',
+		controls: [
+			'startColor / randomColors — fixed theme or procedural colors',
+			'scale / pattern / amount — mirrored structure and density',
+			'disableMovement / still / speed — animation behavior',
+			'responsive / inputGainDb — audio response and visual gain',
+		],
+		limitation:
+			'Requires WebGL2. Opaque within its bounds. Dense patterns can shimmer at small output sizes.',
+	},
+	eye: {
+		title: 'Eye',
+		renderer: 'WebGL2',
+		tagline: 'Travel through an endless field of surreal watching eyes.',
+		description:
+			'A procedural eye tunnel with alternate color treatments and bass-reactive geometry.',
+		controls: [
+			'startColor / endColor / colorful / dark — color treatment',
+			'amount / smoothness / volume — eye field geometry',
+			'speed / bpm — camera motion',
+			'responsive / inputGainDb — audio response and visual gain',
+		],
+		limitation:
+			'Requires WebGL2. Procedural distance fields are GPU-intensive. Opaque within its bounds.',
+	},
+	flowers: {
+		title: 'Flowers',
+		renderer: 'WebGL2',
+		tagline: 'A rotating garden of geometric, audio-reactive blooms.',
+		description:
+			'Layered flower forms repeat across a hexagonal field with animated petals and glowing edges.',
+		controls: [
+			'strokeColor / backgroundColor — palette',
+			'scale / pattern / volume — flower shape and repetition',
+			'rotationSpeed / flowersSpeed — field and petal motion',
+			'responsive / inputGainDb — audio response and visual gain',
+		],
+		limitation:
+			'Requires WebGL2. Opaque within its bounds. Fine outlines may alias when scaled down.',
+	},
+	moon: {
+		title: 'Moon',
+		renderer: 'WebGL2',
+		tagline: 'An eclipsed moon wrapped in stars and a live spectrum.',
+		description:
+			'A procedural night sky with a moon, atmospheric glow and spectrum lines mapped around its surface.',
+		controls: [
+			'startColor / moonColor — sky and moon palette',
+			'hideMoon / hideAudio — independently hide the moon or spectrum',
+			'stars / pattern / speed / volume — sky density and motion',
+			'responsive / inputGainDb — spectrum response and visual gain',
+		],
+		limitation:
+			'Requires WebGL2. Opaque within its bounds. The spectrum uses a 308-bin audio texture updated per frame.',
+	},
+	city: {
+		title: 'City',
+		renderer: 'WebGL2',
+		tagline: 'Glide past a neon skyline and an infinite glowing grid.',
+		description:
+			'A procedural cityscape with animated buildings, windows, stars and a perspective ground plane.',
+		controls: [
+			'startColor / endColor — buildings and sky glow',
+			'lightsColor / groundColor / shineColor — windows and grid palette',
+			'textureSrc — optional noise image for the window pattern',
+			'stars / speed / responsive / inputGainDb — density, motion and audio response',
+		],
+		limitation:
+			'Requires WebGL2. External texture URLs need CORS access; an internal deterministic noise texture is used when empty. Opaque within its bounds.',
+	},
+	basic: {
+		title: 'Basic',
+		renderer: 'WebGL2',
+		tagline: 'A restrained audio-reactive gradient sky with optional stars.',
+		description:
+			'A lightweight procedural background that blends two colors with the bass and can add a flickering star field.',
+		controls: [
+			'backgroundColor / intensifyColor / starsColor — palette',
+			'enableStars / stars / pattern — star field and flicker',
+			'starsAudioReactivity / responsive / inputGainDb — audio response',
+			'speed / timeOffsetInSeconds — star-field movement and phase',
+		],
+		limitation: 'Requires WebGL2. Opaque within its bounds. Stars are disabled by default.',
 	},
 
 	ferrofluid: {
