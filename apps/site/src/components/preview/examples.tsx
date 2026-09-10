@@ -3,6 +3,7 @@ import type {ComponentProps, ComponentType} from 'react';
 import type {Control} from './controls';
 import type {PreviewProps as Props} from './types';
 import {range, color, select, booleanControl, numberControl} from './controls';
+import {FisheyePreview, fisheyePreviewDefaults} from './fisheye';
 import {VhsPreview, vhsPreviewDefaults} from './vhs';
 import {
 	Waveform,
@@ -93,6 +94,16 @@ export const examples = {
 			numberControl('timeOffsetInSeconds', 'Effect phase (s)', -86400, 86400, 0.01),
 		],
 	} satisfies PreviewExample<typeof VhsPreview>,
+	fisheye: {
+		component: FisheyePreview,
+		width: 1280,
+		height: 720,
+		props: fisheyePreviewDefaults,
+		controls: [
+			range('strength', 'Distortion strength / bypass', 0, 2, 0.01),
+			range('perspectiveFactor', 'Perspective compensation', 0, 1, 0.01),
+		],
+	} satisfies PreviewExample<typeof FisheyePreview>,
 	fractals: {
 		component: Fractals,
 		width: 1280,
@@ -638,6 +649,7 @@ export const defaultAudioFor = (kind: PreviewKind) => {
 	if (
 		[
 			'vhs',
+			'fisheye',
 			'halo',
 			'ferrofluid',
 			'trip',

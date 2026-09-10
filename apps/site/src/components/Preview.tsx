@@ -57,8 +57,9 @@ export default function Preview({
 		};
 	}, [selected]);
 	const example = examples[selected];
+	const isWrapper = selected === 'vhs' || selected === 'fisheye';
 	const durationInSeconds =
-		selected === 'vhs' ||
+		isWrapper ||
 		selected === 'ferrofluid' ||
 		selected === 'trip' ||
 		selected === 'fractals' ||
@@ -153,7 +154,7 @@ export default function Preview({
 			<div className="preview-caption">
 				<span>60 FPS · {durationInSeconds} seconds · Press play to hear audio</span>
 				<span>
-					{selected === 'vhs'
+					{isWrapper
 						? 'Demo children are not included. Wrap your own JSX after installation.'
 						: 'Studio uses your preview settings. Download TSX uses the original defaults.'}
 				</span>

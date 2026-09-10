@@ -26,6 +26,7 @@ export function PreviewControls({
 	artwork,
 }: PreviewControlsProps) {
 	const selected = slug;
+	const isWrapper = selected === 'vhs' || selected === 'fisheye';
 	const example: {props: PreviewProps; controls: readonly Control[]} = examples[selected];
 	const [panel, setPanel] = useState<'look' | 'audio' | 'more'>('look');
 	const [copyMessage, setCopyMessage] = useState('');
@@ -71,7 +72,7 @@ export function PreviewControls({
 		try {
 			await navigator.clipboard.writeText(configuredJsx(slug, inputProps, Boolean(localAudio)));
 			setCopyMessage(
-				slug !== 'vhs' && (localAudio || localArtwork)
+				!isWrapper && (localAudio || localArtwork)
 					? 'Copied. Replace local asset paths with your project files.'
 					: 'Configuration copied. Paste inside your composition.',
 			);
@@ -128,7 +129,7 @@ export function PreviewControls({
 						{tab === 'look'
 							? 'Look'
 							: tab === 'audio'
-								? slug === 'vhs'
+								? isWrapper
 									? 'Demo audio'
 									: 'Audio'
 								: 'More'}
@@ -142,9 +143,9 @@ export function PreviewControls({
 				hidden={panel !== 'audio'}
 				tabIndex={0}
 			>
-				{slug === 'vhs' ? (
+				{isWrapper ? (
 					<p className="control-note">
-						Audio drives the demo children only. VHS itself has no audio controls or analysis.
+						Audio drives the demo children only. The wrapper has no audio controls or analysis.
 					</p>
 				) : null}
 				<div className="audio-controls">

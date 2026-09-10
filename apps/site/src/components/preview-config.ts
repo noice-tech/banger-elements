@@ -25,6 +25,8 @@ const advancedKeys = new Set([
 
 export const isAdvancedControl = (key: string) => advancedKeys.has(key);
 
+const wrapperSlugs = new Set(['vhs', 'fisheye']);
+
 export function configuredJsx(
 	slug: string,
 	props: Record<string, PreviewValue>,
@@ -35,8 +37,7 @@ export function configuredJsx(
 		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
 		.join('');
 	const safeProps = {...props};
-	// VHS owns no audio: those controls belong only to the demo children.
-	if (slug === 'vhs') {
+	if (wrapperSlugs.has(slug)) {
 		delete safeProps.audioSrc;
 		delete safeProps.audioOffsetInSeconds;
 		delete safeProps.playAudio;
@@ -56,9 +57,8 @@ export function configuredJsx(
 		.filter(([, value]) => typeof value !== 'number' || Number.isFinite(value))
 		.map(([key, value]) => `  ${key}={${JSON.stringify(value)}}`)
 		.join('\n');
-	const ending =
-		slug === 'vhs'
-			? `>\n  {/* Move your existing Elements and text here. Stack layers with position: 'absolute'. */}\n</${name}>`
-			: '/>';
+	const ending = wrapperSlugs.has(slug)
+		? `>\n  {/* Move your existing Elements and text here. Stack layers with position: 'absolute'. */}\n</${name}>`
+		: '/>';
 	return `import {${name}} from './${slug}.element';\n\n${notes.length ? `${notes.join('\n')}\n` : ''}// Inside your Remotion composition:\n<${name}\n${attributes}\n${ending}`;
 }

@@ -42,17 +42,17 @@ Trip preserves banger.show's five controls: `baseColor`, `intensifyColor`, `thic
 
 ### Effects wrap your content
 
-[VHS](/vhs.html) is a wrapper, not an overlay over sibling layers. Install or download it, then move your existing Elements and text inside `<Vhs>…</Vhs>` in code. Installation does not automatically wrap selected Studio layers. The site's Space/Halo demo is not included in the source.
+[VHS](/vhs.html) and [Fisheye](/fisheye.html) are wrappers, not overlays over sibling layers. Install or download one, then move your existing Elements and text inside it in code. Installation does not automatically wrap selected Studio layers. The site's demo children are not included in the source.
 
 ```tsx
-import {Vhs} from './vhs.element';
+import {Fisheye} from './fisheye.element';
 
-<Vhs width={1280} height={720} strength={1}>
+<Fisheye width={1280} height={720} strength={0.75} perspectiveFactor={0.35}>
   {/* Your existing Elements and text go here. */}
-</Vhs>
+</Fisheye>
 ```
 
-Match child drawing dimensions and use absolute positioning to stack layers. VHS owns its Sequence and moves the group; children retain their own timing. Set `strength={0}` for a clean bypass. VHS does not play or analyze audio: the preview's **Demo audio** controls affect only the demo children. The faithful path uses Remotion’s experimental HTML-in-canvas support to process the group with Banger’s GLSL shader. Browser preview requires Chrome 149+ with `chrome://flags/#canvas-draw-element` enabled; unsupported browsers use an SVG approximation. Rendering uses Remotion’s bundled browser and requires `--gl=angle` or `--gl=swangle`. Do not nest HTML-in-canvas effects.
+Match child drawing dimensions and use absolute positioning to stack layers. Each wrapper owns its Sequence and moves the group; children retain their own timing. Set `strength={0}` for a clean bypass. Effects do not play or analyze audio: the preview's **Demo audio** controls affect only the demo children. The WebGL path uses Remotion’s experimental HTML-in-canvas support to process the group. Browser preview requires Chrome 149+ with `chrome://flags/#canvas-draw-element` enabled. VHS provides an SVG approximation in unsupported browsers; Fisheye reports that HTML-in-canvas is unavailable rather than substituting another look. Rendering uses Remotion’s bundled browser and requires `--gl=angle` or `--gl=swangle`. Do not nest HTML-in-canvas effects.
 
 ## Audio setup
 

@@ -63,11 +63,13 @@ test('categories: gallery and sidebar group all elements without changing their 
 	}
 	const trip = await readFile(path.join(dist, 'trip.html'), 'utf8');
 	assert.ok(trip.includes('href="/shaders"'));
-	const vhs = await readFile(path.join(dist, 'vhs.html'), 'utf8');
-	assert.ok(vhs.includes('href="/effects"'));
-	assert.ok(vhs.includes('does not automatically wrap selected layers'));
-	assert.ok(vhs.includes('wrapper is empty until you add children'));
-	assert.ok(!vhs.includes('No props are required.'));
+	for (const slug of ['vhs', 'fisheye']) {
+		const effect = await readFile(path.join(dist, `${slug}.html`), 'utf8');
+		assert.ok(effect.includes('href="/effects"'));
+		assert.ok(effect.includes('does not automatically wrap selected layers'));
+		assert.ok(effect.includes('wrapper is empty until you add children'));
+		assert.ok(!effect.includes('No props are required.'));
+	}
 });
 
 test('static navigation, assets and fragment targets resolve without a backend', async () => {

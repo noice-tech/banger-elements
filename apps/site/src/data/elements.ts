@@ -16,12 +16,25 @@ export const elementCategories = [
 	{
 		id: 'effects',
 		title: 'Effects',
-		description: 'Wrap your elements with analog distortion and texture.',
-		featured: ['vhs'],
+		description: 'Wrap your elements with lens distortion and analog texture.',
+		featured: ['vhs', 'fisheye'],
 	},
 ] as const;
 
 const details = {
+	fisheye: {
+		title: 'Fisheye',
+		renderer: 'WebGL2',
+		tagline: 'Bend everything inside the frame through a wide-angle lens.',
+		description:
+			'Wrap text, visualizers and backgrounds in adjustable barrel distortion with perspective compensation. The preview combines Space, Halo, a grid and text, while the downloaded source is only the reusable wrapper.',
+		controls: [
+			'strength — barrel distortion amount; zero bypasses capture and distortion',
+			'perspectiveFactor — compensates the apparent zoom as distortion increases',
+		],
+		limitation:
+			'Requires WebGL2 and HTML-in-canvas support: Chrome 149+ with chrome://flags/#canvas-draw-element for browser preview, and Remotion 4.0.523+ with ANGLE or Swangle for rendering. Filters children only, never sibling layers or portals; HTML-in-canvas wrappers cannot be nested. Clips to its bounds, and large groups cost more rendering time.',
+	},
 	vhs: {
 		title: 'VHS',
 		renderer: 'WebGL2',
