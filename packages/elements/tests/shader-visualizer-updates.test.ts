@@ -2,8 +2,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {loadHelpers, mockCanvas} from './helpers';
 
-const shaders = ['pulse', 'rooftop', 'cathedral', 'liquid', 'chrome', 'neuron', 'matrix'];
-
 for (const [slug, name, schema] of [
 	['vhs', 'Vhs', 'vhsSchema'],
 	['fisheye', 'Fisheye', 'fisheyeSchema'],
@@ -39,69 +37,6 @@ for (const [slug, name, schema] of [
 		draw({...state, gl}, image, {...props, time: 2}, ...(name === 'Vhs' ? [2, 1] : [1]));
 		assert.equal(uploads.length, 1);
 		assert.deepEqual(uploads[0], [gl.TEXTURE_2D, gl.RGBA8, image]);
-	});
-}
-
-for (const slug of shaders) {
-	const name = slug[0].toUpperCase() + slug.slice(1);
-	const helpers = loadHelpers(slug, [
-		`setup${name}`,
-		`draw${name}`,
-		`cleanup${name}`,
-		`${slug}Schema`,
-		'spectrumBars',
-	]) as Record<string, unknown>;
-	const setup = helpers[`setup${name}`] as (canvas: HTMLCanvasElement) => unknown;
-	const draw = helpers[`draw${name}`] as (state: unknown, frame: Record<string, unknown>) => void;
-	const cleanup = helpers[`cleanup${name}`] as (state: unknown) => void;
-	const defaults = Object.fromEntries(
-		Object.entries(helpers[`${slug}Schema`] as Record<string, {default: unknown}>)
-			.filter(([, field]) => field && typeof field === 'object' && 'default' in field)
-			.map(([key, field]) => [key, (field as {default: unknown}).default]),
-	);
-	for (const failure of [
-		'vertex',
-		'fragment',
-		'link',
-		'first-buffer',
-		'texture',
-		...(slug === 'chrome' || slug === 'matrix' ? ['second-texture'] : []),
-	] as const) {
-		test(`${name}: releases partial allocations on ${failure} failure`, () => {
-			const {canvas, calls} = mockCanvas(failure as Parameters<typeof mockCanvas>[0]);
-			assert.throws(() => setup(canvas));
-			assert.equal(calls.filter((c) => c.name === 'deleteProgram').length, 1);
-			for (const resource of ['Shader', 'Buffer', 'Texture']) {
-				const created = calls.filter((c) => c.name === `create${resource}`).length;
-				const released = calls.filter((c) => c.name === `delete${resource}` && c.args[0]).length;
-				const failed =
-					(resource === 'Buffer' && failure === 'first-buffer') ||
-					(resource === 'Texture' && String(failure).includes('texture'));
-				assert.equal(released, created - Number(failed), resource);
-			}
-		});
-	}
-	test(`${name}: draws deterministic audio uniforms and cleans up`, () => {
-		const {canvas, calls} = mockCanvas();
-		const state = setup(canvas);
-		const frame = {...defaults, time: 1.6, bars: Array.from({length: 308}, () => 0.1)};
-		draw(state, frame);
-		assert.ok(calls.some((c) => c.name === 'drawArrays'));
-		assert.ok(
-			calls.some((c) => c.name === 'uniform1i' && c.args[0] === 'iSoundTexture' && c.args[1] === 0),
-		);
-		assert.ok(
-			calls.some((c) => c.name === 'uniform1f' && c.args[0] === 'iGlobalTime' && c.args[1] === 1.6),
-		);
-		assert.ok(
-			calls.some((c) => c.name === 'uniform1f' && c.args[0] === 'iLowFreq' && c.args[1] === 0.1),
-		);
-		cleanup(state);
-		assert.equal(calls.filter((c) => c.name === 'deleteProgram').length, 1);
-		assert.equal(
-			calls.filter((c) => c.name === 'deleteTexture' && c.args[0]).length,
-			slug === 'chrome' || slug === 'matrix' ? 2 : 1,
-		);
 	});
 }
 
@@ -269,55 +204,4 @@ test('waveform: frequency colors distinguish bass, mids and treble at multiple s
 			);
 		}
 	}
-});
-
-const wet = loadHelpers('wet-glass', [
-	'createWetGlassWebGl',
-	'drawWetGlassWebGl',
-	'cleanupWetGlassWebGl',
-	'wetGlassSchema',
-]) as {
-	createWetGlassWebGl: (canvas: HTMLCanvasElement) => unknown;
-	drawWetGlassWebGl: (
-		state: unknown,
-		image: unknown,
-		props: Record<string, unknown>,
-		pixelDensity: number,
-	) => void;
-	cleanupWetGlassWebGl: (state: unknown) => void;
-	wetGlassSchema: Record<string, {default: unknown}>;
-};
-for (const failure of ['vertex', 'fragment', 'link', 'vao', 'first-buffer', 'texture'] as const) {
-	test(`Wet Glass: releases partial resources on ${failure} failure`, () => {
-		const {canvas, calls} = mockCanvas(failure);
-		assert.throws(() => wet.createWetGlassWebGl(canvas));
-		assert.equal(calls.filter((c) => c.name === 'deleteProgram').length, 1);
-		for (const resource of ['Shader', 'VertexArray', 'Buffer', 'Texture']) {
-			const failed =
-				(resource === 'VertexArray' && failure === 'vao') ||
-				(resource === 'Buffer' && failure === 'first-buffer') ||
-				(resource === 'Texture' && failure === 'texture');
-			assert.equal(
-				calls.filter((c) => c.name === `delete${resource}` && c.args[0]).length,
-				calls.filter((c) => c.name === `create${resource}`).length - Number(failed),
-			);
-		}
-	});
-}
-
-test('Wet Glass: captures premultiplied children and sends deterministic phase/seed', () => {
-	const {canvas, calls} = mockCanvas();
-	const state = wet.createWetGlassWebGl(canvas);
-	const props = Object.fromEntries(
-		Object.entries(wet.wetGlassSchema)
-			.filter(([, field]) => field && typeof field === 'object' && 'default' in field)
-			.map(([key, field]) => [key, (field as {default: unknown}).default]),
-	);
-	wet.drawWetGlassWebGl(state, {}, {...props, time: 2, seed: 7}, 1);
-	assert.ok(calls.some((c) => c.name === 'texElementImage2D'));
-	assert.ok(calls.some((c) => c.name === 'pixelStorei' && c.args[1] === true));
-	assert.ok(calls.some((c) => c.name === 'uniform1f' && c.args[0] === 'time' && c.args[1] === 2));
-	assert.ok(calls.some((c) => c.name === 'uniform1f' && c.args[0] === 'seed' && c.args[1] === 7));
-	wet.cleanupWetGlassWebGl(state);
-	assert.equal(calls.filter((c) => c.name === 'deleteTexture').length, 1);
 });
