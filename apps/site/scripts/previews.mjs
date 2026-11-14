@@ -36,7 +36,7 @@ for (const {slug, id: composition} of compositions) {
 			'--scale=0.5',
 			'--crf=36',
 			'--muted',
-			'--gl=angle',
+			`--gl=${process.env.REMOTION_GL ?? 'angle'}`,
 			'--concurrency=1',
 			'--log=error',
 			`--public-dir=${path.join(repository, 'public')}`,

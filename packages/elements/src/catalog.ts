@@ -11,6 +11,7 @@ type CatalogEntry = {
 export const catalog = [
 	{slug: 'vhs', name: 'Vhs', category: 'effects', width: 1280, height: 720},
 	{slug: 'fisheye', name: 'Fisheye', category: 'effects', width: 1280, height: 720},
+	{slug: 'wet-glass', name: 'WetGlass', category: 'effects', width: 1280, height: 720},
 	{
 		slug: 'ferrofluid',
 		name: 'Ferrofluid',
@@ -112,4 +113,11 @@ export const catalog = [
 	{slug: 'moon', name: 'Moon', category: 'shaders', width: 1280, height: 720},
 	{slug: 'city', name: 'City', category: 'shaders', width: 1280, height: 720},
 	{slug: 'basic', name: 'Basic', category: 'shaders', width: 1280, height: 720},
+	{slug: 'pulse', name: 'Pulse', category: 'shaders', width: 1280, height: 720},
+	{slug: 'rooftop', name: 'Rooftop', category: 'shaders', width: 1280, height: 720},
+	{slug: 'cathedral', name: 'Cathedral', category: 'shaders', width: 1280, height: 720},
+	{slug: 'liquid', name: 'Liquid', category: 'shaders', width: 1280, height: 720},
+	{slug: 'chrome', name: 'Chrome', category: 'shaders', width: 1280, height: 720},
+	{slug: 'neuron', name: 'Neuron', category: 'shaders', width: 1280, height: 720},
+	{slug: 'matrix', name: 'Matrix', category: 'shaders', width: 1280, height: 720},
 ] as const satisfies readonly CatalogEntry[];

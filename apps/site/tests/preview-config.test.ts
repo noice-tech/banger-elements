@@ -3,7 +3,12 @@ import test from 'node:test';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {ControlField} from '../src/components/preview/ControlField';
-import {configuredJsx, isAdvancedControl} from '../src/components/preview-config';
+import {
+	configuredJsx,
+	isAdvancedControl,
+	isControlVisible,
+	isWrapper,
+} from '../src/components/preview-config';
 import {examples} from '../src/components/preview/examples';
 
 test('configuration export preserves typed preview values and standalone import', () => {
@@ -122,6 +127,57 @@ test('Fisheye exports a children wrapper without preview-only audio props', () =
 	assert.ok(!result.includes('blob:'));
 	assert.equal(examples.fisheye.props.strength, 0.75);
 	assert.equal(examples.fisheye.props.perspectiveFactor, 0.35);
+});
+
+test('Wet Glass exports its own wrapper without demo audio or strength props', () => {
+	const result = configuredJsx(
+		'wet-glass',
+		{...examples['wet-glass'].props, audioSrc: 'blob:demo', playAudio: true},
+		true,
+	);
+	assert.equal(isWrapper('wet-glass'), true);
+	assert.ok(result.startsWith("import {WetGlass} from './wet-glass.element';"));
+	assert.ok(result.includes('</WetGlass>'));
+	assert.ok(result.includes('amount={0.65}'));
+	assert.ok(!result.includes('audioSrc'));
+	assert.ok(!result.includes('strength'));
+	assert.ok(!result.includes('blob:'));
+});
+
+test('visualizer controls only expose settings used by the selected variant and color mode', () => {
+	assert.equal(isControlVisible('circle', {circleVariant: 'radial-bars'}, 'barWidth'), true);
+	assert.equal(isControlVisible('circle', {circleVariant: 'glow-ring'}, 'barWidth'), false);
+	assert.equal(isControlVisible('circle', {circleVariant: 'waveform-ring'}, 'count'), false);
+	assert.equal(isControlVisible('circle', {circleVariant: 'dotted-ring'}, 'dotSize'), true);
+	assert.equal(isControlVisible('spectre', {colorMode: 'rainbow'}, 'startColor'), false);
+	assert.equal(isControlVisible('spectre', {colorMode: 'gradient-3'}, 'middleColor'), true);
+	assert.equal(isControlVisible('spectre', {spectreVariant: 'bars'}, 'segmentGap'), false);
+	assert.equal(isControlVisible('spectre', {spectreVariant: 'segmented'}, 'segmentGap'), true);
+	assert.equal(
+		isControlVisible('oscilloscope', {displayMode: 'single-cycle'}, 'timeSpanMs'),
+		false,
+	);
+	assert.equal(isControlVisible('waveform', {colorMode: 'frequency'}, 'color'), false);
+});
+
+test('new shader preview defaults lie on their native slider grids', () => {
+	for (const slug of [
+		'pulse',
+		'rooftop',
+		'cathedral',
+		'liquid',
+		'chrome',
+		'neuron',
+		'matrix',
+	] as const) {
+		const {props, controls} = examples[slug];
+		for (const control of controls.filter((c) => c.type === 'range' && c.key !== 'inputGainDb')) {
+			const value = Number((props as Record<string, unknown>)[control.key]);
+			assert.ok(Number.isFinite(value), `${slug}: ${control.key}`);
+			const steps = (value - control.min!) / control.step!;
+			assert.ok(Math.abs(steps - Math.round(steps)) < 1e-8, `${slug}: ${control.key}`);
+		}
+	}
 });
 
 test('VHS preview exposes no date option', () => {

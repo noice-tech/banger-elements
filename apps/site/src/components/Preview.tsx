@@ -8,6 +8,7 @@ import {PreviewRenderer, PREVIEW_WIDTH, PREVIEW_HEIGHT} from './preview/PreviewR
 import {PreviewControls} from './preview/PreviewControls';
 import {usePreviewAudio, usePreviewArtwork} from './preview/use-preview-assets';
 import type {PreviewProps} from './preview/types';
+import {isWrapper as isWrapperElement} from './preview-config';
 
 export type {PreviewKind} from './preview/examples';
 
@@ -57,7 +58,7 @@ export default function Preview({
 		};
 	}, [selected]);
 	const example = examples[selected];
-	const isWrapper = selected === 'vhs' || selected === 'fisheye';
+	const isWrapper = isWrapperElement(selected);
 	const durationInSeconds =
 		isWrapper ||
 		selected === 'ferrofluid' ||

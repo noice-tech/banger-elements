@@ -35,7 +35,15 @@ type CircleOptions = {
 	readonly intensity?: number;
 	readonly startColor?: string;
 	readonly endColor?: string;
-	readonly colorMode?: 'gradient' | 'rainbow';
+	readonly colorMode?: 'gradient' | 'gradient-3' | 'rainbow';
+	readonly middleColor?: string;
+	readonly rainbowSpeed?: number;
+	readonly saturation?: number;
+	readonly brightness?: number;
+	readonly barWidth?: number;
+	readonly lineThickness?: number;
+	readonly dotSize?: number;
+	readonly showLines?: boolean;
 	readonly radius?: number;
 	readonly count?: number;
 	readonly lineWidth?: number;
@@ -95,8 +103,44 @@ const circleSchema = {
 		type: 'enum',
 		default: 'gradient',
 		description: 'Color mode',
-		variants: {gradient: {}, rainbow: {}},
+		variants: {gradient: {}, 'gradient-3': {}, rainbow: {}},
 	},
+	middleColor: {
+		type: 'color',
+		default: '#f567f5',
+		description: 'Middle color for three-stop gradients',
+	},
+	rainbowSpeed: {type: 'number', default: 1, min: 0, max: 10, step: 0.1, hiddenFromList: false},
+	saturation: {type: 'number', default: 0.85, min: 0, max: 1, step: 0.01, hiddenFromList: false},
+	brightness: {type: 'number', default: 0.85, min: 0, max: 1, step: 0.01, hiddenFromList: false},
+	barWidth: {
+		type: 'number',
+		default: 0.5,
+		min: 0.05,
+		max: 1,
+		step: 0.01,
+		description: 'Radial bar width',
+		hiddenFromList: false,
+	},
+	lineThickness: {
+		type: 'number',
+		default: 3,
+		min: 0.1,
+		max: 5,
+		step: 0.1,
+		description: 'Waveform ring thickness',
+		hiddenFromList: false,
+	},
+	dotSize: {
+		type: 'number',
+		default: 3,
+		min: 0.1,
+		max: 5,
+		step: 0.1,
+		description: 'Dotted ring size',
+		hiddenFromList: false,
+	},
+	showLines: {type: 'boolean', default: true, description: 'Glow ring horizontal rays'},
 	circleVariant: {
 		type: 'enum',
 		default: 'radial-bars',
@@ -205,31 +249,59 @@ type AudioInput = {
 	readonly fps: number;
 };
 
+// Preserve every log-spaced slot, including silence and frequencies above Nyquist.
 function computeBars({
 	allVisualizationValues,
+	sampleRate = 44100,
 	outputBarsCount = 308,
 }: {
 	allVisualizationValues: number[];
+	sampleRate?: number;
 	outputBarsCount?: number;
 }) {
-	const minFreq = 20;
-	const maxFreq = 22000;
-	const defaultFill = 0.0025;
-	const freqStep = (maxFreq - minFreq) / allVisualizationValues.length;
-	const bars = Array.from({length: outputBarsCount}, () => defaultFill);
-	const binSize = 1 / outputBarsCount;
-	for (let index = 0; index < allVisualizationValues.length; index++) {
-		const frequency = minFreq + index * freqStep;
-		const logFrequency = Math.log10(frequency / minFreq) / Math.log10(maxFreq / minFreq);
-		const binIndex = Math.floor(logFrequency / binSize);
-		if (binIndex < outputBarsCount) {
-			bars[binIndex] +=
-				binIndex < Math.floor(outputBarsCount * 0.334415584415584)
-					? allVisualizationValues[index] * 1.3
-					: allVisualizationValues[index];
+	const binWidth = sampleRate / (allVisualizationValues.length * 2);
+	return Array.from({length: outputBarsCount}, (_, band) => {
+		const low = 20 * 1100 ** (band / outputBarsCount);
+		const high = 20 * 1100 ** ((band + 1) / outputBarsCount);
+		const center = Math.sqrt(low * high);
+		if (center >= sampleRate / 2 || !Number.isFinite(binWidth) || binWidth <= 0) return 0;
+		const first = Math.max(1, Math.ceil(low / binWidth));
+		const end = Math.min(allVisualizationValues.length, Math.ceil(high / binWidth));
+		let amplitude = 0;
+		if (end > first) {
+			for (let bin = first; bin < end; bin++)
+				amplitude = Math.max(amplitude, allVisualizationValues[bin] || 0);
+		} else {
+			const position = center / binWidth,
+				lower = Math.floor(position);
+			amplitude =
+				(allVisualizationValues[lower] || 0) * (1 - position + lower) +
+				(allVisualizationValues[lower + 1] || 0) * (position - lower);
 		}
-	}
-	return bars.filter((b) => b !== defaultFill && !Number.isNaN(b));
+		return amplitude * 3.5 * 10 ** ((4.5 * Math.log2(center / 1000)) / 20);
+	});
+}
+
+function circleBands(variant: Required<CircleOptions>['circleVariant'], count: number) {
+	return variant === 'glow-ring'
+		? 160
+		: variant === 'waveform-ring'
+			? 308
+			: Math.floor(count / 2) + 1;
+}
+
+function barAtFrequency(bars: number[], frequency: number) {
+	return (
+		bars[
+			Math.max(
+				0,
+				Math.min(
+					bars.length - 1,
+					Math.floor((Math.log(frequency / 20) / Math.log(1100)) * bars.length),
+				),
+			)
+		] ?? 0
+	);
 }
 
 function spectrumBars(input: AudioInput, count = 308) {
@@ -246,6 +318,7 @@ function spectrumBars(input: AudioInput, count = 308) {
 	});
 	return computeBars({
 		allVisualizationValues: frequencies,
+		sampleRate: input.audioData.sampleRate,
 		outputBarsCount: count,
 	});
 }
@@ -305,18 +378,18 @@ void main() {
     vec2 fragPos = (vUv - 0.5) * 2.0;
     fragPos.x *= iResolution.x / iResolution.y;
 
-    float angle = atan(fragPos.y, fragPos.x);
-    float dist = length(fragPos);
+    float angle = atan(fragPos.x, fragPos.y);
 
     float dots = iCount;
     float angleStep = 2.0 * M_PI / dots;
     float nearestDotAngle = floor(angle / angleStep + 0.5) * angleStep;
     float dotIndex = mod(floor(angle / angleStep + 0.5), dots);
-    float t = dotIndex / dots;
+    float mirroredBand = min(dotIndex, dots - dotIndex);
+    float t = mirroredBand / (iBands - 1.0);
 
-    float freq = texture(iTexture, vec2(t, 0.0)).x;
+    float freq = texture(iTexture, vec2((mirroredBand + 0.5) / iBands, 0.5)).x;
 
-    vec2 dotCenter = vec2(cos(nearestDotAngle), sin(nearestDotAngle)) * iRadius;
+    vec2 dotCenter = vec2(sin(nearestDotAngle), cos(nearestDotAngle)) * iRadius;
     float baseDotRadius = iDotSize * 0.015;
     float pulseDotRadius = baseDotRadius * (1.0 + freq * iIntensity * 0.5);
 
@@ -397,11 +470,14 @@ void main() {
     vec2 fragPos = (vUv - 0.5) * 2.0;
     fragPos.x *= iResolution.x / iResolution.y;
 
-    float angle = atan(fragPos.y, fragPos.x);
-    float normalizedAngle = (angle + M_PI) / (2.0 * M_PI);
+    float normalizedAngle = abs(atan(fragPos.x, fragPos.y)) / M_PI;
     float dist = length(fragPos);
 
-    float freq = texture(iTexture, vec2(normalizedAngle, 0.0)).x;
+    float position = normalizedAngle * iBands - 0.5;
+    float index = floor(position);
+    float a = texture(iTexture, vec2((clamp(index, 0.0, iBands - 1.0) + 0.5) / iBands, 0.5)).x;
+    float b = texture(iTexture, vec2((clamp(index + 1.0, 0.0, iBands - 1.0) + 0.5) / iBands, 0.5)).x;
+    float freq = mix(a, b, smoothstep(0.0, 1.0, position - index));
     float displacement = freq * iIntensity * 0.15;
     float waveRadius = iRadius + displacement;
 
@@ -486,19 +562,14 @@ vec3 getBaseColor(float t) {
     return mix(iStartColor, iEndColor, t);
 }
 
-vec4 capsule(vec4 color, vec4 background, vec4 region, vec2 uv)
-{
-    if(uv.x > (region.x-region.z) && uv.x < (region.x+region.z) &&
-       uv.y > (region.y-region.w) && uv.y < (region.y+region.w) ||
-       distance(uv, region.xy - vec2(0.0, region.w)) < region.z ||
-       distance(uv, region.xy + vec2(0.0, region.w)) < region.z)
-        return color;
-    return background;
+float capsuleDistance(vec2 uv, vec2 start, float len, float radius) {
+    vec2 p = uv - start;
+    p.y -= clamp(p.y, 0.0, len);
+    return length(p) - radius;
 }
 
-vec4 bar(vec4 color, vec4 background, vec2 position, vec2 dimensions, vec2 uv)
-{
-    return capsule(color, background, vec4(position.x, position.y+dimensions.y/2.0, dimensions.x/2.0, dimensions.y/2.0), uv);
+float band(float index) {
+    return texture(iTexture, vec2((clamp(index, 0.0, iBands - 1.0) + 0.5) / iBands, 0.5)).x;
 }
 
 vec2 rotate(vec2 point, vec2 center, float angle)
@@ -526,13 +597,16 @@ vec4 basic()
     float RAY_LENGTH = 0.6;
     float inside = (1.0 - RAY_LENGTH) * RADIUS;
     float outside = RADIUS - inside;
-    float circle = iWidth * M_PI * inside;
+    float barWidth = iBarWidth * 2.0 * M_PI * inside / RAYS;
     vec2 center = vec2(aspect / 2.0, 0.5);
+    float aa = max(fwidth(uv.x), fwidth(uv.y));
 
     for (int i = 1; float(i) <= RAYS; i++)
     {
-        float t = float(i) / RAYS;
-        float len = outside * texture(iTexture, vec2(t, 0.0)).x * iIntensity / 2.5;
+        float ray = mod(float(i), RAYS);
+        float mirroredBand = min(ray, RAYS - ray);
+        float t = mirroredBand / (iBands - 1.0);
+        float len = outside * band(mirroredBand) * iIntensity / 2.5;
 
         vec3 rayColor = getBaseColor(t);
         vec3 hsvColor = rgb2hsv(rayColor);
@@ -540,7 +614,11 @@ vec4 basic()
         vec3 adjustedColorHsv = vec3(hsvColor.x, hsvColor.y - multiplyer, hsvColor.z + multiplyer * 1.0 * 3.0);
         rayColor = hsv2rgb(adjustedColorHsv);
 
-        color = bar(vec4(rayColor, 1.0), color, vec2(center.x, center.y+inside), vec2(circle/(RAYS*2.0), len), rotate(uv, center, 10.0 + 360.0/RAYS*float(i) - iLowFreq * (80.0 + iIntensity)));
+        float d = capsuleDistance(rotate(uv, center, 360.0/RAYS*float(i)), vec2(center.x, center.y+inside), len, barWidth / 2.0);
+        float coverage = clamp(0.5 - d / aa, 0.0, 1.0);
+        float alpha = max(color.a, coverage);
+        color.rgb = mix(color.rgb, rayColor, coverage / max(alpha, 0.0001));
+        color.a = alpha;
     }
 
     color.a *= iOpacity;
@@ -552,13 +630,13 @@ float luma(vec3 color) {
 }
 
 float getFrequency(float x) {
-    return texture(iTexture, vec2((x * (iCount * 2.0) + 1.0) / (iCount * 2.0), 0.25)).x + 0.06;
+    return band(floor(x * iBands)) + 0.06;
 }
 
 float getFrequency_smooth(float x) {
-    float index = floor(x * (iCount * 2.0)) / (iCount * 2.0);
-    float next = floor(x * (iCount * 2.0) + 1.0) / (iCount * 2.0);
-    return mix(getFrequency(index), getFrequency(next), smoothstep(0.0, 1.0, fract(x * (iCount * 2.0))));
+    float position = x * iBands - 0.5;
+    float index = floor(position);
+    return mix(band(index), band(index + 1.0), smoothstep(0.0, 1.0, position - index)) + 0.06;
 }
 
 float getFrequency_blend(float x) {
@@ -567,7 +645,7 @@ float getFrequency_blend(float x) {
 
 vec3 circleIllumination(vec2 fragment, float radius) {
     float distance = length(fragment);
-    float ring = 1.0 / abs(distance - radius - (getFrequency_smooth(0.0) / 15.50));
+    float ring = 1.0 / max(0.0001, abs(distance - radius - ((min(iLowFreq * iIntensity, 1.0) + 0.06) / 15.50)));
 
     vec3 color = vec3(0.0);
     float t = fragment.y * 0.5 + 0.5;
@@ -643,7 +721,11 @@ function shaderSource(source: string, fragment: boolean) {
 	let code = source
 		.replace(/\bvarying\b/g, fragment ? 'in' : 'out')
 		.replace(/\bgl_FragColor\b/g, 'outColor')
-		.replace('vec2 iResolution = vec2(1920.0, 1080.0);', 'uniform vec2 iResolution;');
+		.replace('vec2 iResolution = vec2(1920.0, 1080.0);', 'uniform vec2 iResolution;')
+		.replace(
+			'return mix(iStartColor, iEndColor, t);',
+			'if (iColorMode == 1) return t < 0.5 ? mix(iStartColor, iMiddleColor, t * 2.0) : mix(iMiddleColor, iEndColor, (t - 0.5) * 2.0); return mix(iStartColor, iEndColor, t);',
+		);
 	if (fragment)
 		code =
 			code.replace(/void main\(\)/, 'void renderEffect()') +
@@ -656,7 +738,7 @@ void main() {
   outColor.a = clamp(outColor.a, 0.0, 1.0);
   outColor.rgb *= outColor.a;
 }`;
-	return `#version 300 es\nprecision highp float;\nprecision highp int;\n${fragment ? 'out vec4 outColor;\nuniform float iAspect;\n' : ''}${code}`;
+	return `#version 300 es\nprecision highp float;\nprecision highp int;\n${fragment ? 'out vec4 outColor;\nuniform float iAspect;\nuniform float iBands;\nuniform float iBarWidth;\nuniform vec3 iMiddleColor;\n' : ''}${code}`;
 }
 
 type CircleFrame = Omit<
@@ -688,6 +770,13 @@ type CircleState = {
 		readonly bass: WebGLUniformLocation | null;
 		readonly lineThickness: WebGLUniformLocation | null;
 		readonly dotSize: WebGLUniformLocation | null;
+		readonly bands: WebGLUniformLocation | null;
+		readonly barWidth: WebGLUniformLocation | null;
+		readonly middleColor: WebGLUniformLocation | null;
+		readonly rainbowSpeed: WebGLUniformLocation | null;
+		readonly saturation: WebGLUniformLocation | null;
+		readonly brightness: WebGLUniformLocation | null;
+		readonly showLines: WebGLUniformLocation | null;
 	};
 };
 
@@ -769,6 +858,13 @@ function setupCircle(canvas: HTMLCanvasElement, fragment: string): CircleState {
 				bass: gl.getUniformLocation(program, 'iLowFreq'),
 				lineThickness: gl.getUniformLocation(program, 'iLineThickness'),
 				dotSize: gl.getUniformLocation(program, 'iDotSize'),
+				bands: gl.getUniformLocation(program, 'iBands'),
+				barWidth: gl.getUniformLocation(program, 'iBarWidth'),
+				middleColor: gl.getUniformLocation(program, 'iMiddleColor'),
+				rainbowSpeed: gl.getUniformLocation(program, 'iRainbowSpeed'),
+				saturation: gl.getUniformLocation(program, 'iRainbowSaturation'),
+				brightness: gl.getUniformLocation(program, 'iRainbowBrightness'),
+				showLines: gl.getUniformLocation(program, 'iShowLines'),
 			},
 		};
 	} catch (error) {
@@ -791,15 +887,25 @@ function drawCircle({gl, program, texture, uniforms}: CircleState, frame: Circle
 	gl.uniform2f(uniforms.resolution, frame.width, frame.height);
 	gl.uniform3fv(uniforms.startColor, linearColor(frame.startColor));
 	gl.uniform3fv(uniforms.endColor, linearColor(frame.endColor));
-	gl.uniform1i(uniforms.colorMode, frame.colorMode === 'rainbow' ? 2 : 0);
+	gl.uniform1i(
+		uniforms.colorMode,
+		frame.colorMode === 'rainbow' ? 2 : frame.colorMode === 'gradient-3' ? 1 : 0,
+	);
+	gl.uniform3fv(uniforms.middleColor, linearColor(frame.middleColor ?? '#f567f5'));
+	gl.uniform1f(uniforms.bands, frame.texture.width);
+	gl.uniform1f(uniforms.barWidth, frame.barWidth ?? 0.5);
+	gl.uniform1f(uniforms.rainbowSpeed, frame.rainbowSpeed ?? 1);
+	gl.uniform1f(uniforms.saturation, frame.saturation ?? 0.85);
+	gl.uniform1f(uniforms.brightness, frame.brightness ?? 0.85);
+	gl.uniform1i(uniforms.showLines, Number(frame.showLines ?? true));
 	gl.uniform1f(uniforms.intensity, frame.intensity);
 	gl.uniform1f(uniforms.width, frame.lineWidth);
 	gl.uniform1f(uniforms.count, frame.count);
 	gl.uniform1f(uniforms.radius, frame.radius);
 	gl.uniform1i(uniforms.smooth, Number(frame.circleVariant === 'glow-ring'));
 	gl.uniform1f(uniforms.bass, frame.bass);
-	gl.uniform1f(uniforms.lineThickness, frame.lineWidth);
-	gl.uniform1f(uniforms.dotSize, frame.lineWidth);
+	gl.uniform1f(uniforms.lineThickness, frame.lineThickness ?? frame.lineWidth);
+	gl.uniform1f(uniforms.dotSize, frame.dotSize ?? frame.lineWidth);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.texImage2D(
@@ -852,6 +958,7 @@ function CircleCanvas(frame: CircleFrame) {
 		canvas.addEventListener('webglcontextlost', lost);
 		return () => {
 			canvas.removeEventListener('webglcontextlost', lost);
+			if (!current) return;
 			cleanupCircle(current);
 			state.current = null;
 			queueMicrotask(() => {
@@ -940,12 +1047,16 @@ const CircleContent: React.FC<Required<CircleOptions>> = (props) => {
 	const offsetFrames = Math.round(props.audioOffsetInSeconds * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
 	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
-	const bars = spectrumBars({
-		audioData: audioData ?? silentAudio,
-		dataOffsetInSeconds,
-		sourceTime,
-		fps,
-	});
+	const count = Math.round(clamp(props.count, 5, 150));
+	const bars = spectrumBars(
+		{
+			audioData: audioData ?? silentAudio,
+			dataOffsetInSeconds,
+			sourceTime,
+			fps,
+		},
+		circleBands(props.circleVariant, count),
+	);
 	const gain = 10 ** (props.inputGainDb / 20);
 	return (
 		<>
@@ -953,9 +1064,10 @@ const CircleContent: React.FC<Required<CircleOptions>> = (props) => {
 				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
 			<CircleCanvas
+				{...props}
 				sourceTime={sourceTime}
 				texture={barsTexture(bars, props.intensity * gain)}
-				bass={(bars[11] ?? 0) * gain}
+				bass={barAtFrequency(bars, 60) * gain}
 				width={props.width}
 				height={props.height}
 				intensity={props.intensity}
@@ -963,7 +1075,7 @@ const CircleContent: React.FC<Required<CircleOptions>> = (props) => {
 				endColor={props.endColor}
 				colorMode={props.colorMode}
 				radius={props.radius}
-				count={Math.round(props.count)}
+				count={count}
 				lineWidth={props.lineWidth}
 				circleVariant={props.circleVariant}
 			/>
@@ -993,6 +1105,18 @@ const CircleInner = forwardRef<
 			count = circleSchema.count.default,
 			lineWidth = circleSchema.lineWidth.default,
 			circleVariant = circleSchema.circleVariant.default,
+			middleColor = circleSchema.middleColor.default,
+			rainbowSpeed = circleSchema.rainbowSpeed.default,
+			saturation = circleSchema.saturation.default,
+			brightness = circleSchema.brightness.default,
+			barWidth = circleSchema.barWidth.default,
+			lineThickness = lineWidth === circleSchema.lineWidth.default
+				? circleSchema.lineThickness.default
+				: lineWidth,
+			dotSize = lineWidth === circleSchema.lineWidth.default
+				? circleSchema.dotSize.default
+				: lineWidth,
+			showLines = circleSchema.showLines.default,
 			controls,
 			name,
 			style,
@@ -1037,6 +1161,14 @@ const CircleInner = forwardRef<
 						count={count}
 						lineWidth={lineWidth}
 						circleVariant={circleVariant}
+						middleColor={middleColor}
+						rainbowSpeed={rainbowSpeed}
+						saturation={saturation}
+						brightness={brightness}
+						barWidth={barWidth}
+						lineThickness={lineThickness}
+						dotSize={dotSize}
+						showLines={showLines}
 					/>
 				</div>
 			</Sequence>

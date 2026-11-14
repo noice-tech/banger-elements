@@ -63,7 +63,7 @@ test('categories: gallery and sidebar group all elements without changing their 
 	}
 	const trip = await readFile(path.join(dist, 'trip.html'), 'utf8');
 	assert.ok(trip.includes('href="/shaders"'));
-	for (const slug of ['vhs', 'fisheye']) {
+	for (const slug of ['vhs', 'fisheye', 'wet-glass']) {
 		const effect = await readFile(path.join(dist, `${slug}.html`), 'utf8');
 		assert.ok(effect.includes('href="/effects"'));
 		assert.ok(effect.includes('does not automatically wrap selected layers'));

@@ -1,6 +1,6 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {forwardRef, useRef, useImperativeHandle, useLayoutEffect} from 'react';
+import React, {forwardRef, useRef, useImperativeHandle, useLayoutEffect, useMemo} from 'react';
 import {
 	Interactive,
 	Sequence,
@@ -23,6 +23,8 @@ type WaveformOptions = {
 	readonly intensity?: number;
 	readonly color?: string;
 	readonly windowInSeconds?: number;
+	readonly colorMode?: 'solid' | 'frequency';
+	readonly resolution?: number;
 };
 
 type WaveformProps = InteractiveBaseProps & InteractiveTransformProps & WaveformOptions;
@@ -82,6 +84,22 @@ const waveformSchema = {
 		keyframable: false,
 	},
 	color: {type: 'color', default: DEFAULT_COLOR, description: 'Waveform color'},
+	colorMode: {
+		type: 'enum',
+		default: 'solid',
+		description: 'Waveform colors',
+		variants: {solid: {}, frequency: {}},
+	},
+	resolution: {
+		type: 'number',
+		default: 1,
+		min: 1,
+		max: 16,
+		step: 1,
+		description: 'Resolution multiplier',
+		hiddenFromList: false,
+	},
+
 	inputGainDb: {
 		type: 'number',
 		default: DEFAULT_INPUT_GAIN_DB,
@@ -160,7 +178,9 @@ function waveformPath({
 	inputGainDb,
 	intensity,
 	windowInSeconds,
+	resolution = 1,
 }: {
+	readonly resolution?: number;
 	readonly audioData: MediaUtilsAudioData;
 	readonly dataOffsetInSeconds: number;
 	readonly sourceTime: number;
@@ -178,7 +198,10 @@ function waveformPath({
 	// Anchor complete bins to the source timeline, not the moving viewport.
 	// Only their x coordinates change during playback. Include an extra point
 	// on either side so SVG clipping preserves smooth motion at the edges.
-	const binSize = Math.max(1, Math.floor(windowSamples / 2048));
+	const binSize = Math.max(
+		1,
+		Math.floor(windowSamples / (2048 * Math.max(1, Math.min(16, resolution)))),
+	);
 	const firstBin = Math.floor(startSample / binSize) - 1;
 	const lastBin = Math.ceil((startSample + windowSamples) / binSize);
 	const bufferStart = Math.round(dataOffsetInSeconds * sampleRate);
@@ -186,26 +209,97 @@ function waveformPath({
 	const values = Array.from({length: lastBin - firstBin + 1}, (_, index) => {
 		const binStart = (firstBin + index) * binSize;
 		const end = Math.min(binStart + binSize, sourceEnd, bufferStart + waveform.length);
-		let sum = 0;
+		let min = 0,
+			max = 0;
 		for (let sample = Math.max(0, binStart, bufferStart); sample < end; sample++) {
-			sum += Math.abs(waveform[sample - bufferStart]);
+			const raw = waveform[sample - bufferStart];
+			const value = Number.isFinite(raw) ? raw : 0;
+			min = Math.min(min, value);
+			max = Math.max(max, value);
 		}
 		return {
 			x: ((binStart + binSize / 2 - startSample) / windowSamples) * width,
-			amplitude: sum / binSize,
+			min,
+			max,
 		};
 	});
 	const upper = values.map(
 		(sample) =>
-			`${sample.x},${height / 2 - Math.max(1, sample.amplitude * gain * intensity * height * 0.38)}`,
+			`${sample.x},${height / 2 - Math.max(1, sample.max * gain * intensity * height * 0.38)}`,
 	);
 	const lower = values
 		.map(
 			(sample) =>
-				`${sample.x},${height / 2 + Math.max(1, sample.amplitude * gain * intensity * height * 0.38)}`,
+				`${sample.x},${height / 2 + Math.max(1, -sample.min * gain * intensity * height * 0.38)}`,
 		)
 		.reverse();
 	return `M${upper.join(' L')} L${lower.join(' L')} Z`;
+}
+
+// Biquad band energies: bass below 200 Hz is red, mids to 2 kHz green, treble blue.
+// Each cached second has its own 100 ms warm-up, so seeking never depends on playback order.
+function createFrequencyColors(waveform: Float32Array, sampleRate: number, offset: number) {
+	const cache = new Map<number, Float32Array>();
+	return (time: number) => {
+		const second = Math.floor(time);
+		let colors = cache.get(second);
+		if (!colors) {
+			const filters = [
+				{frequency: 200, highpass: false},
+				{frequency: 200, highpass: true},
+				{frequency: 2000, highpass: false},
+				{frequency: 2000, highpass: true},
+			].map(({frequency, highpass}) => {
+				const omega = (2 * Math.PI * Math.min(frequency, sampleRate * 0.45)) / sampleRate;
+				const cosine = Math.cos(omega),
+					alpha = Math.sin(omega) / (2 * Math.SQRT1_2),
+					a0 = 1 + alpha;
+				const b0 = (highpass ? 1 + cosine : 1 - cosine) / (2 * a0);
+				return {
+					b0,
+					b1: (highpass ? -2 : 2) * b0,
+					b2: b0,
+					a1: (-2 * cosine) / a0,
+					a2: (1 - alpha) / a0,
+					z1: 0,
+					z2: 0,
+				};
+			});
+			colors = new Float32Array(3000);
+			const energy = [0, 0, 0],
+				bands = [0, 0, 0];
+			const smoothing = 1 - Math.exp(-1 / (sampleRate * 0.015));
+			for (let tick = -100; tick < 1000; tick++) {
+				const from = Math.round((second + tick / 1000 - offset) * sampleRate);
+				const to = Math.round((second + (tick + 1) / 1000 - offset) * sampleRate);
+				for (let i = from; i < to; i++) {
+					const raw = waveform[i] ?? 0,
+						input = Number.isFinite(raw) ? raw : 0;
+					let midInput = input;
+					for (let f = 0; f < filters.length; f++) {
+						const filter = filters[f],
+							x = f === 2 ? midInput : input,
+							y = filter.b0 * x + filter.z1;
+						filter.z1 = filter.b1 * x - filter.a1 * y + filter.z2;
+						filter.z2 = filter.b2 * x - filter.a2 * y;
+						if (f === 1) midInput = y;
+						else bands[f === 0 ? 0 : f - 1] = y;
+					}
+					for (let band = 0; band < 3; band++)
+						energy[band] += smoothing * (bands[band] ** 2 - energy[band]);
+				}
+				if (tick < 0) continue;
+				const loudest = Math.sqrt(Math.max(...energy));
+				for (let band = 0; band < 3; band++)
+					colors[tick * 3 + band] =
+						loudest > 1e-8 ? Math.sqrt(Math.max(0, energy[band])) / loudest : 1;
+			}
+			if (cache.size >= 8) cache.delete(cache.keys().next().value!);
+			cache.set(second, colors);
+		}
+		const index = Math.min(999, Math.floor((time - second) * 1000)) * 3;
+		return `rgb(${[0, 1, 2].map((band) => Math.round(colors![index + band] * 255)).join(',')})`;
+	};
 }
 
 const silentAudio: MediaUtilsAudioData = {
@@ -227,6 +321,8 @@ const WaveformContent: React.FC<Required<WaveformOptions>> = ({
 	intensity,
 	color,
 	windowInSeconds,
+	colorMode,
+	resolution,
 }) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();
@@ -238,6 +334,13 @@ const WaveformContent: React.FC<Required<WaveformOptions>> = ({
 		fps,
 		windowInSeconds,
 	);
+	const data = audioData ?? silentAudio;
+	const frequencyColor = useMemo(
+		() => createFrequencyColors(data.channelWaveforms[0], data.sampleRate, dataOffsetInSeconds),
+		[data, dataOffsetInSeconds],
+	);
+	const gradientId = React.useId().replace(/:/g, '');
+	const colorStops = Math.max(2, Math.ceil(width / 2));
 	const path = waveformPath({
 		audioData: audioData ?? silentAudio,
 		dataOffsetInSeconds,
@@ -247,6 +350,7 @@ const WaveformContent: React.FC<Required<WaveformOptions>> = ({
 		inputGainDb,
 		intensity,
 		windowInSeconds,
+		resolution,
 	});
 	return (
 		<>
@@ -257,7 +361,22 @@ const WaveformContent: React.FC<Required<WaveformOptions>> = ({
 				viewBox={`0 0 ${width} ${height}`}
 				style={{width: '100%', height: '100%', overflow: 'hidden'}}
 			>
-				<path d={path} fill={color} />
+				{colorMode === 'frequency' ? (
+					<defs>
+						<linearGradient id={gradientId} x1="0" x2="1" y1="0" y2="0" colorInterpolation="sRGB">
+							{Array.from({length: colorStops}, (_, i) => (
+								<stop
+									key={i}
+									offset={i / (colorStops - 1)}
+									stopColor={frequencyColor(
+										sourceTime - windowInSeconds / 2 + (windowInSeconds * i) / (colorStops - 1),
+									)}
+								/>
+							))}
+						</linearGradient>
+					</defs>
+				) : null}
+				<path d={path} fill={colorMode === 'frequency' ? `url(#${gradientId})` : color} />
 			</svg>
 		</>
 	);
@@ -280,6 +399,8 @@ const WaveformInner = forwardRef<
 			intensity = DEFAULT_INTENSITY,
 			color = DEFAULT_COLOR,
 			windowInSeconds = DEFAULT_WINDOW_SECONDS,
+			colorMode = waveformSchema.colorMode.default,
+			resolution = waveformSchema.resolution.default,
 			controls,
 			name,
 			style,
@@ -318,6 +439,8 @@ const WaveformInner = forwardRef<
 						intensity={intensity}
 						color={color}
 						windowInSeconds={windowInSeconds}
+						colorMode={colorMode}
+						resolution={resolution}
 					/>
 				</div>
 			</Sequence>

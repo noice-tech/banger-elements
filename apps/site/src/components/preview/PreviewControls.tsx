@@ -1,5 +1,10 @@
 import {useEffect, useState, type Dispatch, type SetStateAction} from 'react';
-import {configuredJsx, isAdvancedControl} from '../preview-config';
+import {
+	configuredJsx,
+	isAdvancedControl,
+	isWrapper as isWrapperElement,
+	isControlVisible,
+} from '../preview-config';
 import {examples, type PreviewKind} from './examples';
 import {booleanControl, numberControl, type Control} from './controls';
 import {ControlField} from './ControlField';
@@ -26,7 +31,7 @@ export function PreviewControls({
 	artwork,
 }: PreviewControlsProps) {
 	const selected = slug;
-	const isWrapper = selected === 'vhs' || selected === 'fisheye';
+	const isWrapper = isWrapperElement(selected);
 	const example: {props: PreviewProps; controls: readonly Control[]} = examples[selected];
 	const [panel, setPanel] = useState<'look' | 'audio' | 'more'>('look');
 	const [copyMessage, setCopyMessage] = useState('');
@@ -233,7 +238,11 @@ export function PreviewControls({
 						update={(value) => update('height', value)}
 					/>
 					{example.controls
-						.filter((control) => isAdvancedControl(control.key))
+						.filter(
+							(control) =>
+								isAdvancedControl(control.key) &&
+								isControlVisible(selected, customProps, control.key),
+						)
 						.map((control) => (
 							<ControlField
 								key={control.key}
@@ -276,7 +285,11 @@ export function PreviewControls({
 				<p className="inspector-section-label">SHAPE & APPEARANCE</p>
 				<div className="visual-controls">
 					{example.controls
-						.filter((control) => !isAdvancedControl(control.key))
+						.filter(
+							(control) =>
+								!isAdvancedControl(control.key) &&
+								isControlVisible(selected, customProps, control.key),
+						)
 						.map((control) => (
 							<ControlField
 								key={control.key}

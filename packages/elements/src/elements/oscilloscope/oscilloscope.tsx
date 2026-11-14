@@ -24,6 +24,8 @@ type OscilloscopeOptions = {
 	readonly lineColor?: string;
 	readonly lineWidth?: number;
 	readonly sampleCount?: number;
+	readonly timeSpanMs?: number;
+	readonly displayMode?: 'pitch' | 'single-cycle' | 'free';
 };
 
 type OscilloscopeProps = InteractiveBaseProps & InteractiveTransformProps & OscilloscopeOptions;
@@ -104,12 +106,28 @@ const oscilloscopeSchema = {
 		type: 'number',
 		default: 1024,
 		min: 256,
-		max: 2048,
+		max: 4096,
 		step: 256,
-		description: 'PCM samples',
+		description: 'Trace resolution (independent of time span)',
 		hiddenFromList: false,
 		keyframable: false,
 	},
+	timeSpanMs: {
+		type: 'number',
+		default: 46.4,
+		min: 5,
+		max: 200,
+		step: 0.1,
+		description: 'Visible time span in milliseconds (pitch and free modes)',
+		hiddenFromList: false,
+	},
+	displayMode: {
+		type: 'enum',
+		default: 'pitch',
+		description: 'Trigger mode',
+		variants: {pitch: {}, 'single-cycle': {}, free: {}},
+	},
+
 	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
@@ -146,25 +164,174 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 	return {...result, audioData: complete ? audioData : null};
 }
 
-function triggeredSamples(
-	audioData: MediaUtilsAudioData,
-	time: number,
-	fps: number,
-	count: number,
+const DETECTOR_RATE = 4000;
+const FILTER_RADIUS = 32;
+const CUTOFF = 300 / DETECTOR_RATE;
+const detectorFilter = Float64Array.from({length: FILTER_RADIUS * 2 + 1}, (_, i) => {
+	const x = i - FILTER_RADIUS;
+	const sinc = x === 0 ? 2 * CUTOFF : Math.sin(2 * Math.PI * CUTOFF * x) / (Math.PI * x);
+	return sinc * (0.5 + 0.5 * Math.cos((Math.PI * x) / FILTER_RADIUS));
+});
+const filterSum = detectorFilter.reduce((sum, value) => sum + value, 0);
+for (let i = 0; i < detectorFilter.length; i++) detectorFilter[i] /= filterSum;
+
+// Source-anchored triggering.
+function findPitchWindow(
+	waveform: Float32Array,
+	sampleRate: number,
 	dataOffsetInSeconds: number,
+	anchor: number,
+	singleCycle: boolean,
 ) {
-	const samples = new Float32Array(count);
-	if (time < 0 || time >= audioData.durationInSeconds) return samples;
-	const waveform = audioData.channelWaveforms[0];
-	const start = Math.floor((time - dataOffsetInSeconds) * audioData.sampleRate);
-	let trigger = Math.max(0, start - Math.floor(Math.min(audioData.sampleRate / fps, 4096) / 2));
-	for (let i = trigger; i < start; i++) {
-		if (i > 0 && waveform[i - 1] < 0 && waveform[i] >= 0) {
-			trigger = i;
-			break;
+	const detectorEnd = Math.floor(anchor * DETECTOR_RATE);
+	const detectorStart = detectorEnd - Math.ceil(0.093 * DETECTOR_RATE);
+	const length = detectorEnd - detectorStart + 1;
+	const raw = new Float64Array(length + FILTER_RADIUS * 2);
+	for (let i = 0; i < raw.length; i++) {
+		const tick = detectorStart - FILTER_RADIUS + i;
+		const start = Math.round((tick / DETECTOR_RATE - dataOffsetInSeconds) * sampleRate);
+		const end = Math.max(
+			start + 1,
+			Math.round(((tick + 1) / DETECTOR_RATE - dataOffsetInSeconds) * sampleRate),
+		);
+		let sum = 0;
+		for (let j = start; j < end; j++) sum += waveform[j] ?? 0;
+		raw[i] = sum / (end - start);
+	}
+	const detector = new Float64Array(length);
+	let rawMin = Infinity,
+		rawMax = -Infinity,
+		filteredMin = Infinity,
+		filteredMax = -Infinity;
+	for (let i = 0; i < length; i++) {
+		for (let tap = 0; tap < detectorFilter.length; tap++)
+			detector[i] += raw[i + tap] * detectorFilter[tap];
+		filteredMin = Math.min(filteredMin, detector[i]);
+		filteredMax = Math.max(filteredMax, detector[i]);
+		rawMin = Math.min(rawMin, raw[i + FILTER_RADIUS]);
+		rawMax = Math.max(rawMax, raw[i + FILTER_RADIUS]);
+	}
+	if (filteredMax - filteredMin < (rawMax - rawMin) * 0.02) {
+		detector.set(raw.subarray(FILTER_RADIUS, FILTER_RADIUS + length));
+		filteredMin = rawMin;
+		filteredMax = rawMax;
+	}
+	const center = (filteredMin + filteredMax) / 2;
+	const hysteresis = (filteredMax - filteredMin) * 0.05;
+	let armed = false,
+		startTime = anchor;
+	if (filteredMax - filteredMin > 0.00001) {
+		for (let i = 1; i < length; i++) {
+			const previous = detector[i - 1] - center,
+				current = detector[i] - center;
+			if (previous < -hysteresis) armed = true;
+			if (armed && previous <= 0 && current > 0) {
+				startTime = (detectorStart + i - 1 - previous / (current - previous) + 0.5) / DETECTOR_RATE;
+				armed = false;
+			}
 		}
 	}
-	for (let i = 0; i < count; i++) samples[i] = waveform[trigger + i] ?? 0;
+	let period: number | undefined;
+	if (singleCycle && rawMax - rawMin > 0.00001) {
+		const maxLag = Math.ceil(DETECTOR_RATE / 40),
+			minLag = Math.floor(DETECTOR_RATE / 1000);
+		const scores = new Float64Array(maxLag + 2);
+		let cumulativeDifference = 0;
+		for (let lag = 1; lag <= maxLag + 1; lag++) {
+			let difference = 0;
+			for (let i = maxLag + 1; i < length; i++) {
+				const delta = raw[i + FILTER_RADIUS] - raw[i + FILTER_RADIUS - lag];
+				difference += delta * delta;
+			}
+			cumulativeDifference += difference;
+			scores[lag] = cumulativeDifference > 1e-12 ? (difference * lag) / cumulativeDifference : 1;
+		}
+		for (let lag = minLag; lag <= maxLag; lag++) {
+			const left = scores[lag - 1],
+				middle = scores[lag],
+				right = scores[lag + 1];
+			if (middle >= left || middle > right) continue;
+			const curvature = left - 2 * middle + right;
+			const offset =
+				curvature > 1e-12 ? Math.max(-0.5, Math.min(0.5, (left - right) / (2 * curvature))) : 0;
+			if (middle - ((left - right) * offset) / 4 < 0.12) {
+				const candidatePeriod = (lag + offset) / DETECTOR_RATE;
+				let difference = 0,
+					sumA = 0,
+					sumB = 0,
+					energy = 0,
+					count = 0;
+				for (let i = maxLag + 1; i < length; i++) {
+					const position =
+						((detectorStart + i + 0.5) / DETECTOR_RATE - dataOffsetInSeconds) * sampleRate;
+					const delayed = position - candidatePeriod * sampleRate;
+					const indexA = Math.floor(position),
+						indexB = Math.floor(delayed);
+					const a0 = waveform[indexA] ?? 0,
+						b0 = waveform[indexB] ?? 0;
+					const a = a0 + ((waveform[indexA + 1] ?? 0) - a0) * (position - indexA);
+					const b = b0 + ((waveform[indexB + 1] ?? 0) - b0) * (delayed - indexB);
+					difference += (a - b) ** 2;
+					sumA += a;
+					sumB += b;
+					energy += a * a + b * b;
+					count++;
+				}
+				const centeredEnergy = energy - (sumA * sumA + sumB * sumB) / count;
+				if (centeredEnergy > 1e-8 && difference / centeredEnergy < 0.03) {
+					period = candidatePeriod;
+					break;
+				}
+			}
+		}
+	}
+	return {startTime, period};
+}
+
+function getOscilloscopeSamples({
+	waveform,
+	sampleRate,
+	timeInSeconds,
+	dataOffsetInSeconds = 0,
+	timeSpanMs = 46.4,
+	displayMode = 'pitch',
+	sampleCount,
+}: {
+	waveform: Float32Array;
+	sampleRate: number;
+	timeInSeconds: number;
+	dataOffsetInSeconds?: number;
+	timeSpanMs?: number;
+	displayMode?: 'pitch' | 'single-cycle' | 'free';
+	sampleCount: number;
+}) {
+	const samples = new Float32Array(sampleCount);
+	const localTime = timeInSeconds - dataOffsetInSeconds;
+	if (sampleRate <= 0 || localTime < 0 || localTime * sampleRate >= waveform.length) return samples;
+	let duration =
+		displayMode === 'single-cycle' ? 0.0464 : Math.min(200, Math.max(5, timeSpanMs)) / 1000;
+	let startTime = timeInSeconds - duration / 2;
+	if (displayMode !== 'free') {
+		const window = findPitchWindow(
+			waveform,
+			sampleRate,
+			dataOffsetInSeconds,
+			startTime,
+			displayMode === 'single-cycle',
+		);
+		startTime = window.startTime;
+		duration = window.period ?? duration;
+	}
+	for (let i = 0; i < sampleCount; i++) {
+		const position =
+			(startTime + (duration * i) / Math.max(1, sampleCount - 1) - dataOffsetInSeconds) *
+			sampleRate;
+		const index = Math.floor(position),
+			fraction = position - index;
+		const a = waveform[index] ?? 0,
+			b = waveform[index + 1] ?? 0;
+		samples[i] = a + (b - a) * fraction;
+	}
 	return samples;
 }
 
@@ -183,13 +350,16 @@ const OscilloscopeContent: React.FC<Required<OscilloscopeOptions>> = (props) => 
 	const offsetFrames = Math.round(props.audioOffsetInSeconds * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
 	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
-	const samples = triggeredSamples(
-		audioData ?? silentAudio,
-		sourceTime,
-		fps,
-		props.sampleCount,
+	const data = audioData ?? silentAudio;
+	const samples = getOscilloscopeSamples({
+		waveform: data.channelWaveforms[0],
+		sampleRate: data.sampleRate,
+		timeInSeconds: sourceTime,
 		dataOffsetInSeconds,
-	);
+		sampleCount: Math.round(Math.max(256, Math.min(4096, props.sampleCount))),
+		timeSpanMs: props.timeSpanMs,
+		displayMode: props.displayMode,
+	});
 	const gain = 10 ** (props.inputGainDb / 20);
 	const path = Array.from(
 		samples,
@@ -244,6 +414,8 @@ const OscilloscopeInner = forwardRef<
 			lineColor = oscilloscopeSchema.lineColor.default,
 			lineWidth = oscilloscopeSchema.lineWidth.default,
 			sampleCount = oscilloscopeSchema.sampleCount.default,
+			timeSpanMs = oscilloscopeSchema.timeSpanMs.default,
+			displayMode = oscilloscopeSchema.displayMode.default,
 			controls,
 			name,
 			style,
@@ -283,6 +455,8 @@ const OscilloscopeInner = forwardRef<
 						lineColor={lineColor}
 						lineWidth={lineWidth}
 						sampleCount={sampleCount}
+						timeSpanMs={timeSpanMs}
+						displayMode={displayMode}
 					/>
 				</div>
 			</Sequence>

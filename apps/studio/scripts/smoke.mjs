@@ -15,7 +15,14 @@ const cli = path.join(
 const output = path.join(repository, 'out');
 mkdirSync(output, {recursive: true});
 
-for (const {id: composition} of compositions) {
+const requested = new Set(process.argv.slice(2));
+const fixtures = requested.size
+	? compositions.filter(({id, slug}) => requested.has(id) || (slug && requested.has(slug)))
+	: compositions;
+if (fixtures.length === 0)
+	throw new Error('No matching smoke fixtures. Pass a composition ID or element slug.');
+
+for (const {id: composition} of fixtures) {
 	console.log(`Rendering ${composition}`);
 	const result = spawnSync(
 		process.execPath,
@@ -26,7 +33,7 @@ for (const {id: composition} of compositions) {
 			composition,
 			path.join(output, `${composition}.png`),
 			'--frame=96',
-			'--gl=angle',
+			`--gl=${process.env.REMOTION_GL ?? 'angle'}`,
 			'--log=error',
 			`--public-dir=${path.join(repository, 'public')}`,
 		],

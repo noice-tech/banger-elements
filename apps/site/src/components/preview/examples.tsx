@@ -5,6 +5,8 @@ import type {PreviewProps as Props} from './types';
 import {range, color, select, booleanControl, numberControl} from './controls';
 import {FisheyePreview, fisheyePreviewDefaults} from './fisheye';
 import {VhsPreview, vhsPreviewDefaults} from './vhs';
+import {WetGlassPreview, wetGlassPreviewDefaults} from './wet-glass';
+import {shaderExamples} from './shader-updates';
 import {
 	Waveform,
 	Spectre,
@@ -40,14 +42,27 @@ type PreviewExample<C extends ComponentType<Props>> = {
 };
 
 const DEFAULT_AUDIO = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3';
-const HALO_AUDIO =
-	'https://raw.githubusercontent.com/remotion-dev/remotion/main/packages/template-music-visualization/public/demo-track.mp3';
+const HALO_AUDIO = DEFAULT_AUDIO;
 const AUDIO_PARTICLES_AUDIO =
 	'https://raw.githubusercontent.com/remotion-dev/remotion/main/packages/template-recorder/public/sounds/utope-rhythmic-reverie.mp3';
 const colorMode = select('colorMode', 'Color mode', [
 	{value: 'gradient', label: 'Gradient'},
 	{value: 'rainbow', label: 'Rainbow'},
 ]);
+const spectrumColorMode = select('colorMode', 'Color mode', [
+	{value: 'gradient', label: 'Gradient'},
+	{value: 'gradient-3', label: 'Three colors'},
+	{value: 'rainbow', label: 'Rainbow'},
+]);
+const spectrumColors = [
+	spectrumColorMode,
+	color('startColor', 'Start color'),
+	color('middleColor', 'Middle color'),
+	color('endColor', 'End color'),
+	range('rainbowSpeed', 'Rainbow speed', 0, 10, 0.1),
+	range('saturation', 'Saturation', 0, 1, 0.01),
+	range('brightness', 'Brightness', 0, 1, 0.01),
+];
 const gain = range('inputGainDb', 'Visual gain', -30, 30, 1);
 const intensity = range('intensity', 'Intensity', 0.1, 10, 0.1);
 
@@ -86,6 +101,24 @@ const HaloAndParticles = (props: Props) => {
 	);
 };
 export const examples = {
+	...shaderExamples,
+	'wet-glass': {
+		component: WetGlassPreview,
+		width: 1280,
+		height: 720,
+		props: wetGlassPreviewDefaults,
+		controls: [
+			range('amount', 'Rain amount / bypass', 0, 1, 0.01),
+			range('speed', 'Rain speed', 0, 4, 0.01),
+			range('dropSize', 'Droplet size', 0.25, 2, 0.01),
+			range('refraction', 'Refraction', 0, 2, 0.01),
+			range('blur', 'Wet-glass defocus', 0, 1, 0.01),
+			range('effectOpacity', 'Effect mix / bypass', 0, 1, 0.01),
+			color('color', 'Water tint'),
+			range('seed', 'Droplet seed', 0, 32, 0.01),
+			numberControl('timeOffsetInSeconds', 'Effect phase (s)', -86400, 86400, 0.01),
+		],
+	} satisfies PreviewExample<typeof WetGlassPreview>,
 	vhs: {
 		component: VhsPreview,
 		width: 1280,
@@ -572,13 +605,20 @@ export const examples = {
 			inputGainDb: 4,
 			intensity: 1.6,
 			color: '#b794ff',
+			colorMode: 'solid',
+			resolution: 1,
 			windowInSeconds: 2,
 		},
 		controls: [
+			select('colorMode', 'Color mode', [
+				{value: 'solid', label: 'Solid'},
+				{value: 'frequency', label: 'Frequency RGB'},
+			]),
 			color('color', 'Color'),
 			gain,
 			intensity,
 			range('windowInSeconds', 'Time window', 0.1, 5, 0.1),
+			range('resolution', 'Resolution', 1, 16, 1),
 		],
 	} satisfies PreviewExample<typeof Waveform>,
 	spectre: {
@@ -594,6 +634,12 @@ export const examples = {
 			count: 64,
 			barWidth: 3,
 			bottom: false,
+			middleColor: '#aa8bff',
+			rainbowSpeed: 1,
+			saturation: 0.85,
+			brightness: 0.85,
+			gradientAngle: 0,
+			segmentGap: 0.4,
 			spectreVariant: 'bars',
 		},
 		controls: [
@@ -601,12 +647,12 @@ export const examples = {
 				{value: 'bars', label: 'Bars'},
 				{value: 'segmented', label: 'Segmented'},
 			]),
-			colorMode,
-			color('startColor', 'Start color'),
-			color('endColor', 'End color'),
+			...spectrumColors,
+			range('gradientAngle', 'Gradient angle', 0, 360, 1),
+			range('segmentGap', 'Segment gap', 0.1, 1, 0.01),
 			gain,
 			intensity,
-			range('count', 'Bar count', 5, 150, 1),
+			range('count', 'Bar count', 5, 240, 1),
 			range('barWidth', 'Bar width', 0.5, 10, 0.5),
 			booleanControl('bottom', 'Align to bottom'),
 		],
@@ -638,17 +684,26 @@ export const examples = {
 			lineColor: '#51e8cc',
 			lineWidth: 3,
 			sampleCount: 1024,
+			displayMode: 'pitch',
+			timeSpanMs: 46.4,
 		},
 		controls: [
+			select('displayMode', 'Trigger mode', [
+				{value: 'pitch', label: 'Pitch'},
+				{value: 'single-cycle', label: 'Single cycle'},
+				{value: 'free', label: 'Free running'},
+			]),
+			range('timeSpanMs', 'Time span (ms)', 5, 200, 0.1),
 			color('lineColor', 'Line color'),
 			gain,
 			range('amplitude', 'Amplitude', 0.1, 10, 0.1),
 			range('lineWidth', 'Line width', 0.5, 10, 0.5),
-			select('sampleCount', 'PCM samples', [
+			select('sampleCount', 'Trace resolution', [
 				{value: '256', label: '256'},
 				{value: '512', label: '512'},
 				{value: '1024', label: '1024'},
 				{value: '2048', label: '2048'},
+				{value: '4096', label: '4096'},
 			]),
 		],
 	} satisfies PreviewExample<typeof Oscilloscope>,
@@ -691,6 +746,14 @@ export const examples = {
 			endColor: '#51e8cc',
 			colorMode: 'gradient',
 			circleVariant: 'radial-bars',
+			middleColor: '#f567f5',
+			rainbowSpeed: 1,
+			saturation: 0.85,
+			brightness: 0.85,
+			barWidth: 0.5,
+			lineThickness: 3,
+			dotSize: 3,
+			showLines: true,
 		},
 		controls: [
 			select('circleVariant', 'Treatment', [
@@ -699,14 +762,16 @@ export const examples = {
 				{value: 'waveform-ring', label: 'Waveform ring'},
 				{value: 'dotted-ring', label: 'Dotted ring'},
 			]),
-			colorMode,
-			color('startColor', 'Start color'),
-			color('endColor', 'End color'),
+			...spectrumColors,
 			gain,
 			intensity,
 			range('radius', 'Radius', 0.05, 0.8, 0.01),
 			range('count', 'Count', 5, 150, 1),
-			range('lineWidth', 'Line / dot width', 0.5, 10, 0.5),
+			range('barWidth', 'Bar width', 0.05, 1, 0.01),
+			range('lineWidth', 'Glow width', 0.5, 10, 0.5),
+			range('lineThickness', 'Line thickness', 0.1, 5, 0.1),
+			range('dotSize', 'Dot size', 0.1, 5, 0.1),
+			booleanControl('showLines', 'Horizontal rays'),
 		],
 	} satisfies PreviewExample<typeof Circle>,
 	glow: {
@@ -828,6 +893,14 @@ export const defaultAudioFor = (kind: PreviewKind) => {
 		[
 			'vhs',
 			'fisheye',
+			'wet-glass',
+			'pulse',
+			'rooftop',
+			'cathedral',
+			'liquid',
+			'chrome',
+			'neuron',
+			'matrix',
 			'halo',
 			'ferrofluid',
 			'trip',

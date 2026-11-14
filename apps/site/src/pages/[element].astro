@@ -10,12 +10,13 @@ export function getStaticPaths() {
 const {entry} = Astro.props;
 const isWrapper = entry.category === 'effects';
 const wrapperName = entry.name;
+const bypassKey = entry.slug === 'wet-glass' ? 'amount' : 'strength';
 const wrapperExample = `import {${wrapperName}} from './${entry.slug}.element';
 import {Space} from './space.element';
 import {Halo} from './halo.element';
 
 // Install Space and Halo separately, or use your existing content.
-<${wrapperName} width={1280} height={720} strength={${entry.slug === 'vhs' ? 1 : 0.75}}>
+<${wrapperName} width={1280} height={720} ${bypassKey}={${entry.slug === 'wet-glass' ? 0.65 : entry.slug === 'vhs' ? 1 : 0.75}}>
   <Space playAudio={false} style={{position: 'absolute', inset: 0}} />
   <Halo playAudio style={{position: 'absolute', inset: 0}} />
 </${wrapperName}>`;
@@ -36,7 +37,7 @@ const related = elements.filter(element => element.slug !== entry.slug).sort((a,
 					<div slot="fallback" class="preview-block not-content">
 						<div class="preview-stage"><div class="preview-placeholder" role="status" aria-label="Loading preview"></div></div>
 						<div class="preview-caption" aria-hidden="true">
-							<span>60 FPS · {['vhs', 'fisheye', 'ferrofluid', 'trip', 'fractals', 'hyperloop', 'downfall', 'rail', 'rain', 'space', 'synthwave', 'mushrooms', 'halo', 'audio-particles', 'combined'].includes(entry.slug) ? 16 : 9} seconds · Press play to hear audio</span>
+							<span>60 FPS · {['vhs', 'fisheye', 'wet-glass', 'ferrofluid', 'trip', 'fractals', 'hyperloop', 'downfall', 'rail', 'rain', 'space', 'synthwave', 'mushrooms', 'halo', 'audio-particles', 'combined'].includes(entry.slug) ? 16 : 9} seconds · Press play to hear audio</span>
 							<span>{isWrapper ? 'Demo children are not included. Wrap your own JSX after installation.' : 'Studio uses your preview settings. Download TSX uses the original defaults.'}</span>
 						</div>
 					</div>
@@ -61,7 +62,7 @@ const related = elements.filter(element => element.slug !== entry.slug).sort((a,
 			{isWrapper ? <>
 				<p>Download the TSX or confirm installation in Studio, then wrap the Elements you want to affect in <code>&lt;{wrapperName}&gt;…&lt;/{wrapperName}&gt;</code>. The wrapper is empty until you add children; it does not automatically wrap selected layers. The preview's visualizers and title are demo content, not bundled dependencies.</p>
 				<pre><code>{wrapperExample}</code></pre>
-				<p>Match child dimensions to the wrapper and position stacked layers absolutely. Each Element keeps its own Sequence; moving the wrapper moves the group. Select the wrapper in Studio for effect controls. Set <code>strength</code> to zero for a clean bypass.</p>
+				<p>Match child dimensions to the wrapper and position stacked layers absolutely. Each Element keeps its own Sequence; moving the wrapper moves the group. Select the wrapper in Studio for effect controls. Set <code>{bypassKey}</code> to zero for a clean bypass.</p>
 			</> : <>
 				<p>The Studio protocol handles source installation and insertion, so this workflow does not require a manual import. Confirm the request in Studio, then select the inserted Element to adjust its Interactive controls.</p>
 				<p>No props are required. The installed source uses the audio URL from your preview. Local files need a hosted URL before installation. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track, or copy the configured JSX from the preview controls for use with the original source.</p>

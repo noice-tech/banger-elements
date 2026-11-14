@@ -35,7 +35,13 @@ type SpectreOptions = {
 	readonly intensity?: number;
 	readonly startColor?: string;
 	readonly endColor?: string;
-	readonly colorMode?: 'gradient' | 'rainbow';
+	readonly colorMode?: 'gradient' | 'gradient-3' | 'rainbow';
+	readonly middleColor?: string;
+	readonly rainbowSpeed?: number;
+	readonly saturation?: number;
+	readonly brightness?: number;
+	readonly gradientAngle?: number;
+	readonly segmentGap?: number;
 	readonly count?: number;
 	readonly barWidth?: number;
 	readonly bottom?: boolean;
@@ -117,13 +123,23 @@ const spectreSchema = {
 		type: 'enum',
 		default: DEFAULT_COLOR_MODE,
 		description: 'Color mode',
-		variants: {gradient: {}, rainbow: {}},
+		variants: {gradient: {}, 'gradient-3': {}, rainbow: {}},
 	},
+	middleColor: {
+		type: 'color',
+		default: '#aa8bff',
+		description: 'Middle color for three-stop gradients',
+	},
+	rainbowSpeed: {type: 'number', default: 1, min: 0, max: 10, step: 0.1, hiddenFromList: false},
+	saturation: {type: 'number', default: 0.85, min: 0, max: 1, step: 0.01, hiddenFromList: false},
+	brightness: {type: 'number', default: 0.85, min: 0, max: 1, step: 0.01, hiddenFromList: false},
+	gradientAngle: {type: 'number', default: 0, min: 0, max: 360, step: 1, hiddenFromList: false},
+	segmentGap: {type: 'number', default: 0.4, min: 0.1, max: 1, step: 0.01, hiddenFromList: false},
 	count: {
 		type: 'number',
 		default: DEFAULT_COUNT,
 		min: 5,
-		max: 150,
+		max: 240,
 		step: 1,
 		description: 'Bar count',
 		hiddenFromList: false,
@@ -222,31 +238,37 @@ type AudioInput = {
 	readonly fps: number;
 };
 
+// Preserve every log-spaced slot, including silence and frequencies above Nyquist.
 function computeBars({
 	allVisualizationValues,
+	sampleRate = 44100,
 	outputBarsCount = 308,
 }: {
 	allVisualizationValues: number[];
+	sampleRate?: number;
 	outputBarsCount?: number;
 }) {
-	const minFreq = 20;
-	const maxFreq = 22000;
-	const defaultFill = 0.0025;
-	const freqStep = (maxFreq - minFreq) / allVisualizationValues.length;
-	const bars = Array.from({length: outputBarsCount}, () => defaultFill);
-	const binSize = 1 / outputBarsCount;
-	for (let index = 0; index < allVisualizationValues.length; index++) {
-		const frequency = minFreq + index * freqStep;
-		const logFrequency = Math.log10(frequency / minFreq) / Math.log10(maxFreq / minFreq);
-		const binIndex = Math.floor(logFrequency / binSize);
-		if (binIndex < outputBarsCount) {
-			bars[binIndex] +=
-				binIndex < Math.floor(outputBarsCount * 0.334415584415584)
-					? allVisualizationValues[index] * 1.3
-					: allVisualizationValues[index];
+	const binWidth = sampleRate / (allVisualizationValues.length * 2);
+	return Array.from({length: outputBarsCount}, (_, band) => {
+		const low = 20 * 1100 ** (band / outputBarsCount);
+		const high = 20 * 1100 ** ((band + 1) / outputBarsCount);
+		const center = Math.sqrt(low * high);
+		if (center >= sampleRate / 2 || !Number.isFinite(binWidth) || binWidth <= 0) return 0;
+		const first = Math.max(1, Math.ceil(low / binWidth));
+		const end = Math.min(allVisualizationValues.length, Math.ceil(high / binWidth));
+		let amplitude = 0;
+		if (end > first) {
+			for (let bin = first; bin < end; bin++)
+				amplitude = Math.max(amplitude, allVisualizationValues[bin] || 0);
+		} else {
+			const position = center / binWidth,
+				lower = Math.floor(position);
+			amplitude =
+				(allVisualizationValues[lower] || 0) * (1 - position + lower) +
+				(allVisualizationValues[lower + 1] || 0) * (position - lower);
 		}
-	}
-	return bars.filter((b) => b !== defaultFill && !Number.isNaN(b));
+		return amplitude * 3.5 * 10 ** ((4.5 * Math.log2(center / 1000)) / 20);
+	});
 }
 
 function spectrumBars(input: AudioInput, count = 308) {
@@ -263,6 +285,7 @@ function spectrumBars(input: AudioInput, count = 308) {
 	});
 	return computeBars({
 		allVisualizationValues: frequencies,
+		sampleRate: input.audioData.sampleRate,
 		outputBarsCount: count,
 	});
 }
@@ -427,11 +450,18 @@ function createShaderSource(source: string, fragment: boolean) {
 		return `#version 300 es\nprecision highp float;\nprecision highp int;\n${source}`;
 	}
 
-	const effect = source.replace(/void main\(\)/, 'void renderEffect()');
+	const effect = source
+		.replace(/void main\(\)/, 'void renderEffect()')
+		.replaceAll('vec2(barIndex / numBars, 0.5)', 'vec2((barIndex + 0.5) / numBars, 0.5)')
+		.replace(
+			'return mix(iStartColor, iEndColor, t);',
+			'if (iColorMode == 1) return t < 0.5 ? mix(iStartColor, iMiddleColor, t * 2.0) : mix(iMiddleColor, iEndColor, (t - 0.5) * 2.0); return mix(iStartColor, iEndColor, t);',
+		);
 	return `#version 300 es
 precision highp float;
 precision highp int;
 out vec4 outColor;
+uniform vec3 iMiddleColor;
 ${effect}
 void main() {
 	renderEffect();
@@ -458,6 +488,7 @@ type SpectreState = {
 		readonly count: WebGLUniformLocation | null;
 		readonly startColor: WebGLUniformLocation | null;
 		readonly endColor: WebGLUniformLocation | null;
+		readonly middleColor: WebGLUniformLocation | null;
 		readonly intensity: WebGLUniformLocation | null;
 		readonly opacity: WebGLUniformLocation | null;
 		readonly bottom: WebGLUniformLocation | null;
@@ -481,6 +512,12 @@ type SpectreFrame = Pick<
 	| 'intensity'
 	| 'bottom'
 	| 'colorMode'
+	| 'middleColor'
+	| 'rainbowSpeed'
+	| 'saturation'
+	| 'brightness'
+	| 'gradientAngle'
+	| 'segmentGap'
 > & {
 	readonly sourceTime: number;
 	readonly texture: DataTexture;
@@ -554,6 +591,7 @@ function setupSpectre(canvas: HTMLCanvasElement, fragment: string): SpectreState
 				count: gl.getUniformLocation(program, 'iCount'),
 				startColor: gl.getUniformLocation(program, 'iStartColor'),
 				endColor: gl.getUniformLocation(program, 'iEndColor'),
+				middleColor: gl.getUniformLocation(program, 'iMiddleColor'),
 				intensity: gl.getUniformLocation(program, 'iIntensity'),
 				opacity: gl.getUniformLocation(program, 'iOpacity'),
 				bottom: gl.getUniformLocation(program, 'iBottom'),
@@ -590,12 +628,16 @@ function drawSpectre(state: SpectreState, frame: SpectreFrame) {
 	gl.uniform1f(uniforms.intensity, frame.intensity);
 	gl.uniform1f(uniforms.opacity, 1);
 	gl.uniform1i(uniforms.bottom, Number(frame.bottom));
-	gl.uniform1f(uniforms.gradientAngle, 0);
-	gl.uniform1f(uniforms.segmentGap, 0.4);
-	gl.uniform1i(uniforms.colorMode, frame.colorMode === 'rainbow' ? 2 : 0);
-	gl.uniform1f(uniforms.rainbowSpeed, 1);
-	gl.uniform1f(uniforms.rainbowSaturation, 0.85);
-	gl.uniform1f(uniforms.rainbowBrightness, 0.85);
+	gl.uniform1f(uniforms.gradientAngle, frame.gradientAngle ?? 0);
+	gl.uniform1f(uniforms.segmentGap, frame.segmentGap ?? 0.4);
+	gl.uniform1i(
+		uniforms.colorMode,
+		frame.colorMode === 'rainbow' ? 2 : frame.colorMode === 'gradient-3' ? 1 : 0,
+	);
+	gl.uniform3fv(uniforms.middleColor, linearColor(frame.middleColor ?? '#aa8bff'));
+	gl.uniform1f(uniforms.rainbowSpeed, frame.rainbowSpeed ?? 1);
+	gl.uniform1f(uniforms.rainbowSaturation, frame.saturation ?? 0.85);
+	gl.uniform1f(uniforms.rainbowBrightness, frame.brightness ?? 0.85);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, texture);
 	gl.texImage2D(
@@ -643,6 +685,7 @@ function SpectreCanvas({fragment, ...frame}: SpectreFrame & {readonly fragment: 
 		canvas.addEventListener('webglcontextlost', onContextLost);
 		return () => {
 			canvas.removeEventListener('webglcontextlost', onContextLost);
+			if (!current) return;
 			cleanupSpectre(current);
 			state.current = null;
 			queueMicrotask(() => {
@@ -733,12 +776,16 @@ const SpectreContent: React.FC<Required<SpectreOptions>> = (props) => {
 	const offsetFrames = Math.round(props.audioOffsetInSeconds * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
 	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
-	const bars = spectrumBars({
-		audioData: audioData ?? silentAudio,
-		dataOffsetInSeconds,
-		sourceTime,
-		fps,
-	});
+	const count = Math.round(clamp(props.count, 5, 240));
+	const bars = spectrumBars(
+		{
+			audioData: audioData ?? silentAudio,
+			dataOffsetInSeconds,
+			sourceTime,
+			fps,
+		},
+		count,
+	);
 	const gain = 10 ** (props.inputGainDb / 20);
 	return (
 		<>
@@ -746,6 +793,7 @@ const SpectreContent: React.FC<Required<SpectreOptions>> = (props) => {
 				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
 			<SpectreCanvas
+				{...props}
 				fragment={
 					props.spectreVariant === 'segmented' ? segmentedFragmentShader : barsFragmentShader
 				}
@@ -757,7 +805,7 @@ const SpectreContent: React.FC<Required<SpectreOptions>> = (props) => {
 				startColor={props.startColor}
 				endColor={props.endColor}
 				colorMode={props.colorMode}
-				count={props.count}
+				count={count}
 				barWidth={props.barWidth}
 				bottom={props.bottom}
 			/>
@@ -787,6 +835,12 @@ const SpectreInner = forwardRef<
 			barWidth = DEFAULT_BAR_WIDTH,
 			bottom = DEFAULT_BOTTOM,
 			spectreVariant = DEFAULT_VARIANT,
+			middleColor = spectreSchema.middleColor.default,
+			rainbowSpeed = spectreSchema.rainbowSpeed.default,
+			saturation = spectreSchema.saturation.default,
+			brightness = spectreSchema.brightness.default,
+			gradientAngle = spectreSchema.gradientAngle.default,
+			segmentGap = spectreSchema.segmentGap.default,
 			controls,
 			name,
 			style,
@@ -831,6 +885,12 @@ const SpectreInner = forwardRef<
 						barWidth={barWidth}
 						bottom={bottom}
 						spectreVariant={spectreVariant}
+						middleColor={middleColor}
+						rainbowSpeed={rainbowSpeed}
+						saturation={saturation}
+						brightness={brightness}
+						gradientAngle={gradientAngle}
+						segmentGap={segmentGap}
 					/>
 				</div>
 			</Sequence>
