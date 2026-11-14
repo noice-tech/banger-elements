@@ -185,7 +185,18 @@ function drawFisheyeWebGl(
 	gl.bindVertexArray(state.vao);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, state.texture);
-	gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, elementImage);
+	// Chromium 156 simplified this experimental API; retain the Chrome 149 overload too.
+	if (gl.texElementImage2D.length === 3) {
+		(
+			gl.texElementImage2D as unknown as (
+				target: GLenum,
+				internalformat: GLenum,
+				image: ElementImage,
+			) => void
+		)(gl.TEXTURE_2D, gl.RGBA8, elementImage);
+	} else {
+		gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, elementImage);
+	}
 	gl.uniform1i(uniforms.inputTexture, 0);
 	gl.uniform1f(uniforms.strength, bounded(props.strength, 0, 2, 0.5));
 	gl.uniform1f(uniforms.perspectiveFactor, bounded(props.perspectiveFactor, 0, 1, 0.25));

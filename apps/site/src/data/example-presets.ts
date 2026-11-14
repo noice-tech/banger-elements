@@ -9,6 +9,23 @@ const circleCode = (variant: string, props = '') => `import {Circle} from './cir
 
 export const examplePresets = [
 	{
+		id: 'wet-glass',
+		group: 'Effects',
+		label: 'Wet glass',
+		description:
+			'Apply the rain overlay to your existing JSX. Unlike the Rain shader, Wet Glass refracts the children inside its frame.',
+		code: `import {WetGlass} from './wet-glass.element';
+import {City} from './city.element';
+
+<WetGlass amount={0.65} blur={0.35} refraction={1} seed={4}>
+  <City />
+</WetGlass>`,
+		links: [
+			{label: 'Open Wet Glass', href: '/wet-glass.html'},
+			{label: 'Open City', href: '/city.html'},
+		],
+	},
+	{
 		id: 'vhs',
 		group: 'Effects',
 		label: 'VHS wrapper',

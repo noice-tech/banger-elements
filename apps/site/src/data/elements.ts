@@ -1,4 +1,5 @@
 import catalog from '../../../../packages/elements/dist/catalog.json';
+import {shaderDetails} from './shader-updates';
 
 export const elementCategories = [
 	{
@@ -11,17 +12,33 @@ export const elementCategories = [
 		id: 'shaders',
 		title: 'Shaders',
 		description: 'Immersive backgrounds, procedural worlds and evolving textures.',
-		featured: ['space', 'kaleidoscope', 'eye', 'moon', 'city', 'flowers'],
+		featured: ['pulse', 'cathedral', 'liquid', 'chrome', 'neuron', 'matrix'],
 	},
 	{
 		id: 'effects',
 		title: 'Effects',
-		description: 'Wrap your elements with lens distortion and analog texture.',
-		featured: ['vhs', 'fisheye'],
+		description: 'Wrap your elements with lens distortion, analog texture and wet glass.',
+		featured: ['wet-glass', 'vhs', 'fisheye'],
 	},
 ] as const;
 
 const details = {
+	...shaderDetails,
+	'wet-glass': {
+		title: 'Wet Glass',
+		renderer: 'WebGL2',
+		tagline: 'A rain-soaked lens over your existing content.',
+		description:
+			'Wrap text, visualizers and backgrounds in sliding droplets, refraction and wet-glass defocus. Unlike the Rain background shader, this effect filters its children and preserves their transparency. The city demo is not included in the installed source.',
+		controls: [
+			'amount / effectOpacity — rain coverage and effect mix; either at zero bypasses capture',
+			'dropSize / speed / seed — droplet shape, motion and deterministic layout',
+			'refraction / blur / color — distortion, defocus and water tint; white is neutral',
+			'timeOffsetInSeconds — effect phase, independent of child media timing',
+		],
+		limitation:
+			'The faithful shader uses HTML-in-canvas: Chrome 149+ with chrome://flags/#canvas-draw-element for preview, and Remotion 4.0.523+ with ANGLE or Swangle for rendering. Other browsers receive an SVG blur/displacement approximation, not the original droplet field. Filters children only, not siblings or portals; HTML-in-canvas wrappers cannot be nested. Clips to its bounds. Blur uses 16 samples and can be GPU-intensive.',
+	},
 	fisheye: {
 		title: 'Fisheye',
 		renderer: 'WebGL2',
@@ -308,11 +325,12 @@ const details = {
 		renderer: 'SVG',
 		tagline: 'Your track as a scrolling waveform.',
 		description:
-			'A filled waveform showing how the audio level changes over time. Adjust the color, height and visible duration.',
+			'A scrolling signed min/max envelope that preserves transients. Choose a solid color or frequency colors: bass is red, mids green and treble blue.',
 		controls: [
-			'color — envelope fill',
+			'colorMode / color — frequency RGB or solid fill',
 			'intensity — visual amplitude',
 			'windowInSeconds — visible audio window',
+			'resolution — 1× to 16× envelope detail, independent of the time window',
 		],
 		limitation: 'An amplitude envelope, not a frequency spectrum. Analysis uses the first channel.',
 	},
@@ -325,20 +343,25 @@ const details = {
 		controls: [
 			'spectreVariant — bars or segmented',
 			'count — frequency bar count',
-			'startColor / endColor — gradient',
+			'colorMode / startColor / middleColor / endColor — two- or three-color gradient, or rainbow',
+			'gradientAngle / segmentGap — gradient direction and segmented-bar spacing',
+			'rainbowSpeed / saturation / brightness — rainbow treatment',
 		],
-		limitation: 'Requires WebGL2 and graphics acceleration. No SVG fallback.',
+		limitation:
+			'Requires WebGL2 and graphics acceleration. No SVG fallback. Real-frequency log mapping spans 20 Hz–22 kHz; frequencies above the audio Nyquist limit stay silent.',
 	},
 	oscilloscope: {
 		title: 'Oscilloscope',
 		renderer: 'SVG',
 		tagline: 'The audio signal, drawn in real time.',
 		description:
-			'A thin line traces the audio waveform. Adjust its color, thickness and height, or change how many samples it shows.',
+			'A thin line traces the audio waveform with pitch-stable triggering, automatic single-cycle detection or free-running display. Resolution and visible duration are independent.',
 		controls: [
 			'lineColor / lineWidth — trace styling',
 			'amplitude — trace height',
-			'sampleCount — source sample span',
+			'displayMode — pitch, single-cycle or free',
+			'timeSpanMs — 5–200 ms visible duration; single-cycle mode detects the period instead',
+			'sampleCount — 256–4096 trace points, independent of duration',
 		],
 		limitation: 'A time-domain trace, not a loudness meter. Analysis uses the first channel.',
 	},
@@ -364,8 +387,11 @@ const details = {
 			'Four audio-reactive ring styles: radial bars, glow, waveform and dots. Customize the colors and level of detail.',
 		controls: [
 			'circleVariant — radial-bars, glow-ring, waveform-ring or dotted-ring',
-			'count / lineWidth — detail and stroke',
-			'startColor / endColor — gradient',
+			'count / barWidth — radial bars and dots use mirrored, real-frequency bands',
+			'lineWidth / showLines — glow-ring width and horizontal rays',
+			'lineThickness / dotSize — waveform-ring thickness and dotted-ring size',
+			'colorMode / startColor / middleColor / endColor — two- or three-color gradient, or rainbow',
+			'rainbowSpeed / saturation / brightness — rainbow treatment',
 		],
 		limitation:
 			'Requires WebGL2. Treatment controls have different visual effects across variants.',

@@ -25,7 +25,26 @@ const advancedKeys = new Set([
 
 export const isAdvancedControl = (key: string) => advancedKeys.has(key);
 
-const wrapperSlugs = new Set(['vhs', 'fisheye']);
+const wrapperSlugs = new Set(['vhs', 'fisheye', 'wet-glass']);
+export const isWrapper = (slug: string) => wrapperSlugs.has(slug);
+
+export function isControlVisible(slug: string, props: Record<string, PreviewValue>, key: string) {
+	if (slug === 'waveform' && key === 'color') return props.colorMode !== 'frequency';
+	if (slug === 'oscilloscope' && key === 'timeSpanMs') return props.displayMode !== 'single-cycle';
+	if (slug !== 'circle' && slug !== 'spectre') return true;
+	if (key === 'middleColor') return props.colorMode === 'gradient-3';
+	if (['startColor', 'endColor'].includes(key)) return props.colorMode !== 'rainbow';
+	if (['rainbowSpeed', 'saturation', 'brightness'].includes(key))
+		return props.colorMode === 'rainbow';
+	if (slug === 'spectre') return key !== 'segmentGap' || props.spectreVariant === 'segmented';
+	const variant = props.circleVariant ?? 'radial-bars';
+	if (key === 'count') return variant === 'radial-bars' || variant === 'dotted-ring';
+	if (key === 'barWidth') return variant === 'radial-bars';
+	if (key === 'lineWidth' || key === 'showLines') return variant === 'glow-ring';
+	if (key === 'lineThickness') return variant === 'waveform-ring';
+	if (key === 'dotSize') return variant === 'dotted-ring';
+	return true;
+}
 
 export function configuredJsx(
 	slug: string,

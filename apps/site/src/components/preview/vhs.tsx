@@ -16,7 +16,7 @@ export const vhsPreviewDefaults = {
 export const VhsPreview = ({
 	width = 1280,
 	height = 720,
-	audioSrc = 'https://raw.githubusercontent.com/remotion-dev/remotion/main/packages/template-music-visualization/public/demo-track.mp3',
+	audioSrc = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 	audioOffsetInSeconds = 0,
 	playAudio = true,
 	...props

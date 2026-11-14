@@ -23,6 +23,14 @@ import {
 	Synthwave,
 	Trip,
 	Waveform,
+	Pulse,
+	Rooftop,
+	Cathedral,
+	Liquid,
+	Chrome,
+	Neuron,
+	Matrix,
+	WetGlass,
 } from '../../../packages/elements/dist/components';
 import {compositions} from './fixtures/compositions';
 
@@ -30,9 +38,40 @@ const components = {
 	Ferrofluid,
 	FerrofluidFluid: () => <Ferrofluid fluidity={0.8} mappingMode="voronoi" quality="high" />,
 	Waveform,
+	WaveformFrequency: () => <Waveform colorMode="frequency" />,
+	WaveformHighResolution: () => <Waveform resolution={16} />,
+	WetGlassBypass: () => (
+		<WetGlass amount={0}>
+			<div style={{color: 'white', fontSize: 100}}>BYPASS</div>
+		</WetGlass>
+	),
+	WetGlassTransparent: () => (
+		<WetGlass>
+			<div
+				style={{
+					position: 'absolute',
+					left: 400,
+					top: 150,
+					width: 400,
+					height: 400,
+					borderRadius: '50%',
+					background: '#00ffff80',
+				}}
+			/>
+		</WetGlass>
+	),
+	Pulse,
+	Rooftop,
+	Cathedral,
+	Liquid,
+	Chrome,
+	Neuron,
+	Matrix,
 	Spectre,
 	SpectreSegmented: () => <Spectre spectreVariant="segmented" />,
 	Oscilloscope,
+	OscilloscopeSingleCycle: () => <Oscilloscope displayMode="single-cycle" />,
+	OscilloscopeFree: () => <Oscilloscope displayMode="free" timeSpanMs={100} />,
 	Pulsar,
 	Circle,
 	CircleGlow: () => <Circle circleVariant="glow-ring" />,

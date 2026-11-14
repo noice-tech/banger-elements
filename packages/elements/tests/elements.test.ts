@@ -15,7 +15,7 @@ test('catalog: stable identities and explicit purpose-based categories', () => {
 	assert.equal(catalog.filter((entry) => entry.category === 'visualizers').length, 8);
 	assert.deepEqual(
 		catalog.filter((entry) => entry.category === 'effects').map((entry) => entry.slug),
-		['vhs', 'fisheye'],
+		['vhs', 'fisheye', 'wet-glass'],
 	);
 	assert.deepEqual(
 		catalog.filter((entry) => entry.category === 'shaders').map((entry) => entry.slug),
@@ -35,6 +35,13 @@ test('catalog: stable identities and explicit purpose-based categories', () => {
 			'moon',
 			'city',
 			'basic',
+			'pulse',
+			'rooftop',
+			'cathedral',
+			'liquid',
+			'chrome',
+			'neuron',
+			'matrix',
 		],
 	);
 });
