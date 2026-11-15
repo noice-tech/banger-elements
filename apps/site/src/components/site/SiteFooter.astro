@@ -1,0 +1,35 @@
+---
+import packageMetadata from '../../../package.json';
+import Brand from '../Brand.astro';
+import {elementCategories} from '../../data/elements';
+---
+<footer class="site-foot">
+	<div class="site-foot-inner">
+		<div class="site-foot-brand">
+			<Brand />
+			<p>Audio-reactive visualizers, shaders and effects for Remotion. Source you own.</p>
+		</div>
+		<nav class="site-foot-links" aria-label="Footer">
+			<div>
+				<p>Collection</p>
+				{elementCategories.map((category) => <a href={`/${category.id}`}>{category.title}</a>)}
+			</div>
+			<div>
+				<p>Docs</p>
+				<a href="/getting-started.html">Getting started</a>
+				<a href="/examples.html">Examples</a>
+				<a href="/getting-started.html#audio-setup">Audio setup</a>
+			</div>
+			<div>
+				<p>Elsewhere</p>
+				<a href="https://github.com/noice-tech/banger-elements">GitHub</a>
+				<a href="https://banger.show/">banger.show</a>
+				<a href="https://www.remotion.dev/">Remotion</a>
+			</div>
+		</nav>
+	</div>
+	<div class="site-foot-base">
+		<span>v{packageMetadata.version} · MIT licensed</span>
+		<span>Made by <a href="https://noice.tech/">noice.tech</a></span>
+	</div>
+</footer>

@@ -16,6 +16,7 @@
 		"typecheck": "astro check && tsc --noEmit",
 		"posters": "node scripts/posters.mjs",
 		"previews": "node scripts/previews.mjs",
+		"hero-word": "node scripts/hero-word.mjs",
 		"test": "tsx --test tests/*.test.ts"
 	},
 	"dependencies": {

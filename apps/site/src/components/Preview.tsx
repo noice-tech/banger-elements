@@ -9,6 +9,7 @@ import {PreviewControls} from './preview/PreviewControls';
 import {usePreviewAudio, usePreviewArtwork} from './preview/use-preview-assets';
 import type {PreviewProps} from './preview/types';
 import {isWrapper as isWrapperElement} from './preview-config';
+import {previewDurationInSeconds, usePlayerReady} from './preview/player';
 
 export type {PreviewKind} from './preview/examples';
 
@@ -27,55 +28,10 @@ export default function Preview({
 }) {
 	const [selected, setSelected] = useState<PreviewKind>(slug);
 	const playerRef = useRef<PlayerRef>(null);
-	const [readyKind, setReadyKind] = useState<PreviewKind | null>(null);
-	useEffect(() => {
-		const player = playerRef.current;
-		if (!player) return;
-		let frame = 0;
-		let settledFrames = 0;
-		let buffering = false;
-		const onWaiting = () => {
-			buffering = true;
-		};
-		const onResume = () => {
-			buffering = false;
-		};
-		player.addEventListener('waiting', onWaiting);
-		player.addEventListener('resume', onResume);
-		const revealWhenReady = () => {
-			settledFrames = buffering ? 0 : settledFrames + 1;
-			if (settledFrames >= 2) {
-				setReadyKind(selected);
-			} else {
-				frame = requestAnimationFrame(revealWhenReady);
-			}
-		};
-		frame = requestAnimationFrame(revealWhenReady);
-		return () => {
-			cancelAnimationFrame(frame);
-			player.removeEventListener('waiting', onWaiting);
-			player.removeEventListener('resume', onResume);
-		};
-	}, [selected]);
+	const ready = usePlayerReady(playerRef, selected);
 	const example = examples[selected];
 	const isWrapper = isWrapperElement(selected);
-	const durationInSeconds =
-		isWrapper ||
-		selected === 'ferrofluid' ||
-		selected === 'trip' ||
-		selected === 'fractals' ||
-		selected === 'hyperloop' ||
-		selected === 'downfall' ||
-		selected === 'rail' ||
-		selected === 'rain' ||
-		selected === 'space' ||
-		selected === 'synthwave' ||
-		selected === 'mushrooms' ||
-		selected === 'halo' ||
-		selected === 'audio-particles' ||
-		selected === 'combined'
-			? 16
-			: 9;
+	const durationInSeconds = previewDurationInSeconds(selected);
 	const initialProps = useMemo<PreviewProps>(
 		() => ({...example.props, width: example.width, height: example.height}),
 		[example],
@@ -130,7 +86,7 @@ export default function Preview({
 						installTarget,
 					)
 				: null}
-			<div className="preview-stage" data-ready={readyKind === selected}>
+			<div className="preview-stage" data-ready={ready}>
 				<Player
 					ref={playerRef}
 					className="preview-player"

@@ -49,14 +49,14 @@ test('every catalog entry has a downloadable detail page, poster and gallery pre
 	assert.ok(!/<video[^>]*autoplay/.test(overview), 'Gallery must not force autoplay');
 });
 
-test('categories: gallery and sidebar group all elements without changing their URLs', async () => {
+test('categories: gallery and navigation group all elements without changing their URLs', async () => {
 	const overview = await readFile(path.join(dist, 'index.html'), 'utf8');
 	for (const category of ['visualizers', 'shaders', 'effects']) {
 		const section = new RegExp(
 			`<section[^>]*aria-labelledby="${category}"[^>]*>([\\s\\S]*?)</section>`,
 		).exec(overview)?.[1];
 		assert.ok(section, `${category}: missing gallery section`);
-		assert.ok(overview.includes(`aria-labelledby="nav-${category}"`));
+		assert.ok(overview.includes(`href="/${category}"`), `${category}: missing category link`);
 		for (const entry of catalog) {
 			assert.equal(section.includes(`href="/${entry.slug}.html"`), entry.category === category);
 		}

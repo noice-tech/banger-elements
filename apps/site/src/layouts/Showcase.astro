@@ -1,0 +1,84 @@
+---
+import '../styles/tokens.css';
+import '../styles/components.css';
+import '../styles/showcase.css';
+import SiteHeader from '../components/site/SiteHeader.astro';
+import SiteFooter from '../components/site/SiteFooter.astro';
+
+interface Props {
+	title: string;
+	description: string;
+	pageClass?: string;
+	searchable?: boolean;
+}
+const {title, description, pageClass, searchable = false} = Astro.props;
+const canonical = new URL(Astro.url.pathname.replace(/\/$/, '') || '/', Astro.site).href;
+const fullTitle = title.includes('Banger Elements') ? title : `${title} | Banger Elements`;
+---
+<!doctype html>
+<html lang="en" data-theme="dark">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{fullTitle}</title>
+		<meta name="description" content={description} />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#07080c" />
+		<link rel="canonical" href={canonical} />
+		<link rel="icon" href="/brand/banger-icon.png" type="image/png" />
+		<link rel="sitemap" href="/sitemap-index.xml" />
+		<link rel="preload" href="/fonts/Geist.woff2" as="font" type="font/woff2" crossorigin />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={fullTitle} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonical} />
+		<meta property="og:site_name" content="Banger Elements" />
+		<meta name="twitter:card" content="summary_large_image" />
+	</head>
+	<body class:list={['showcase', pageClass]}>
+		<a class="skip-link" href="#main">Skip to content</a>
+		<SiteHeader />
+		<main id="main" data-pagefind-body={searchable ? '' : undefined}>
+			<slot />
+		</main>
+		<SiteFooter />
+		<script>
+			// Play looping previews only while they are on screen, the tab is visible and
+			// the visitor has not asked for reduced motion. Posters stay up otherwise.
+			const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+			const visible = new Set<HTMLVideoElement>();
+			const videos = () => Array.from(document.querySelectorAll<HTMLVideoElement>('video[data-play-visible]'));
+			const sync = () => {
+				for (const video of videos()) {
+					const hiddenByFilter = Boolean(video.closest('[hidden]'));
+					if (!motion.matches && !document.hidden && visible.has(video) && !hiddenByFilter) {
+						void video.play().catch(() => {
+							/* Keep the poster if playback is unavailable. */
+						});
+					} else video.pause();
+				}
+			};
+			const observer = new IntersectionObserver(
+				(entries) => {
+					for (const entry of entries) {
+						const video = entry.target as HTMLVideoElement;
+						if (entry.isIntersecting) visible.add(video);
+						else visible.delete(video);
+					}
+					sync();
+				},
+				{threshold: 0.15},
+			);
+			for (const video of videos()) observer.observe(video);
+			motion.addEventListener('change', sync);
+			document.addEventListener('visibilitychange', sync);
+			document.addEventListener('showcase:sync-media', sync);
+
+			// Close the mobile menu when navigating within the page or clicking outside.
+			const menu = document.querySelector<HTMLDetailsElement>('.mobile-menu');
+			document.addEventListener('click', (event) => {
+				if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
+			});
+		</script>
+	</body>
+</html>
