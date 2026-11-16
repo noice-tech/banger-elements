@@ -2,34 +2,12 @@
 import Brand from '../Brand.astro';
 import GitHubIcon from '../GitHubIcon.astro';
 import StudioActions from '../StudioActions';
-import {elementCategories, elements} from '../../data/elements';
-
-const current = Astro.url.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
-const activeCategory =
-	elementCategories.find((category) => current === `/${category.id}`)?.id ??
-	elements.find((entry) => current === `/${entry.slug}`)?.category;
-const links = [
-	...elementCategories.map((category) => ({
-		href: `/${category.id}`,
-		label: category.title,
-		count: elements.filter((entry) => entry.category === category.id).length,
-		active: activeCategory === category.id,
-	})),
-	{href: '/examples.html', label: 'Examples', count: undefined, active: false},
-	{href: '/getting-started.html', label: 'Docs', count: undefined, active: false},
-];
+import SiteNav from './SiteNav.astro';
 ---
 <header class="site-header">
 	<div class="site-header-inner">
 		<Brand />
-		<nav class="site-nav" aria-label="Main">
-			{links.map((link) => (
-				<a href={link.href} aria-current={link.active ? 'page' : undefined}>
-					{link.label}
-					{link.count ? <span class="site-nav-count">{link.count}</span> : null}
-				</a>
-			))}
-		</nav>
+		<SiteNav class="site-nav" label="Main" />
 		<div class="site-header-end">
 			<a class="icon-link" href="https://github.com/noice-tech/banger-elements" aria-label="Banger Elements on GitHub">
 				<GitHubIcon />
@@ -41,15 +19,9 @@ const links = [
 				<summary aria-label="Menu">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 8h16M4 16h16" /></svg>
 				</summary>
-				<nav class="mobile-menu-panel" aria-label="Mobile">
-					{links.map((link) => (
-						<a href={link.href} aria-current={link.active ? 'page' : undefined}>
-							{link.label}
-							{link.count ? <span class="site-nav-count">{link.count}</span> : null}
-						</a>
-					))}
+				<SiteNav class="mobile-menu-panel" label="Mobile">
 					<a href="https://github.com/noice-tech/banger-elements">GitHub</a>
-				</nav>
+				</SiteNav>
 			</details>
 		</div>
 	</div>

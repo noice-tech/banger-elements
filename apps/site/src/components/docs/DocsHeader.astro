@@ -1,0 +1,24 @@
+---
+// Starlight's header, rebuilt to match the site header: the same brand, links
+// and Studio actions, plus the docs search.
+import Search from '@astrojs/starlight/components/Search.astro';
+import Brand from '../Brand.astro';
+import GitHubIcon from '../GitHubIcon.astro';
+import SidebarToggle from '../SidebarToggle.astro';
+import StudioActions from '../StudioActions';
+import SiteNav from '../site/SiteNav.astro';
+---
+<div class="docs-header">
+	<Brand />
+	<SidebarToggle />
+	<SiteNav class="site-nav" label="Main" />
+	<div class="docs-header-end">
+		<Search />
+		<a class="icon-link" href="https://github.com/noice-tech/banger-elements" aria-label="Banger Elements on GitHub">
+			<GitHubIcon />
+		</a>
+		<div class="header-studio">
+			<StudioActions client:only="react" />
+		</div>
+	</div>
+</div>

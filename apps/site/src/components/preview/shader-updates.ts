@@ -27,6 +27,7 @@ export const shaderExamples = {
 			speed: 1,
 			bpm: 120,
 			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
 		},
 		controls: [
 			color('startColor', 'Primary Color'),
@@ -73,6 +74,7 @@ export const shaderExamples = {
 			fog: 0.5,
 			bpm: 120,
 			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
 		},
 		controls: [
 			color('skyColor', 'Atmosphere Color'),
@@ -118,6 +120,7 @@ export const shaderExamples = {
 			fog: 1,
 			bpm: 120,
 			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
 		},
 		controls: [
 			color('stoneColor', 'Stone Color'),
@@ -162,6 +165,7 @@ export const shaderExamples = {
 			fog: 0.5,
 			bpm: 120,
 			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
 		},
 		controls: [
 			color('color1', 'Color 1'),
@@ -210,6 +214,7 @@ export const shaderExamples = {
 			lightMovement: 1,
 			bpm: 120,
 			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
 		},
 		controls: [
 			color('color1', 'Metal Color 1'),
@@ -258,6 +263,7 @@ export const shaderExamples = {
 			cameraMovement: 2.5,
 			bpm: 120,
 			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
 		},
 		controls: [
 			color('color1', 'Color 1'),
@@ -305,6 +311,7 @@ export const shaderExamples = {
 			responsive: 2,
 			bpm: 120,
 			timeOffsetInSeconds: 0,
+			inputGainDb: 0,
 		},
 		controls: [
 			color('color1', 'Primary Color'),

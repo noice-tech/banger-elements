@@ -1,0 +1,180 @@
+---
+import Showcase from '../layouts/Showcase.astro';
+import {elements} from '../data/elements';
+import {highlightLine} from '../components/highlight';
+import {RECIPE_FPS, RECIPE_FRAMES, recipes} from '../components/recipes/recipes';
+import episodeClip from '../components/recipes/episode-clip.tsx?raw';
+import releaseTeaser from '../components/recipes/release-teaser.tsx?raw';
+import verticalCanvas from '../components/recipes/vertical-canvas.tsx?raw';
+import rainyStream from '../components/recipes/rainy-stream.tsx?raw';
+
+const sources: Record<string, string> = {
+	'episode-clip': episodeClip,
+	'release-teaser': releaseTeaser,
+	'vertical-canvas': verticalCanvas,
+	'rainy-stream': rainyStream,
+};
+const element = (slug: string) => elements.find((entry) => entry.slug === slug)!;
+const byName = new Map(elements.map((entry) => [entry.name, entry.slug]));
+
+// The recipes import the collection's build for rendering. Readers install each
+// element as its own file, so show one import per element instead.
+const forReaders = (source: string) =>
+	source.replace(/^import \{([^}]+)\} from '[^']*packages\/elements\/dist\/components';$/m, (_, names: string) =>
+		names
+			.split(',')
+			.map((name) => name.trim())
+			.map((name) => `import {${name}} from './${byName.get(name)}.element';`)
+			.join('\n'),
+	);
+
+const seconds = (RECIPE_FRAMES / RECIPE_FPS).toFixed(1);
+const shapes = {square: 'Square', wide: 'Landscape', tall: 'Vertical'} as const;
+const shapeOf = (width: number, height: number): keyof typeof shapes =>
+	width === height ? 'square' : width > height ? 'wide' : 'tall';
+
+const cards = recipes.map((recipe, index) => {
+	const code = forReaders(sources[recipe.id]!).trimEnd();
+	const lines = code.split('\n');
+	return {
+		...recipe,
+		number: String(index + 1).padStart(2, '0'),
+		shape: shapeOf(recipe.width, recipe.height),
+		code,
+		lines: lines.map(highlightLine),
+		layerEntries: recipe.layers.map(element),
+	};
+});
+---
+<Showcase
+	title="Examples"
+	description="Finished Remotion compositions built from Banger Elements: an audiogram, a release teaser, a vertical loop and a stream background, each with the code that rendered it."
+	pageClass="page-examples"
+>
+	<div class="wrap">
+		<header class="page-hero">
+			<nav class="kicker" aria-label="Breadcrumb"><a href="/getting-started.html">Docs</a><span aria-hidden="true">/</span><span aria-current="page">Examples</span><span class="kicker-count">{recipes.length}</span></nav>
+			<h1>Real compositions, <span class="tone">ready to copy.</span></h1>
+			<p class="lede">
+				Finished pieces built only from the collection, each in the format it ships in. The code under every clip is the
+				exact composition that rendered it. Swap in your track, change the words and render.
+			</p>
+		</header>
+
+		<nav class="recipe-index" aria-label="Examples on this page">
+			{cards.map((card) => (
+				<a href={`#${card.id}`}>
+					<img src={`/recipes/${card.id}.webp`} alt="" loading="lazy" decoding="async" />
+					<span class="recipe-index-text">
+						<span>{card.title}</span>
+						<span>{shapes[card.shape]} · {card.width} × {card.height}</span>
+					</span>
+				</a>
+			))}
+		</nav>
+
+		{cards.map((card) => (
+			<article class="recipe" id={card.id} data-shape={card.shape} aria-labelledby={`${card.id}-title`}>
+				<div class="recipe-media" style={`--ratio: ${card.width} / ${card.height}`}>
+					<video muted loop playsinline preload="none" poster={`/recipes/${card.id}.webp`} data-play-visible>
+						<source src={`/recipes/${card.id}.webm`} type="video/webm" />
+					</video>
+					<button class="recipe-sound" type="button" aria-pressed="false" data-recipe-sound>
+						<svg viewBox="0 0 16 16" aria-hidden="true">
+							<path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor"></path>
+							<path class="sound-waves" d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
+							<path class="sound-muted" d="m10.5 6 4 4m0-4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
+						</svg>
+						<span class="sr-only">Sound</span>
+					</button>
+				</div>
+				<div class="recipe-body">
+					<p class="recipe-use"><span>{card.number}</span>{card.use}</p>
+					<h2 id={`${card.id}-title`}>{card.title}</h2>
+					<p class="recipe-description">{card.description}</p>
+					<dl class="recipe-specs">
+						<div><dt>Format</dt><dd>{card.width} × {card.height}</dd></div>
+						<div><dt>Length</dt><dd>4 bars · {seconds} s</dd></div>
+						<div><dt>Frame rate</dt><dd>{RECIPE_FPS} fps</dd></div>
+					</dl>
+					<p class="recipe-layers-label">Layers, back to front</p>
+					<ol class="recipe-layers">
+						{card.layerEntries.map((entry) => (
+							<li>
+								<a href={`/${entry.slug}.html`}>
+									<img src={`/posters/${entry.slug}.webp`} alt="" loading="lazy" decoding="async" />
+									<span>{entry.title}</span>
+									<span class="recipe-layer-kind">{entry.category === 'effects' ? 'Effect' : entry.category === 'shaders' ? 'Shader' : 'Visualizer'}</span>
+								</a>
+							</li>
+						))}
+					</ol>
+				</div>
+				<details class="recipe-code code-window">
+					<summary class="code-window-bar">
+						<span class="code-file"><span class="code-dir">src/</span>{card.component}.tsx</span>
+						<span class="recipe-code-meta"><span class="recipe-code-count">{card.lines.length} lines</span><span class="recipe-code-toggle" aria-hidden="true"></span></span>
+					</summary>
+					<div class="recipe-code-actions">
+						<code><span aria-hidden="true">$ </span>npx remotion render {card.component} --gl=angle</code>
+						<button type="button" class="code-copy" data-copy-recipe>Copy code</button>
+					</div>
+<pre class="code-lines"><code>{card.lines.map((html) => <span class="line" set:html={html} />)}</code></pre>
+				</details>
+			</article>
+		))}
+
+		<section class="recipe-next" aria-labelledby="recipe-next-title">
+			<h2 id="recipe-next-title">Make one yours</h2>
+			<ol>
+				<li>
+					<span>Install the layers</span>
+					<p>Open each element in the stack and install it in Studio, or download its TSX next to your composition.</p>
+				</li>
+				<li>
+					<span>Bring your track</span>
+					<p>Put the audio in <code>public/</code>, and set <code>START</code> to the moment the clip should begin. <a href="/getting-started.html#audio-setup">Audio setup</a></p>
+				</li>
+				<li>
+					<span>Render</span>
+					<p>The shaders need WebGL2, so render with <code>--gl=angle</code> if a layer comes out blank. <a href="/getting-started.html#rendering-with-angle">Rendering with ANGLE</a></p>
+				</li>
+			</ol>
+		</section>
+	</div>
+</Showcase>
+<script>
+	// Copy a recipe's code; the line numbers are generated content.
+	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy-recipe]')) {
+		const lines = button.closest('details')!.querySelectorAll('.line');
+		let reset: number | undefined;
+		button.addEventListener('click', async () => {
+			try {
+				await navigator.clipboard.writeText(Array.from(lines, (line) => line.textContent).join('\n'));
+				button.textContent = 'Copied';
+			} catch {
+				button.textContent = 'Select to copy';
+			}
+			window.clearTimeout(reset);
+			reset = window.setTimeout(() => (button.textContent = 'Copy code'), 1600);
+		});
+	}
+
+	// One clip plays sound at a time.
+	const toggles = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-recipe-sound]'));
+	const videoOf = (button: HTMLButtonElement) => button.closest('.recipe-media')!.querySelector('video')!;
+	for (const button of toggles) {
+		button.addEventListener('click', () => {
+			const video = videoOf(button);
+			const on = video.muted;
+			for (const other of toggles) {
+				videoOf(other).muted = true;
+				other.setAttribute('aria-pressed', 'false');
+			}
+			video.muted = !on;
+			button.setAttribute('aria-pressed', String(on));
+			// Turning sound on is a request to hear it, even under reduced motion.
+			if (on && video.paused) void video.play().catch(() => {});
+		});
+	}
+</script>

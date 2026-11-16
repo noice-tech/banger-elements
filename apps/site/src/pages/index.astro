@@ -5,6 +5,7 @@ import HeroStage from '../components/HeroStage';
 import type {PreviewKind} from '../components/Preview';
 import {elements, elementCategories} from '../data/elements';
 import {REEL_FPS, REEL_FRAMES, reelScenes} from '../components/reel/scenes';
+import {highlightLine} from '../components/highlight';
 
 const byCategory = elementCategories.map((category) => elements.filter((entry) => entry.category === category.id));
 // Interleave the categories so the filmstrip alternates looks instead of running in blocks.
@@ -41,26 +42,12 @@ export const Cover = () => (
 );`;
 // Props you would have set in the preview; the page marks these lines.
 const tunedProps = ['colorMode', 'centerMode', 'intensity'];
-const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const tokenClasses = ['ts', 'tk', 'tc', 'tp', 'tn', 'tf'];
-const tokenPattern =
-	/('[^']*'|"[^"]*")|\b(import|from|export|const)\b|(?<=<\/?)([A-Z]\w*)|\b([a-z]\w*)(?==)|\b(\d+(?:\.\d+)?|true|false)\b|\b(\w+)(?=\(| = \()/g;
-const highlight = (line: string) => {
-	let html = '';
-	let last = 0;
-	for (const match of line.matchAll(tokenPattern)) {
-		const group = match.slice(1).findIndex((value) => value !== undefined);
-		html += escapeHtml(line.slice(last, match.index)) + `<span class="${tokenClasses[group]}">${escapeHtml(match[0])}</span>`;
-		last = match.index + match[0].length;
-	}
-	return html + escapeHtml(line.slice(last));
-};
 let noted = false;
 const coverLines = coverSnippet.split('\n').map((line) => {
 	const tuned = tunedProps.some((prop) => line.trimStart().startsWith(`${prop}=`));
 	const note = tuned && !noted ? 'from your preview' : undefined;
 	if (tuned) noted = true;
-	return {html: highlight(line), tuned, note};
+	return {html: highlightLine(line), tuned, note};
 });
 const effectOrder: readonly string[] = elementCategories.find((category) => category.id === 'effects')!.featured;
 const effects = elements

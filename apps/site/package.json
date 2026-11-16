@@ -19,6 +19,7 @@
 		"hero-word": "node scripts/hero-word.mjs",
 		"how-clip": "node scripts/how-clip.mjs",
 		"reel": "node scripts/reel.mjs",
+		"recipes": "node scripts/recipes.mjs",
 		"test": "tsx --test tests/*.test.ts"
 	},
 	"dependencies": {

@@ -6,6 +6,20 @@ import {WetGlassPreview} from '../../../site/src/components/preview/wet-glass';
 import {Cover} from '../../../site/src/components/how/cover';
 import {Reel} from '../../../site/src/components/reel/reel';
 import {REEL_FPS, REEL_FRAMES} from '../../../site/src/components/reel/scenes';
+import {RECIPE_FPS, RECIPE_FRAMES, recipes} from '../../../site/src/components/recipes/recipes';
+import {EpisodeClip} from '../../../site/src/components/recipes/episode-clip';
+import {ReleaseTeaser} from '../../../site/src/components/recipes/release-teaser';
+import {VerticalCanvas} from '../../../site/src/components/recipes/vertical-canvas';
+import {RainyStream} from '../../../site/src/components/recipes/rainy-stream';
+import {withSiteFonts} from './site-fonts';
+
+const DEMO_SONG = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
+const recipeComponents: Record<string, React.FC<{audioSrc?: string}>> = {
+	EpisodeClip: withSiteFonts(EpisodeClip),
+	ReleaseTeaser: withSiteFonts(ReleaseTeaser),
+	VerticalCanvas: withSiteFonts(VerticalCanvas),
+	RainyStream: withSiteFonts(RainyStream),
+};
 
 registerRoot(() => (
 	<>
@@ -42,6 +56,18 @@ registerRoot(() => (
 			width={1280}
 			height={720}
 		/>
+		{recipes.map((recipe) => (
+			<Composition
+				key={recipe.id}
+				id={recipe.component}
+				component={recipeComponents[recipe.component]!}
+				durationInFrames={RECIPE_FRAMES}
+				fps={RECIPE_FPS}
+				width={recipe.width}
+				height={recipe.height}
+				defaultProps={{audioSrc: DEMO_SONG}}
+			/>
+		))}
 		<Composition
 			id="Fisheye"
 			component={FisheyePreview}

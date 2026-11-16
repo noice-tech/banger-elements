@@ -1,7 +1,6 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Player, type PlayerRef} from '@remotion/player';
 import {createPortal} from 'react-dom';
-import ExamplePicker from './ExamplePicker';
 import StudioActions from './StudioActions';
 import {examples, type PreviewKind} from './preview/examples';
 import {PreviewRenderer, PREVIEW_WIDTH, PREVIEW_HEIGHT} from './preview/PreviewRenderer';
@@ -15,18 +14,16 @@ export type {PreviewKind} from './preview/examples';
 
 export default function Preview({
 	slug,
-	variants = false,
 	editable = false,
 	controlsTargetId,
 	installTargetId,
 }: {
 	slug: PreviewKind;
-	variants?: boolean;
 	editable?: boolean;
 	controlsTargetId?: string;
 	installTargetId?: string;
 }) {
-	const [selected, setSelected] = useState<PreviewKind>(slug);
+	const selected = slug;
 	const playerRef = useRef<PlayerRef>(null);
 	const ready = usePlayerReady(playerRef, selected);
 	const example = examples[selected];
@@ -116,7 +113,6 @@ export default function Preview({
 						: 'Studio uses your preview settings. Download TSX uses the original defaults.'}
 				</span>
 			</div>
-			{variants ? <ExamplePicker selected={selected} onSelect={setSelected} /> : null}
 			{editable && controlsTarget
 				? createPortal(
 						<PreviewControls
