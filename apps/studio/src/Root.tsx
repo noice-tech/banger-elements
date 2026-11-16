@@ -36,6 +36,13 @@ import {compositions} from './fixtures/compositions';
 
 const components = {
 	Ferrofluid,
+	// The gallery loop and poster. Cards are small, so the blob is drawn larger
+	// than the element's own framing: 1.44x, which fills about 80% of the card.
+	FerrofluidPreview: () => (
+		<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
+			<Ferrofluid width={1280 * 1.44} height={720 * 1.44} style={{flex: 'none'}} />
+		</AbsoluteFill>
+	),
 	FerrofluidFluid: () => <Ferrofluid fluidity={0.8} mappingMode="voronoi" quality="high" />,
 	Waveform,
 	WaveformFrequency: () => <Waveform colorMode="frequency" />,

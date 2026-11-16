@@ -360,9 +360,13 @@ body.showcase {
 }
 
 /* Live hero stage */
+/* Sized so the screen, picks and controls fit in one viewport on a laptop. */
 .hero-stage {
 	position: relative;
 	isolation: isolate;
+	width: min(100%, max(40rem, (100vh - 16.5rem) * 16 / 9));
+	width: min(100%, max(40rem, (100svh - 16.5rem) * 16 / 9));
+	margin-inline: auto;
 }
 .hero-ambient {
 	position: absolute;
@@ -451,9 +455,12 @@ body.showcase {
 	padding-left: 0.3rem;
 }
 .hero-picks button img {
-	width: 30px;
+	width: 32px;
 	height: 18px;
 	border-radius: 5px;
+	outline: 1px solid rgb(255 255 255 / 0.08);
+	outline-offset: -1px;
+	background: var(--stage);
 	object-fit: cover;
 }
 .hero-picks button:hover,
@@ -468,8 +475,10 @@ body.showcase {
 }
 .hero-transport {
 	display: flex;
+	flex: 1 1 22rem;
 	align-items: center;
-	gap: 0.35rem;
+	gap: 0.75rem;
+	min-width: 0;
 }
 .hero-round {
 	display: grid;
@@ -485,6 +494,60 @@ body.showcase {
 .hero-sound {
 	border-color: var(--line-strong);
 }
+.hero-wave {
+	position: relative;
+	flex: 1;
+	min-width: 6rem;
+	height: 28px;
+	color: var(--text);
+}
+/* Until the track is decoded: a hairline where the waveform will be. */
+.hero-wave:not([data-loaded])::before {
+	position: absolute;
+	inset: 50% 0 auto;
+	height: 1px;
+	background: var(--line-strong);
+	content: '';
+}
+.hero-wave-bars {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	fill: color-mix(in srgb, currentColor 20%, transparent);
+	animation: wave-in 500ms var(--ease-out);
+}
+.hero-wave-bars[data-played] {
+	fill: currentColor;
+	clip-path: inset(0 calc((1 - var(--progress)) * 100%) 0 0);
+}
+@keyframes wave-in {
+	from {
+		opacity: 0;
+	}
+}
+/* An invisible range input over the bars handles pointer, keyboard and screen
+   readers. Its thumb is a hairline so a click seeks to exactly where it lands. */
+.hero-wave input.hero-wave-seek {
+	position: absolute;
+	inset: -6px 0;
+	width: 100%;
+	height: calc(100% + 12px);
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+.hero-wave input.hero-wave-seek::-webkit-slider-thumb {
+	width: 1px;
+}
+.hero-wave input.hero-wave-seek::-moz-range-thumb {
+	width: 1px;
+}
+.hero-wave:has(.hero-wave-seek:focus-visible) {
+	border-radius: 4px;
+	outline: 2px solid var(--accent-hi);
+	outline-offset: 4px;
+}
 .hero-sound[aria-pressed='true'] {
 	border-color: color-mix(in srgb, var(--accent-hi) 50%, transparent);
 	color: var(--text);
@@ -497,9 +560,19 @@ body.showcase {
 }
 .hero-meter i {
 	width: 2px;
-	height: 4px;
+	height: 5px;
 	border-radius: 1px;
 	background: currentColor;
+}
+/* At rest the meter reads as a level glyph, not a row of dots. */
+.hero-meter i:nth-child(2) {
+	height: 9px;
+}
+.hero-meter i:nth-child(3) {
+	height: 12px;
+}
+.hero-meter i:nth-child(4) {
+	height: 7px;
 }
 .hero-meter[data-live='true'] i {
 	background: var(--accent-hi);
@@ -525,7 +598,7 @@ body.showcase {
 .hero-tune {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-	align-items: end;
+	align-items: start;
 	gap: 1rem 1.75rem;
 	padding: 0.9rem 0.75rem 0.6rem;
 	border-top: 1px solid var(--line);
@@ -536,7 +609,8 @@ body.showcase {
 	color: var(--text-2);
 	font-size: 0.8rem;
 }
-.hero-control label > span:first-child {
+.hero-control label > span:first-child,
+.hero-control-head {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -550,9 +624,110 @@ body.showcase {
 .hero-control-color .color-control {
 	min-height: 36px;
 }
+.hero-color {
+	display: grid;
+	gap: 0.5rem;
+	color: var(--text-2);
+	font-size: 0.8rem;
+}
+.hero-swatches {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	min-height: 22px;
+}
+.hero-swatch {
+	position: relative;
+	flex: none;
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: var(--swatch);
+	box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+	cursor: pointer;
+	transition:
+		transform 150ms var(--ease-out),
+		box-shadow 150ms;
+}
+.hero-swatch:hover {
+	transform: scale(1.12);
+}
+.hero-swatch[aria-pressed='true'],
+.hero-swatch[data-active] {
+	box-shadow:
+		0 0 0 2px var(--bg-raised),
+		0 0 0 3.5px var(--text);
+}
+.hero-swatch:focus-visible,
+.hero-swatch:has(:focus-visible) {
+	outline: 2px solid var(--accent-hi);
+	outline-offset: 5px;
+}
+/* Opens the native picker; shows the picked color in its middle once used. */
+.hero-swatch-custom {
+	background: conic-gradient(#ff5b5b, #ffd75b, #6bff8f, #5bd8ff, #8f6bff, #ff5bd8, #ff5b5b);
+}
+.hero-swatch-custom[data-active] {
+	background:
+		radial-gradient(closest-side, var(--swatch) 58%, transparent 62%),
+		conic-gradient(#ff5b5b, #ffd75b, #6bff8f, #5bd8ff, #8f6bff, #ff5bd8, #ff5b5b);
+}
+.hero-swatch-custom input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	cursor: pointer;
+}
+.hero-choice {
+	display: grid;
+	gap: 0.5rem;
+	color: var(--text-2);
+	font-size: 0.8rem;
+}
+.hero-segments {
+	display: grid;
+	grid-auto-columns: minmax(0, 1fr);
+	grid-auto-flow: column;
+	gap: 2px;
+	padding: 2px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface);
+}
+.hero-segments button {
+	min-height: 26px;
+	padding: 0 0.6rem;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--text-2);
+	font: inherit;
+	font-size: 0.78rem;
+	cursor: pointer;
+	transition:
+		background 150ms,
+		color 150ms;
+}
+.hero-segments button:hover {
+	color: var(--text);
+}
+.hero-segments button[aria-pressed='true'] {
+	background: var(--surface-3);
+	color: var(--text);
+	box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.hero-segments button:focus-visible {
+	outline: 2px solid var(--accent-hi);
+	outline-offset: 1px;
+}
 .hero-open {
 	display: inline-flex;
 	align-items: center;
+	align-self: end;
 	gap: 0.4rem;
 	min-height: 36px;
 	color: var(--text);
@@ -697,23 +872,34 @@ body.showcase {
 .code-window-bar {
 	display: flex;
 	align-items: center;
-	gap: 0.85rem;
-	padding: 0.85rem 1.1rem;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.6rem 0.75rem 0.6rem 1.25rem;
 	border-bottom: 1px solid var(--line);
 }
-.code-dots {
-	display: flex;
-	gap: 6px;
-}
-.code-dots i {
-	width: 10px;
-	height: 10px;
-	border-radius: 50%;
-	background: var(--surface-3);
-}
 .code-file {
+	color: var(--text);
+	font: 0.78rem var(--font-mono);
+}
+.code-dir {
 	color: var(--text-3);
-	font: 0.75rem var(--font-mono);
+}
+.code-copy {
+	min-height: 28px;
+	padding: 0 0.7rem;
+	border: 1px solid var(--line-strong);
+	border-radius: 7px;
+	background: transparent;
+	color: var(--text-2);
+	font: 0.74rem var(--font-sans);
+	cursor: pointer;
+	transition:
+		color 150ms,
+		border-color 150ms;
+}
+.code-copy:hover {
+	border-color: var(--text-3);
+	color: var(--text);
 }
 .code-window pre,
 .band-code {
@@ -724,7 +910,49 @@ body.showcase {
 	tab-size: 2;
 }
 .code-window pre {
-	padding: 1.4rem 1.5rem;
+	padding: 0.9rem 0;
+	font-size: 0.78rem;
+	line-height: 1.65;
+	counter-reset: line;
+}
+.code-lines code {
+	display: block;
+	min-width: max-content;
+}
+.code-lines .line {
+	position: relative;
+	display: block;
+	padding: 0 1.5rem 0 3.5rem;
+}
+.code-lines .line::before {
+	content: counter(line);
+	counter-increment: line;
+	display: inline-block;
+	width: 1.5rem;
+	margin-left: -2.75rem;
+	margin-right: 1.25rem;
+	color: var(--text-3);
+	text-align: right;
+	opacity: 0.6;
+	user-select: none;
+}
+/* The props you set in the preview, which travel with the element. */
+.code-lines .line[data-tuned] {
+	background: linear-gradient(90deg, var(--accent-wash), transparent 75%);
+	box-shadow: inset 2px 0 0 var(--accent-hi);
+}
+.code-lines .line[data-tuned]::before {
+	color: var(--accent-hi);
+	opacity: 1;
+}
+.code-lines .line[data-note]::after {
+	content: attr(data-note);
+	position: absolute;
+	top: 50%;
+	right: 1.25rem;
+	transform: translateY(-50%);
+	color: var(--accent-hi);
+	font: 0.7rem var(--font-sans);
 }
 .tk {
 	color: #c79bff;
@@ -744,26 +972,52 @@ body.showcase {
 .tf {
 	color: #f1d68f;
 }
-.code-window figcaption {
+/* The effects band stays dark in both themes; the code window follows the theme. */
+:root[data-theme='light'] .code-window .tk {
+	color: #7e22ce;
+}
+:root[data-theme='light'] .code-window .ts {
+	color: #0f7a52;
+}
+:root[data-theme='light'] .code-window .tp {
+	color: #2456c4;
+}
+:root[data-theme='light'] .code-window .tn {
+	color: #b0480b;
+}
+:root[data-theme='light'] .code-window .tf {
+	color: #876000;
+}
+.code-output {
+	border-top: 1px solid var(--line);
+}
+.code-output-bar {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 1rem;
-	padding: 0.75rem;
-	border-top: 1px solid var(--line);
+	padding: 0.65rem 1.25rem;
 	color: var(--text-3);
-	font: 0.75rem var(--font-mono);
+	font: 0.72rem var(--font-mono);
 }
-.code-window figcaption video {
-	width: 168px;
-	aspect-ratio: 16 / 9;
-	border-radius: 9px;
-	object-fit: cover;
-	background: var(--stage);
-}
-.code-window figcaption > span {
+.code-output-bar > span {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.6rem;
+	color: var(--text-2);
+}
+.code-output-bar code {
+	overflow: hidden;
+	font: inherit;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.code-output video {
+	display: block;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+	background: var(--stage);
 }
 
 /* Collection / bento ------------------------------------------------------ */
@@ -1097,6 +1351,129 @@ body.showcase {
 .closing .lede {
 	max-width: 32rem;
 	margin: 1.4rem auto 0;
+}
+
+/* The reel: a rendered arrangement with its scene timeline. */
+.reel {
+	max-width: 1120px;
+	margin: clamp(2.5rem, 5vw, 3.75rem) auto clamp(2.5rem, 5vw, 3.5rem);
+	text-align: left;
+}
+.reel-stage {
+	overflow: hidden;
+	border-radius: var(--radius-lg);
+	background: #000;
+	box-shadow: var(--shadow-raised);
+}
+.reel-stage video {
+	display: block;
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+}
+.reel-bar {
+	display: flex;
+	gap: 0.6rem;
+	margin-top: 0.75rem;
+}
+.reel-timeline {
+	position: relative;
+	flex: 1;
+	min-width: 0;
+}
+.reel-timeline ol {
+	display: flex;
+	gap: 4px;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.reel-timeline li {
+	flex: var(--span) 1 0;
+	min-width: 0;
+}
+.reel-timeline button {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	gap: 0.2rem;
+	width: 100%;
+	height: 100%;
+	min-height: 3rem;
+	padding: 0.45rem 0.7rem;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface);
+	color: var(--text-3);
+	font: 0.68rem/1.2 var(--font-mono);
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background 160ms var(--ease-out),
+		color 160ms var(--ease-out),
+		border-color 160ms var(--ease-out);
+}
+.reel-timeline button:hover {
+	color: var(--text-2);
+	border-color: var(--line-strong);
+}
+.reel-timeline button[aria-current] {
+	border-color: var(--line-strong);
+	background: var(--surface-3);
+	color: var(--text);
+}
+.reel-index {
+	color: var(--text-3);
+}
+.reel-timeline button[aria-current] .reel-index {
+	color: var(--accent-hi);
+}
+.reel-layers {
+	overflow: hidden;
+}
+.reel-playhead {
+	position: absolute;
+	top: -3px;
+	bottom: -3px;
+	left: calc(var(--progress, 0) * 100%);
+	width: 2px;
+	border-radius: 1px;
+	background: var(--accent-hi);
+	box-shadow: 0 0 12px var(--accent-hi);
+	pointer-events: none;
+}
+.reel-sound {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	gap: 0.55rem;
+	padding: 0 1.1rem;
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
+	color: var(--text);
+	font: 500 0.72rem var(--font-mono);
+	cursor: pointer;
+	transition: background 160ms var(--ease-out);
+}
+.reel-sound:hover {
+	background: var(--surface-3);
+}
+.reel-sound svg {
+	width: 16px;
+	height: 16px;
+}
+.reel-sound[aria-pressed='false'] .reel-sound-waves,
+.reel-sound[aria-pressed='true'] .reel-sound-muted {
+	display: none;
+}
+.reel-sound[aria-pressed='true'] {
+	border-color: color-mix(in srgb, var(--accent-hi) 45%, transparent);
+	background: var(--accent-wash);
+}
+.reel-now {
+	display: none;
 }
 
 /* Footer ------------------------------------------------------------------ */
@@ -1553,6 +1930,46 @@ body.showcase {
 	}
 }
 @media (max-width: 640px) {
+	.code-window pre {
+		font-size: 0.72rem;
+	}
+	.code-lines .line {
+		padding: 0 1rem 0 3.25rem;
+	}
+	.code-output-bar {
+		padding-inline: 1rem;
+	}
+	/* Segments are too narrow for names; the current one is named below instead. */
+	.reel-layers {
+		display: none;
+	}
+	.reel-timeline button {
+		align-items: center;
+		padding-inline: 0;
+		min-height: 2.6rem;
+	}
+	.reel-sound {
+		padding-inline: 0.85rem;
+	}
+	.reel-sound span {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+	.reel-now {
+		display: block;
+		margin-top: 0.6rem;
+		color: var(--text-2);
+		font: 0.72rem var(--font-mono);
+	}
+	/* The note would sit past the scrolled-off end of the longest line. */
+	.code-lines .line[data-note]::after,
+	.code-output-bar code {
+		display: none;
+	}
 	.header-studio {
 		display: none;
 	}
@@ -1567,7 +1984,13 @@ body.showcase {
 		align-items: stretch;
 	}
 	.hero-transport {
-		justify-content: space-between;
+		flex-basis: auto;
+	}
+	.hero-picks button {
+		padding: 0 0.75rem;
+	}
+	.hero-picks button img {
+		display: none;
 	}
 	.hero-tune {
 		grid-template-columns: minmax(0, 1fr);
@@ -1608,9 +2031,6 @@ body.showcase {
 	.audio-controls {
 		grid-template-columns: minmax(0, 1fr);
 	}
-	.code-window figcaption video {
-		width: 120px;
-	}
 	.site-foot-links {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
@@ -1635,7 +2055,8 @@ body.showcase {
 		display: none;
 	}
 	.live-dot::after,
-	.hero-meter[data-live='true'] i {
+	.hero-meter[data-live='true'] i,
+	.hero-wave-bars {
 		animation: none;
 	}
 	.tile:hover video,

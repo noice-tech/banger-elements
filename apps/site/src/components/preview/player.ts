@@ -3,21 +3,11 @@ import type {PlayerRef} from '@remotion/player';
 import type {PreviewKind} from './examples';
 import {isWrapper} from '../preview-config';
 
-const LONG_PREVIEWS: readonly string[] = [
-	'ferrofluid',
-	'trip',
-	'fractals',
-	'hyperloop',
-	'downfall',
-	'rail',
-	'rain',
-	'space',
-	'synthwave',
-	'mushrooms',
-	'halo',
-	'audio-particles',
-	'combined',
-];
+/**
+ * Previews loop with their track. The default demo track is 9 seconds, so a
+ * longer loop would sit in silence; only the Audio Particles track is longer.
+ */
+const LONG_PREVIEWS: readonly string[] = ['audio-particles', 'combined'];
 
 export const previewDurationInSeconds = (kind: PreviewKind) =>
 	isWrapper(kind) || LONG_PREVIEWS.includes(kind) ? 16 : 9;

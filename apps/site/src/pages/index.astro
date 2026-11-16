@@ -4,6 +4,7 @@ import Collection from '../components/Collection.astro';
 import HeroStage from '../components/HeroStage';
 import type {PreviewKind} from '../components/Preview';
 import {elements, elementCategories} from '../data/elements';
+import {REEL_FPS, REEL_FRAMES, reelScenes} from '../components/reel/scenes';
 
 const byCategory = elementCategories.map((category) => elements.filter((entry) => entry.category === category.id));
 // Interleave the categories so the filmstrip alternates looks instead of running in blocks.
@@ -14,7 +15,53 @@ const pick = (slug: string) => {
 	const entry = elements.find((element) => element.slug === slug)!;
 	return {slug: entry.slug as PreviewKind, title: entry.title};
 };
-const heroPicks = [pick('ferrofluid'), pick('halo'), pick('pulse'), pick('liquid')];
+const heroPicks = [pick('ferrofluid'), pick('halo'), pick('trip'), pick('liquid')];
+// The closing reel, a render of src/components/reel/reel.tsx (npm run reel).
+const reelLayerCount = new Set(reelScenes.slice(0, -1).flatMap((scene) => scene.layers)).size;
+// The composition in "From preview to project". static/how/cover.webm is a render
+// of src/components/how/cover.tsx, which must stay the same composition.
+const coverSnippet = `import {AbsoluteFill, staticFile} from 'remotion';
+import {Halo} from './halo.element';
+import {Hyperloop} from './hyperloop.element';
+
+const track = staticFile('track.mp3');
+
+export const Cover = () => (
+  <AbsoluteFill>
+    <Hyperloop audioSrc={track} playAudio={false} />
+    <AbsoluteFill>
+      <Halo
+        audioSrc={track}
+        colorMode="rainbow"
+        centerMode="transparent"
+        intensity={1.2}
+      />
+    </AbsoluteFill>
+  </AbsoluteFill>
+);`;
+// Props you would have set in the preview; the page marks these lines.
+const tunedProps = ['colorMode', 'centerMode', 'intensity'];
+const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const tokenClasses = ['ts', 'tk', 'tc', 'tp', 'tn', 'tf'];
+const tokenPattern =
+	/('[^']*'|"[^"]*")|\b(import|from|export|const)\b|(?<=<\/?)([A-Z]\w*)|\b([a-z]\w*)(?==)|\b(\d+(?:\.\d+)?|true|false)\b|\b(\w+)(?=\(| = \()/g;
+const highlight = (line: string) => {
+	let html = '';
+	let last = 0;
+	for (const match of line.matchAll(tokenPattern)) {
+		const group = match.slice(1).findIndex((value) => value !== undefined);
+		html += escapeHtml(line.slice(last, match.index)) + `<span class="${tokenClasses[group]}">${escapeHtml(match[0])}</span>`;
+		last = match.index + match[0].length;
+	}
+	return html + escapeHtml(line.slice(last));
+};
+let noted = false;
+const coverLines = coverSnippet.split('\n').map((line) => {
+	const tuned = tunedProps.some((prop) => line.trimStart().startsWith(`${prop}=`));
+	const note = tuned && !noted ? 'from your preview' : undefined;
+	if (tuned) noted = true;
+	return {html: highlight(line), tuned, note};
+});
 const effectOrder: readonly string[] = elementCategories.find((category) => category.id === 'effects')!.featured;
 const effects = elements
 	.filter((entry) => entry.category === 'effects')
@@ -104,27 +151,20 @@ const effectSnippet = (name: string, slug: string) => {
 				</ol>
 				<a class="arrow-link" href="/getting-started.html">Read the getting started guide <span aria-hidden="true">→</span></a>
 			</div>
-			<figure class="code-window" aria-label="Using Halo in a composition">
+			<figure class="code-window" aria-labelledby="cover-file">
 				<div class="code-window-bar">
-					<span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-					<span class="code-file">src/Cover.tsx</span>
+					<span class="code-file" id="cover-file"><span class="code-dir">src/</span>Cover.tsx</span>
+					<button type="button" class="code-copy" data-copy-code>Copy</button>
 				</div>
-<pre><code><span class="tk">import</span> {'{'}staticFile{'}'} <span class="tk">from</span> <span class="ts">'remotion'</span>;
-<span class="tk">import</span> {'{'}<span class="tc">Halo</span>{'}'} <span class="tk">from</span> <span class="ts">'./halo.element'</span>;
-
-<span class="tk">export const</span> <span class="tf">Cover</span> = () =&gt; (
-  &lt;<span class="tc">Halo</span>
-    <span class="tp">audioSrc</span>={'{'}<span class="tf">staticFile</span>(<span class="ts">'track.mp3'</span>){'}'}
-    <span class="tp">colorMode</span>=<span class="ts">"rainbow"</span>
-    <span class="tp">intensity</span>={'{'}<span class="tn">1.4</span>{'}'}
-    <span class="tp">trailDepth</span>={'{'}<span class="tn">9</span>{'}'}
-  /&gt;
-);</code></pre>
-				<figcaption>
-					<video muted loop playsinline preload="none" poster="/posters/halo.webp" aria-hidden="true" data-play-visible>
-						<source src="/previews/halo.webm" type="video/webm" />
+<pre class="code-lines"><code>{coverLines.map((line) => <span class="line" data-tuned={line.tuned || undefined} data-note={line.note} set:html={line.html} />)}</code></pre>
+				<figcaption class="code-output">
+					<span class="code-output-bar">
+						<span><span class="live-dot" aria-hidden="true"></span>Rendered with Remotion</span>
+						<code><span aria-hidden="true">$ </span>npx remotion render Cover</code>
+					</span>
+					<video muted loop playsinline preload="none" poster="/how/cover.webp" aria-hidden="true" data-play-visible>
+						<source src="/how/cover.webm" type="video/webm" />
 					</video>
-					<span><span class="live-dot" aria-hidden="true"></span>Rendered with Remotion</span>
 				</figcaption>
 			</figure>
 		</div>
@@ -172,7 +212,57 @@ const effectSnippet = (name: string, slug: string) => {
 	<section class="section closing" aria-labelledby="closing-title">
 		<div class="wrap closing-inner">
 			<h2 id="closing-title">Make something <span class="tone">loud.</span></h2>
-			<p class="lede">Free and open source under MIT. Built for Remotion by the team behind banger.show.</p>
+			<p class="lede">
+				{reelLayerCount} elements, one track, cut on the beat. Every frame below is a Remotion render, layered the way you
+				would in your own project.
+			</p>
+			<figure class="reel" data-reel>
+				<div class="reel-stage">
+					<video muted loop playsinline preload="none" poster="/reel/reel.webp" data-play-visible>
+						<source src="/reel/reel.webm" type="video/webm" />
+					</video>
+				</div>
+				<div class="reel-bar">
+					<div class="reel-timeline" role="group" aria-label="Scenes in the reel" style={`--frames: ${REEL_FRAMES}`}>
+						<ol>
+							{reelScenes.map((scene, index) => (
+								<li style={`--span: ${scene.to - scene.from}`}>
+									<button
+										type="button"
+										data-seek={scene.from / REEL_FPS}
+										aria-current={index === 0 ? 'true' : undefined}
+									>
+										<span class="reel-index">{String(index + 1).padStart(2, '0')}</span>
+										<span class="reel-layers">{scene.layers.join(' × ')}</span>
+									</button>
+								</li>
+							))}
+						</ol>
+						<span class="reel-playhead" aria-hidden="true"></span>
+					</div>
+					<button class="reel-sound" type="button" aria-pressed="false" data-reel-sound>
+						<svg viewBox="0 0 16 16" aria-hidden="true">
+							<path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor"></path>
+							<path
+								class="reel-sound-waves"
+								d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.4"
+								stroke-linecap="round"></path>
+							<path
+								class="reel-sound-muted"
+								d="m10.5 6 4 4m0-4-4 4"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.4"
+								stroke-linecap="round"></path>
+						</svg>
+						<span>Sound</span>
+					</button>
+				</div>
+				<figcaption class="reel-now" aria-live="off">{reelScenes[0]!.layers.join(' × ')}</figcaption>
+			</figure>
 			<div class="hero-ctas">
 				<a class="button primary large" href="/visualizers">Start with a visualizer</a>
 				<a class="button ghost large" href="https://github.com/noice-tech/banger-elements">Star on GitHub</a>
@@ -185,6 +275,69 @@ const effectSnippet = (name: string, slug: string) => {
 	// reduced motion, the word stands on its own.
 	const glow = document.querySelector<HTMLVideoElement>('.halo-word-glow video');
 	glow?.addEventListener('playing', () => glow.toggleAttribute('data-playing', true), {once: true});
+
+	// Copy the snippet line by line; the line numbers and note are generated content.
+	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy-code]')) {
+		const lines = button.closest('figure')!.querySelectorAll('.line');
+		let reset: number | undefined;
+		button.addEventListener('click', async () => {
+			const code = Array.from(lines, (line) => line.textContent).join('\n');
+			try {
+				await navigator.clipboard.writeText(code);
+				button.textContent = 'Copied';
+			} catch {
+				button.textContent = 'Select to copy';
+			}
+			window.clearTimeout(reset);
+			reset = window.setTimeout(() => (button.textContent = 'Copy'), 1600);
+		});
+	}
+
+	// The closing reel: a sound toggle, and a timeline that follows and seeks the clip.
+	const reel = document.querySelector<HTMLElement>('[data-reel]');
+	const reelVideo = reel?.querySelector('video');
+	if (reel && reelVideo) {
+		const sound = reel.querySelector<HTMLButtonElement>('[data-reel-sound]')!;
+		const timeline = reel.querySelector<HTMLElement>('.reel-timeline')!;
+		const now = reel.querySelector<HTMLElement>('.reel-now')!;
+		const seekers = Array.from(reel.querySelectorAll<HTMLButtonElement>('[data-seek]'));
+		const starts = seekers.map((button) => Number(button.dataset.seek));
+		const follow = () => {
+			const duration = reelVideo.duration || 1;
+			const time = reelVideo.currentTime;
+			timeline.style.setProperty('--progress', String(time / duration));
+			const current = starts.filter((start) => start <= time + 0.01).length - 1;
+			seekers.forEach((button, index) => {
+				if (index === current) button.setAttribute('aria-current', 'true');
+				else button.removeAttribute('aria-current');
+			});
+			now.textContent = seekers[current]?.querySelector('.reel-layers')?.textContent ?? '';
+		};
+		let frame = 0;
+		const tick = () => {
+			follow();
+			frame = requestAnimationFrame(tick);
+		};
+		reelVideo.addEventListener('play', () => {
+			cancelAnimationFrame(frame);
+			tick();
+		});
+		reelVideo.addEventListener('pause', () => cancelAnimationFrame(frame));
+		reelVideo.addEventListener('seeked', follow);
+		sound.addEventListener('click', () => {
+			reelVideo.muted = !reelVideo.muted;
+			sound.setAttribute('aria-pressed', String(!reelVideo.muted));
+			// Turning sound on is a request to hear it, even under reduced motion.
+			if (!reelVideo.muted && reelVideo.paused) void reelVideo.play().catch(() => {});
+		});
+		for (const button of seekers) {
+			button.addEventListener('click', () => {
+				reelVideo.currentTime = Number(button.dataset.seek);
+				follow();
+				if (reelVideo.paused) void reelVideo.play().catch(() => {});
+			});
+		}
+	}
 
 	const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-effect]'));
 	const link = document.querySelector<HTMLAnchorElement>('[data-effect-link]');
