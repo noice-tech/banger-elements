@@ -20,7 +20,8 @@
 		"reel": "node scripts/reel.mjs",
 		"recipes": "node scripts/recipes.mjs",
 		"scenes": "node scripts/scenes.mjs",
-		"test": "tsx --test tests/*.test.ts"
+		"test": "tsx --test tests/*.test.ts",
+		"wrap": "node scripts/wrap.mjs"
 	},
 	"dependencies": {
 		"@astrojs/mdx": "4.3.14",

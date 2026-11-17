@@ -6,6 +6,7 @@ import ElementTuner from '../components/ElementTuner';
 import type {PreviewKind} from '../components/Preview';
 import {elements, elementCategories} from '../data/elements';
 import {REEL_FPS, REEL_FRAMES, reelScenes} from '../components/reel/scenes';
+import {wrapDemos} from '../components/wrap/demos';
 
 const byCategory = elementCategories.map((category) => elements.filter((entry) => entry.category === category.id));
 // Interleave the categories so the filmstrip alternates looks instead of running in blocks.
@@ -21,15 +22,11 @@ const tunerPicks = [pick('ferrofluid'), pick('halo'), pick('trip'), pick('liquid
 const titles = Object.fromEntries(elements.map((entry) => [entry.slug, entry.title]));
 // The closing reel, a render of src/components/reel/reel.tsx (npm run reel).
 const reelLayerCount = new Set(reelScenes.slice(0, -1).flatMap((scene) => scene.layers)).size;
-const effectOrder: readonly string[] = elementCategories.find((category) => category.id === 'effects')!.featured;
-const effects = elements
-	.filter((entry) => entry.category === 'effects')
-	.sort((a, b) => effectOrder.indexOf(a.slug) - effectOrder.indexOf(b.slug));
-const effectSnippet = (name: string, slug: string) => {
-	const key = slug === 'wet-glass' ? 'amount' : 'strength';
-	const value = slug === 'wet-glass' ? '0.65' : slug === 'vhs' ? '1' : '0.75';
-	return {name, key, value};
-};
+// "Wrap anything": each effect over plain children, from src/components/wrap (npm run wrap).
+const wraps = wrapDemos.map((demo) => {
+	const entry = elements.find((element) => element.slug === demo.slug)!;
+	return {...demo, title: entry.title, name: entry.name};
+});
 ---
 <Showcase
 	title="Banger Elements — audio-reactive visuals for Remotion"
@@ -129,27 +126,27 @@ const effectSnippet = (name: string, slug: string) => {
 				<p class="kicker">Effects</p>
 				<h2 id="effects-title" class="section-title">Wrap anything. <span class="tone">Effects filter whatever sits inside them.</span></h2>
 				<div class="effect-switch" role="group" aria-label="Choose an effect">
-					{effects.map((entry, index) => (
-						<button type="button" data-effect={entry.slug} aria-pressed={index === 0 ? 'true' : 'false'}>{entry.title}</button>
+					{wraps.map((demo, index) => (
+						<button type="button" data-effect={demo.slug} data-name={demo.name} aria-pressed={index === 0 ? 'true' : 'false'}>{demo.title}</button>
 					))}
 				</div>
-				{effects.map((entry, index) => {
-					const snippet = effectSnippet(entry.name, entry.slug);
-					return (
-<pre class="band-code" data-effect-code={entry.slug} hidden={index !== 0}><code>&lt;<span class="tc">{snippet.name}</span> <span class="tp">{snippet.key}</span>={'{'}<span class="tn">{snippet.value}</span>{'}'}&gt;
-  &lt;<span class="tc">Space</span> /&gt;
-  &lt;<span class="tc">Halo</span> <span class="tp">playAudio</span> /&gt;
-&lt;/<span class="tc">{snippet.name}</span>&gt;</code></pre>
-					);
-				})}
+				{wraps.map((demo, index) => (
+<div class="band-code" data-effect-code={demo.slug} hidden={index !== 0}><pre><code>&lt;<span class="tc">{demo.name}</span>{Object.entries(demo.props).map(([key, value]) => <Fragment> <span class="tp">{key}</span>={'{'}<span class="tn">{value}</span>{'}'}</Fragment>)}&gt;
+{demo.children.map((child) => <Fragment>  &lt;<span class="tc">{child}</span> /&gt;
+</Fragment>)}&lt;/<span class="tc">{demo.name}</span>&gt;</code></pre><p>Inside: {demo.inside}. No audio, no elements.</p></div>
+				))}
 				<a class="arrow-link" href="/effects">See all effects <span aria-hidden="true">→</span></a>
 			</div>
-			<a class="band-shot" href={`/${effects[0]!.slug}.html`} data-effect-link>
-				<video muted loop playsinline preload="none" poster={`/posters/${effects[0]!.slug}.webp`} aria-hidden="true" data-play-visible>
-					<source src={`/previews/${effects[0]!.slug}.webm`} type="video/webm" />
+			<div class="band-shot compare" data-compare style="--split: 50%">
+				<video muted loop playsinline preload="none" poster={`/wrap/${wraps[0]!.slug}.webp`} aria-hidden="true" data-play-visible>
+					<source src={`/wrap/${wraps[0]!.slug}.webm`} type="video/webm" />
 				</video>
-				<span class="sr-only" data-effect-label>Open {effects[0]!.title}</span>
-			</a>
+				<canvas aria-hidden="true"></canvas>
+				<span class="compare-tag compare-before" aria-hidden="true">Children</span>
+				<span class="compare-tag compare-after" aria-hidden="true" data-compare-label>&lt;{wraps[0]!.name}&gt;</span>
+				<span class="compare-handle" aria-hidden="true"></span>
+				<input type="range" min="0" max="100" step="0.5" value="50" aria-label="Split between the plain children and the effect" />
+			</div>
 		</div>
 	</section>
 
@@ -266,25 +263,81 @@ const effectSnippet = (name: string, slug: string) => {
 		}
 	}
 
-	const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-effect]'));
-	const link = document.querySelector<HTMLAnchorElement>('[data-effect-link]');
-	const video = link?.querySelector('video');
-	const label = link?.querySelector<HTMLElement>('[data-effect-label]');
-	for (const button of buttons) {
-		button.addEventListener('click', () => {
-			const slug = button.dataset.effect!;
-			for (const other of buttons) other.setAttribute('aria-pressed', String(other === button));
-			for (const code of document.querySelectorAll<HTMLElement>('[data-effect-code]')) {
-				code.hidden = code.dataset.effectCode !== slug;
-			}
-			if (link && video && label) {
-				link.href = `/${slug}.html`;
-				label.textContent = `Open ${button.textContent}`;
-				video.poster = `/posters/${slug}.webp`;
-				video.querySelector('source')!.src = `/previews/${slug}.webm`;
-				video.load();
-				document.dispatchEvent(new Event('showcase:sync-media'));
-			}
+	// "Wrap anything": each clip stacks the wrapped children over the plain ones.
+	// The video shows the top half; the canvas paints the plain half left of the
+	// split from the same frame, so the two sides never drift apart.
+	const compare = document.querySelector<HTMLElement>('[data-compare]');
+	const compareVideo = compare?.querySelector('video');
+	const canvas = compare?.querySelector('canvas');
+	const range = compare?.querySelector<HTMLInputElement>('input[type="range"]');
+	const compareLabel = compare?.querySelector<HTMLElement>('[data-compare-label]');
+	const context = canvas?.getContext('2d');
+	if (compare && compareVideo && canvas && range && compareLabel && context) {
+		let poster = new Image();
+		let frame = 0;
+		const split = () => Number(range.value) / 100;
+		const draw = () => {
+			const {clientWidth: width, clientHeight: height} = canvas;
+			const scale = window.devicePixelRatio || 1;
+			if (canvas.width !== Math.round(width * scale)) canvas.width = Math.round(width * scale);
+			if (canvas.height !== Math.round(height * scale)) canvas.height = Math.round(height * scale);
+			context.clearRect(0, 0, canvas.width, canvas.height);
+			const live = compareVideo.readyState >= 2;
+			const source = live ? compareVideo : poster;
+			const sourceWidth = live ? compareVideo.videoWidth : poster.naturalWidth;
+			const sourceHeight = (live ? compareVideo.videoHeight : poster.naturalHeight) / 2;
+			if (!sourceWidth || !sourceHeight) return;
+			const share = split();
+			if (share <= 0) return;
+			context.drawImage(
+				source,
+				0,
+				sourceHeight,
+				sourceWidth * share,
+				sourceHeight,
+				0,
+				0,
+				canvas.width * share,
+				canvas.height,
+			);
+		};
+		const tick = () => {
+			draw();
+			frame = compareVideo.paused ? 0 : requestAnimationFrame(tick);
+		};
+		const setSplit = () => {
+			compare.style.setProperty('--split', `${range.value}%`);
+			draw();
+		};
+		const loadPoster = (src: string) => {
+			poster = new Image();
+			poster.addEventListener('load', draw);
+			poster.src = src;
+		};
+		loadPoster(compareVideo.poster);
+		range.addEventListener('input', setSplit);
+		compareVideo.addEventListener('play', () => {
+			cancelAnimationFrame(frame);
+			tick();
 		});
+		for (const event of ['loadeddata', 'seeked', 'pause']) compareVideo.addEventListener(event, draw);
+		new ResizeObserver(draw).observe(canvas);
+
+		const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-effect]'));
+		for (const button of buttons) {
+			button.addEventListener('click', () => {
+				const slug = button.dataset.effect!;
+				for (const other of buttons) other.setAttribute('aria-pressed', String(other === button));
+				for (const code of document.querySelectorAll<HTMLElement>('[data-effect-code]')) {
+					code.hidden = code.dataset.effectCode !== slug;
+				}
+				compareLabel.textContent = `<${button.dataset.name}>`;
+				compareVideo.poster = `/wrap/${slug}.webp`;
+				compareVideo.querySelector('source')!.src = `/wrap/${slug}.webm`;
+				compareVideo.load();
+				loadPoster(compareVideo.poster);
+				document.dispatchEvent(new Event('showcase:sync-media'));
+			});
+		}
 	}
 </script>

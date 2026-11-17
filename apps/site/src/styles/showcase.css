@@ -1410,6 +1410,20 @@ body.showcase {
 	border-radius: var(--radius);
 	background: rgb(0 0 0 / 0.35);
 }
+.band-code {
+	overflow: hidden;
+}
+.band-code pre {
+	margin: 0;
+	overflow-x: auto;
+}
+.band-code p {
+	margin: 0.9rem 0 0;
+	padding-top: 0.8rem;
+	border-top: 1px solid rgb(255 255 255 / 0.08);
+	color: #8e83a3;
+	font: 0.82rem/1.5 var(--font-sans);
+}
 .band-shot {
 	position: relative;
 	display: block;
@@ -1418,6 +1432,83 @@ body.showcase {
 	border-radius: var(--radius-lg);
 	background: var(--stage);
 	box-shadow: var(--shadow-raised);
+}
+
+/* Before and after: the clip stacks the wrapped children over the plain ones.
+   The video shows its top half; the canvas paints the bottom half up to the split. */
+.compare {
+	touch-action: pan-y;
+	user-select: none;
+}
+.compare video {
+	inset: 0 0 auto;
+	height: 200%;
+	object-fit: fill;
+}
+.compare canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+.compare-handle {
+	position: absolute;
+	inset-block: 0;
+	left: var(--split);
+	width: 2px;
+	margin-left: -1px;
+	background: #fff;
+	box-shadow:
+		0 0 0 1px rgb(0 0 0 / 0.25),
+		0 0 18px rgb(0 0 0 / 0.4);
+	pointer-events: none;
+}
+.compare-handle::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 2.4rem;
+	height: 2.4rem;
+	border: 2px solid #fff;
+	border-radius: 50%;
+	background:
+		no-repeat center / 0.9rem 0.9rem
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3 1 8l5 5M10 3l5 5-5 5' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
+		rgb(10 6 20 / 0.55);
+	backdrop-filter: blur(6px);
+	transform: translate(-50%, -50%);
+}
+.compare-tag {
+	position: absolute;
+	top: 0.9rem;
+	padding: 0.3rem 0.6rem;
+	border-radius: 999px;
+	background: rgb(10 6 20 / 0.6);
+	color: #fff;
+	font: 500 0.72rem/1 var(--font-mono);
+	pointer-events: none;
+	backdrop-filter: blur(6px);
+}
+.compare-before {
+	left: 0.9rem;
+}
+.compare-after {
+	right: 0.9rem;
+}
+.compare input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	opacity: 0;
+	cursor: ew-resize;
+}
+.compare:has(input:focus-visible) .compare-handle::after {
+	outline: 2px solid var(--accent-hi);
+	outline-offset: 3px;
 }
 
 /* Closing ----------------------------------------------------------------- */

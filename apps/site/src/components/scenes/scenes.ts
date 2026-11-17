@@ -56,8 +56,8 @@ export const scenes: readonly SceneSpec[] = [
 					endColor: palette.b,
 					hideSphere: true,
 					bpm: track.bpm,
-					responsive: energy(1, 6, 1),
-					inputGainDb: energy(-6, 6, 1),
+					responsive: energy(1, 3, 1),
+					inputGainDb: energy(-9, 3, 1),
 				}),
 			}),
 			layer({
@@ -67,9 +67,9 @@ export const scenes: readonly SceneSpec[] = [
 					startColor: ctx.palette.b,
 					endColor: ctx.palette.c,
 					radius: span(ctx, 0.4),
-					lineWidth: 4,
-					intensity: ctx.energy(3, 7),
-					inputGainDb: ctx.energy(2, 10, 1),
+					lineWidth: 2,
+					intensity: ctx.energy(1.5, 4),
+					inputGainDb: ctx.energy(-6, 4, 1),
 				}),
 			}),
 			layer({
@@ -77,13 +77,13 @@ export const scenes: readonly SceneSpec[] = [
 				props: (ctx) => ({
 					color: ctx.palette.c,
 					radius: span(ctx, 0.42),
-					density: ctx.energy(20, 45, 1),
-					intensity: ctx.energy(3, 9),
+					density: ctx.energy(16, 40, 1),
+					intensity: ctx.energy(2, 7),
 					size: 1.3,
 				}),
 			}),
 		],
-		overlay: ({px, palette}) => [
+		overlay: ({px}) => [
 			fill(
 				{
 					justifyContent: 'flex-end',
@@ -95,14 +95,13 @@ export const scenes: readonly SceneSpec[] = [
 				box({fontSize: px(20), fontWeight: 600, letterSpacing: px(10)}, 'TEQUILA FUNK'),
 				box(
 					{
-						marginTop: px(6),
-						fontSize: px(118),
-						fontWeight: 900,
-						lineHeight: 0.9,
-						letterSpacing: -px(5),
-						filter: `drop-shadow(0 0 ${px(26)}px ${palette.b})`,
+						marginTop: px(10),
+						fontSize: px(112),
+						fontWeight: 300,
+						lineHeight: 0.95,
+						letterSpacing: -px(3),
 					},
-					'TIME TRAVEL',
+					'Time Travel',
 				),
 				box(
 					{marginTop: px(18), fontSize: px(18), fontWeight: 600, letterSpacing: px(8)},

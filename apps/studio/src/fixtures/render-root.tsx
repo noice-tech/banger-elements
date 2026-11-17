@@ -12,10 +12,19 @@ import {VerticalCanvas} from '../../../site/src/components/recipes/vertical-canv
 import {RainyStream} from '../../../site/src/components/recipes/rainy-stream';
 import {SceneVideo} from '../../../site/src/components/scenes/SceneVideo';
 import {sceneFrames, SCENE_FPS, sceneTimings} from '../../../site/src/components/scenes/timing';
+import {WrapDemo} from '../../../site/src/components/wrap/WrapDemo';
+import {
+	WRAP_FPS,
+	WRAP_FRAMES,
+	WRAP_HEIGHT,
+	WRAP_WIDTH,
+	wrapDemos,
+} from '../../../site/src/components/wrap/demos';
 import {withSiteFonts} from './site-fonts';
 
 const DEMO_SONG = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
 const SiteScene = withSiteFonts(SceneVideo);
+const SiteWrap = withSiteFonts(WrapDemo);
 const recipeComponents: Record<string, React.FC<{audioSrc?: string}>> = {
 	EpisodeClip: withSiteFonts(EpisodeClip),
 	ReleaseTeaser: withSiteFonts(ReleaseTeaser),
@@ -60,6 +69,18 @@ registerRoot(() => (
 				width={recipe.width}
 				height={recipe.height}
 				defaultProps={{audioSrc: DEMO_SONG}}
+			/>
+		))}
+		{wrapDemos.map((demo) => (
+			<Composition
+				key={demo.slug}
+				id={`Wrap-${demo.slug}`}
+				component={SiteWrap}
+				durationInFrames={WRAP_FRAMES}
+				fps={WRAP_FPS}
+				width={WRAP_WIDTH}
+				height={WRAP_HEIGHT * 2}
+				defaultProps={{slug: demo.slug}}
 			/>
 		))}
 		{sceneTimings.map((timing) => (
