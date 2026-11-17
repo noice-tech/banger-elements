@@ -1,15 +1,19 @@
 /* eslint-disable @remotion/warn-native-media-tag -- Landing-page UI around the Player, not part of a rendered composition. */
 import {
+	createContext,
+	useContext,
 	useEffect,
 	useId,
 	useMemo,
 	useRef,
 	useState,
+	type ComponentProps,
 	type CSSProperties,
 	type RefObject,
 } from 'react';
 import {Player, type PlayerRef} from '@remotion/player';
 import {getAudioData} from '@remotion/media-utils';
+import {Html5Audio} from 'remotion';
 import {examples, type PreviewKind} from './preview/examples';
 import {PreviewRenderer, PREVIEW_WIDTH, PREVIEW_HEIGHT} from './preview/PreviewRenderer';
 import {ControlField} from './preview/ControlField';
@@ -61,11 +65,30 @@ const baseProps = (slug: PreviewKind): PreviewProps => {
 		...HERO_PROPS[slug],
 		width: example.width,
 		height: example.height,
-		audioSrc: HERO_AUDIO,
-		audioOffsetInSeconds: 0,
-		playAudio: true,
 	};
 };
+
+type HeroVisualProps = ComponentProps<typeof PreviewRenderer>;
+// Change the visual without changing the Player's composition or timing config.
+const HeroVisualContext = createContext<HeroVisualProps | null>(null);
+
+// A single native audio tag keeps playing while a different shader initializes.
+function HeroComposition() {
+	const visual = useContext(HeroVisualContext);
+	return (
+		<>
+			<Html5Audio src={HERO_AUDIO} showInTimeline={false} />
+			{visual && (
+				<PreviewRenderer
+					{...visual}
+					audioSrc={HERO_AUDIO}
+					audioOffsetInSeconds={0}
+					playAudio={false}
+				/>
+			)}
+		</>
+	);
+}
 
 const formatTime = (seconds: number) =>
 	`${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
@@ -102,13 +125,11 @@ const loadWaveform = (src: string, seconds: number) => {
 /** The track's waveform, filled up to the playhead. Doubles as the seek bar. */
 function HeroWave({
 	playerRef,
-	playerKey,
-	src,
+	mounted,
 	durationInFrames,
 }: {
 	playerRef: RefObject<PlayerRef | null>;
-	playerKey: string;
-	src: string;
+	mounted: boolean;
 	durationInFrames: number;
 }) {
 	const waveRef = useRef<HTMLDivElement>(null);
@@ -119,14 +140,14 @@ function HeroWave({
 
 	useEffect(() => {
 		let live = true;
-		loadWaveform(src, seconds).then(
+		loadWaveform(HERO_AUDIO, seconds).then(
 			(next) => live && setLevels(next),
 			() => {},
 		);
 		return () => {
 			live = false;
 		};
-	}, [src, seconds]);
+	}, [seconds]);
 
 	useEffect(() => {
 		const wave = waveRef.current;
@@ -141,6 +162,7 @@ function HeroWave({
 	// The playhead moves every frame, so it is written straight to the DOM
 	// instead of re-rendering the stage 60 times a second.
 	useEffect(() => {
+		if (!mounted) return;
 		const player = playerRef.current;
 		const wave = waveRef.current;
 		const seek = seekRef.current;
@@ -161,7 +183,7 @@ function HeroWave({
 			player.removeEventListener('frameupdate', onFrame);
 			player.removeEventListener('seeked', onFrame);
 		};
-	}, [playerRef, playerKey, durationInFrames]);
+	}, [playerRef, mounted, durationInFrames]);
 
 	const heights = useMemo(() => {
 		if (!levels || bars < 2) return null;
@@ -323,7 +345,10 @@ export default function HeroStage({picks}: {picks: readonly Pick[]}) {
 	useEffect(() => setMounted(true), []);
 	const playerRef = useRef<PlayerRef>(null);
 	const ready = usePlayerReady(playerRef, selected, mounted);
-	const props = useMemo(() => ({...baseProps(selected), ...tweaks[selected]}), [selected, tweaks]);
+	const props = useMemo<HeroVisualProps>(
+		() => ({...baseProps(selected), ...tweaks[selected], previewKind: selected}),
+		[selected, tweaks],
+	);
 	const durationInFrames = DURATION_IN_FRAMES;
 	const controls = useMemo(() => {
 		const keys = HERO_CONTROLS[selected] ?? [];
@@ -335,6 +360,7 @@ export default function HeroStage({picks}: {picks: readonly Pick[]}) {
 	const current = picks.find((pick) => pick.slug === selected)!;
 
 	useEffect(() => {
+		if (!mounted) return;
 		const player = playerRef.current;
 		if (!player) return;
 		const onPlay = () => setPlaying(true);
@@ -349,7 +375,7 @@ export default function HeroStage({picks}: {picks: readonly Pick[]}) {
 			player.removeEventListener('pause', onPause);
 			player.removeEventListener('mutechange', onMute);
 		};
-	}, [selected, mounted]);
+	}, [mounted]);
 
 	const update = (key: string, value: PreviewValue) =>
 		setTweaks((all) => ({...all, [selected]: {...all[selected], [key]: value}}));
@@ -378,29 +404,31 @@ export default function HeroStage({picks}: {picks: readonly Pick[]}) {
 						aria-hidden="true"
 					/>
 					{mounted && (
-						<Player
-							ref={playerRef}
-							key={selected}
-							className="preview-player"
-							component={PreviewRenderer}
-							inputProps={{...props, previewKind: selected}}
-							compositionWidth={PREVIEW_WIDTH}
-							compositionHeight={PREVIEW_HEIGHT}
-							fps={FPS}
-							durationInFrames={durationInFrames}
-							initialFrame={POSTER_FRAME}
-							autoPlay={!reducedMotion}
-							initiallyMuted={muted}
-							loop
-							clickToPlay
-							doubleClickToFullscreen={false}
-							style={{width: '100%', aspectRatio: '16 / 9'}}
-							errorFallback={({error}) => (
-								<p role="alert" className="hero-error">
-									Preview unavailable: {error.message}. WebGL2 elements need graphics acceleration.
-								</p>
-							)}
-						/>
+						<HeroVisualContext value={props}>
+							<Player
+								ref={playerRef}
+								className="preview-player"
+								component={HeroComposition}
+								compositionWidth={PREVIEW_WIDTH}
+								compositionHeight={PREVIEW_HEIGHT}
+								fps={FPS}
+								durationInFrames={durationInFrames}
+								initialFrame={POSTER_FRAME}
+								autoPlay={!reducedMotion}
+								initiallyMuted
+								numberOfSharedAudioTags={0}
+								loop
+								clickToPlay
+								doubleClickToFullscreen={false}
+								style={{width: '100%', aspectRatio: '16 / 9'}}
+								errorFallback={({error}) => (
+									<p role="alert" className="hero-error">
+										Preview unavailable: {error.message}. WebGL2 elements need graphics
+										acceleration.
+									</p>
+								)}
+							/>
+						</HeroVisualContext>
 					)}
 				</div>
 				<div className="hero-bar">
@@ -438,12 +466,7 @@ export default function HeroStage({picks}: {picks: readonly Pick[]}) {
 								</svg>
 							)}
 						</button>
-						<HeroWave
-							playerRef={playerRef}
-							playerKey={`${selected}:${mounted}`}
-							src={String(props.audioSrc)}
-							durationInFrames={durationInFrames}
-						/>
+						<HeroWave playerRef={playerRef} mounted={mounted} durationInFrames={durationInFrames} />
 						<button
 							type="button"
 							className="hero-sound"
