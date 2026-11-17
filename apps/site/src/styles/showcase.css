@@ -201,31 +201,72 @@ body.showcase {
 .hero-copy {
 	text-align: center;
 }
+/* The release line: the new elements' posters fanned like a deck of cards. */
 .announce {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.6rem;
-	padding: 0.28rem 0.85rem 0.28rem 0.3rem;
-	border: 1px solid var(--line-strong);
+	gap: 0.75rem;
+	padding: 0.3rem 0.95rem 0.3rem 0.35rem;
+	border: 1px solid var(--line);
 	border-radius: 999px;
 	background: var(--surface);
 	color: var(--text-2);
-	font-size: 0.82rem;
+	font-size: 0.84rem;
 	text-decoration: none;
 	transition:
 		border-color 150ms,
 		color 150ms;
 }
-.announce:hover {
-	border-color: rgb(255 255 255 / 0.22);
+.announce:hover,
+.announce:focus-visible {
+	border-color: var(--line-strong);
 	color: var(--text);
 }
-.announce-tag {
-	padding: 0.2rem 0.55rem;
-	border-radius: 999px;
-	background: var(--accent);
-	color: #fff;
-	font: 500 0.68rem/1.2 var(--font-mono);
+.announce-deck {
+	display: flex;
+	padding-left: 0.1rem;
+}
+.announce-deck img {
+	position: relative;
+	z-index: calc(8 - var(--i));
+	width: 32px;
+	height: 18px;
+	margin-left: -19px;
+	border-radius: 4px;
+	object-fit: cover;
+	box-shadow:
+		0 0 0 1.5px var(--surface),
+		2px 0 6px rgb(0 0 0 / 0.45);
+	transform-origin: 0 220%;
+	transition: transform 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.announce-deck img:first-child {
+	margin-left: 0;
+}
+/* Hover fans the deck open around a point below it, without changing its width. */
+.announce:hover .announce-deck img,
+.announce:focus-visible .announce-deck img {
+	transform: translateY(-1px) rotate(calc(var(--i) * 1.6deg));
+}
+.announce-text strong {
+	color: var(--text);
+	font-weight: 500;
+}
+.announce-version {
+	padding-left: 0.75rem;
+	border-left: 1px solid var(--line);
+	color: var(--text-3);
+	font: 0.72rem/1.2 var(--font-mono);
+}
+@media (max-width: 480px) {
+	.announce-deck img:nth-child(n + 5) {
+		display: none;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.announce-deck img {
+		transition: none;
+	}
 }
 .hero h1 {
 	margin-top: 1.75rem;
