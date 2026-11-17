@@ -15,7 +15,8 @@ Open http://localhost:3300.
 
 ## Structure
 
-- `src/pages/` — collection and element pages
+- `src/pages/` — home, collection, element and example pages
 - `src/components/` — previews, controls, navigation, and Studio integration
-- `src/content/docs/` — Getting started and Examples
+- `src/components/scenes/` — the home page scenes: data the live player renders and prints as code. `scripts/scenes.mjs` refreshes their posters and waveforms
+- `src/content/docs/` — Getting started
 - `static/` — branding, fonts, posters, and preview videos

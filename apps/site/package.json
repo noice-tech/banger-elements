@@ -17,9 +17,9 @@
 		"posters": "node scripts/posters.mjs",
 		"previews": "node scripts/previews.mjs",
 		"hero-word": "node scripts/hero-word.mjs",
-		"how-clip": "node scripts/how-clip.mjs",
 		"reel": "node scripts/reel.mjs",
 		"recipes": "node scripts/recipes.mjs",
+		"scenes": "node scripts/scenes.mjs",
 		"test": "tsx --test tests/*.test.ts"
 	},
 	"dependencies": {

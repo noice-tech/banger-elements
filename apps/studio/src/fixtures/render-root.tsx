@@ -3,7 +3,6 @@ import {Root} from '../Root';
 import {FisheyePreview} from '../../../site/src/components/preview/fisheye';
 import {VhsPreview} from '../../../site/src/components/preview/vhs';
 import {WetGlassPreview} from '../../../site/src/components/preview/wet-glass';
-import {Cover} from '../../../site/src/components/how/cover';
 import {Reel} from '../../../site/src/components/reel/reel';
 import {REEL_FPS, REEL_FRAMES} from '../../../site/src/components/reel/scenes';
 import {RECIPE_FPS, RECIPE_FRAMES, recipes} from '../../../site/src/components/recipes/recipes';
@@ -11,9 +10,12 @@ import {EpisodeClip} from '../../../site/src/components/recipes/episode-clip';
 import {ReleaseTeaser} from '../../../site/src/components/recipes/release-teaser';
 import {VerticalCanvas} from '../../../site/src/components/recipes/vertical-canvas';
 import {RainyStream} from '../../../site/src/components/recipes/rainy-stream';
+import {SceneVideo} from '../../../site/src/components/scenes/SceneVideo';
+import {sceneFrames, SCENE_FPS, sceneTimings} from '../../../site/src/components/scenes/timing';
 import {withSiteFonts} from './site-fonts';
 
 const DEMO_SONG = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
+const SiteScene = withSiteFonts(SceneVideo);
 const recipeComponents: Record<string, React.FC<{audioSrc?: string}>> = {
 	EpisodeClip: withSiteFonts(EpisodeClip),
 	ReleaseTeaser: withSiteFonts(ReleaseTeaser),
@@ -41,14 +43,6 @@ registerRoot(() => (
 			height={720}
 		/>
 		<Composition
-			id="HowCover"
-			component={Cover}
-			durationInFrames={1500}
-			fps={30}
-			width={1280}
-			height={720}
-		/>
-		<Composition
 			id="Reel"
 			component={Reel}
 			durationInFrames={REEL_FRAMES}
@@ -66,6 +60,18 @@ registerRoot(() => (
 				width={recipe.width}
 				height={recipe.height}
 				defaultProps={{audioSrc: DEMO_SONG}}
+			/>
+		))}
+		{sceneTimings.map((timing) => (
+			<Composition
+				key={timing.id}
+				id={timing.component}
+				component={SiteScene}
+				durationInFrames={sceneFrames(timing)}
+				fps={SCENE_FPS}
+				width={1280}
+				height={720}
+				defaultProps={{id: timing.id}}
 			/>
 		))}
 		<Composition

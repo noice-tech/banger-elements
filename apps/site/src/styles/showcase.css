@@ -283,22 +283,25 @@ body.showcase {
 	margin-top: clamp(3rem, 6vw, 4.75rem);
 }
 
-/* Live hero stage */
-/* Sized so the screen, picks and controls fit in one viewport on a laptop. */
-.hero-stage {
+/* Live stages: the hero's scenes and the element tuner further down. */
+.stage {
 	position: relative;
 	isolation: isolate;
-	width: min(100%, max(40rem, (100vh - 16.5rem) * 16 / 9));
-	width: min(100%, max(40rem, (100svh - 16.5rem) * 16 / 9));
+}
+/* Sized so the screen, scenes and the first row of controls fit in one
+   viewport on a laptop. */
+.scenes {
+	width: min(100%, max(40rem, (100vh - 19rem) * 16 / 9));
+	width: min(100%, max(40rem, (100svh - 19rem) * 16 / 9));
 	margin-inline: auto;
 }
-.hero-ambient {
+.stage-ambient {
 	position: absolute;
 	inset: 8% 6% -4%;
 	z-index: -1;
 	pointer-events: none;
 }
-.hero-ambient img {
+.stage-ambient img {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
@@ -306,41 +309,41 @@ body.showcase {
 	opacity: 0.4;
 	transition: opacity 600ms;
 }
-.hero-frame {
+.stage-frame {
 	padding: 8px;
 	border-radius: var(--radius-lg);
 	background: var(--bg-raised);
 	box-shadow: var(--shadow-raised);
 }
-.hero-screen {
+.stage-screen {
 	position: relative;
 	overflow: hidden;
 	aspect-ratio: 16 / 9;
 	border-radius: 15px;
 	background: var(--stage);
 }
-.hero-poster {
+.stage-poster {
 	position: absolute;
 	inset: 0;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
 }
-.hero-screen .preview-player {
+.stage-screen .preview-player {
 	position: relative;
 	z-index: 1;
 }
-.hero-screen[data-ready='true'] .preview-player {
+.stage-screen[data-ready='true'] .preview-player {
 	opacity: 1;
 }
-.hero-error {
+.stage-error {
 	position: absolute;
 	inset: auto 0 0;
 	padding: 1.5rem;
 	color: var(--text-2);
 	font-size: 0.875rem;
 }
-.hero-bar {
+.stage-bar {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -349,14 +352,14 @@ body.showcase {
 	min-height: 60px;
 	padding: 0.65rem 0.4rem 0.45rem;
 }
-.hero-picks {
+.stage-picks {
 	display: flex;
 	gap: 0.3rem;
 	overflow-x: auto;
 	scrollbar-width: none;
 }
-.hero-picks button,
-.hero-sound,
+.stage-picks button,
+.stage-sound,
 .effect-switch button {
 	display: inline-flex;
 	flex-shrink: 0;
@@ -375,10 +378,10 @@ body.showcase {
 		background 150ms,
 		border-color 150ms;
 }
-.hero-picks button {
+.stage-picks button {
 	padding-left: 0.3rem;
 }
-.hero-picks button img {
+.stage-picks button img {
 	width: 32px;
 	height: 18px;
 	border-radius: 5px;
@@ -387,24 +390,24 @@ body.showcase {
 	background: var(--stage);
 	object-fit: cover;
 }
-.hero-picks button:hover,
-.hero-sound:hover,
+.stage-picks button:hover,
+.stage-sound:hover,
 .effect-switch button:hover {
 	color: var(--text);
 }
-.hero-picks button[aria-pressed='true'] {
+.stage-picks button[aria-pressed='true'] {
 	border-color: var(--line-strong);
 	background: var(--surface-3);
 	color: var(--text);
 }
-.hero-transport {
+.stage-transport {
 	display: flex;
 	flex: 1 1 22rem;
 	align-items: center;
 	gap: 0.75rem;
 	min-width: 0;
 }
-.hero-round {
+.stage-play {
 	display: grid;
 	place-items: center;
 	width: 36px;
@@ -415,10 +418,10 @@ body.showcase {
 	color: var(--bg);
 	cursor: pointer;
 }
-.hero-sound {
+.stage-sound {
 	border-color: var(--line-strong);
 }
-.hero-wave {
+.stage-wave {
 	position: relative;
 	flex: 1;
 	min-width: 6rem;
@@ -426,14 +429,14 @@ body.showcase {
 	color: var(--text);
 }
 /* Until the track is decoded: a hairline where the waveform will be. */
-.hero-wave:not([data-loaded])::before {
+.stage-wave:not([data-loaded])::before {
 	position: absolute;
 	inset: 50% 0 auto;
 	height: 1px;
 	background: var(--line-strong);
 	content: '';
 }
-.hero-wave-bars {
+.stage-wave-bars {
 	position: absolute;
 	inset: 0;
 	width: 100%;
@@ -441,7 +444,7 @@ body.showcase {
 	fill: color-mix(in srgb, currentColor 20%, transparent);
 	animation: wave-in 500ms var(--ease-out);
 }
-.hero-wave-bars[data-played] {
+.stage-wave-bars[data-played] {
 	fill: currentColor;
 	clip-path: inset(0 calc((1 - var(--progress)) * 100%) 0 0);
 }
@@ -452,7 +455,7 @@ body.showcase {
 }
 /* An invisible range input over the bars handles pointer, keyboard and screen
    readers. Its thumb is a hairline so a click seeks to exactly where it lands. */
-.hero-wave input.hero-wave-seek {
+.stage-wave input.stage-wave-seek {
 	position: absolute;
 	inset: -6px 0;
 	width: 100%;
@@ -461,54 +464,54 @@ body.showcase {
 	opacity: 0;
 	cursor: pointer;
 }
-.hero-wave input.hero-wave-seek::-webkit-slider-thumb {
+.stage-wave input.stage-wave-seek::-webkit-slider-thumb {
 	width: 1px;
 }
-.hero-wave input.hero-wave-seek::-moz-range-thumb {
+.stage-wave input.stage-wave-seek::-moz-range-thumb {
 	width: 1px;
 }
-.hero-wave:has(.hero-wave-seek:focus-visible) {
+.stage-wave:has(.stage-wave-seek:focus-visible) {
 	border-radius: 4px;
 	outline: 2px solid var(--accent-hi);
 	outline-offset: 4px;
 }
-.hero-sound[aria-pressed='true'] {
+.stage-sound[aria-pressed='true'] {
 	border-color: color-mix(in srgb, var(--accent-hi) 50%, transparent);
 	color: var(--text);
 }
-.hero-meter {
+.stage-meter {
 	display: inline-flex;
 	align-items: flex-end;
 	gap: 2px;
 	height: 12px;
 }
-.hero-meter i {
+.stage-meter i {
 	width: 2px;
 	height: 5px;
 	border-radius: 1px;
 	background: currentColor;
 }
 /* At rest the meter reads as a level glyph, not a row of dots. */
-.hero-meter i:nth-child(2) {
+.stage-meter i:nth-child(2) {
 	height: 9px;
 }
-.hero-meter i:nth-child(3) {
+.stage-meter i:nth-child(3) {
 	height: 12px;
 }
-.hero-meter i:nth-child(4) {
+.stage-meter i:nth-child(4) {
 	height: 7px;
 }
-.hero-meter[data-live='true'] i {
+.stage-meter[data-live='true'] i {
 	background: var(--accent-hi);
 	animation: meter 900ms ease-in-out infinite alternate;
 }
-.hero-meter[data-live='true'] i:nth-child(2) {
+.stage-meter[data-live='true'] i:nth-child(2) {
 	animation-delay: -300ms;
 }
-.hero-meter[data-live='true'] i:nth-child(3) {
+.stage-meter[data-live='true'] i:nth-child(3) {
 	animation-delay: -650ms;
 }
-.hero-meter[data-live='true'] i:nth-child(4) {
+.stage-meter[data-live='true'] i:nth-child(4) {
 	animation-delay: -150ms;
 }
 @keyframes meter {
@@ -519,7 +522,7 @@ body.showcase {
 		height: 12px;
 	}
 }
-.hero-tune {
+.stage-tune {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
 	align-items: start;
@@ -527,40 +530,40 @@ body.showcase {
 	padding: 0.9rem 0.75rem 0.6rem;
 	border-top: 1px solid var(--line);
 }
-.hero-control label {
+.stage-control label {
 	display: grid;
 	gap: 0.5rem;
 	color: var(--text-2);
 	font-size: 0.8rem;
 }
-.hero-control label > span:first-child,
-.hero-control-head {
+.stage-control label > span:first-child,
+.stage-control-head {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 0.5rem;
 }
-.hero-control output {
+.stage-control output {
 	color: var(--text);
 	font: 0.74rem var(--font-mono);
 	font-variant-numeric: tabular-nums;
 }
-.hero-control-color .color-control {
+.stage-control-color .color-control {
 	min-height: 36px;
 }
-.hero-color {
+.stage-color {
 	display: grid;
 	gap: 0.5rem;
 	color: var(--text-2);
 	font-size: 0.8rem;
 }
-.hero-swatches {
+.stage-swatches {
 	display: flex;
 	align-items: center;
 	gap: 0.55rem;
 	min-height: 22px;
 }
-.hero-swatch {
+.stage-swatch {
 	position: relative;
 	flex: none;
 	width: 20px;
@@ -575,30 +578,30 @@ body.showcase {
 		transform 150ms var(--ease-out),
 		box-shadow 150ms;
 }
-.hero-swatch:hover {
+.stage-swatch:hover {
 	transform: scale(1.12);
 }
-.hero-swatch[aria-pressed='true'],
-.hero-swatch[data-active] {
+.stage-swatch[aria-pressed='true'],
+.stage-swatch[data-active] {
 	box-shadow:
 		0 0 0 2px var(--bg-raised),
 		0 0 0 3.5px var(--text);
 }
-.hero-swatch:focus-visible,
-.hero-swatch:has(:focus-visible) {
+.stage-swatch:focus-visible,
+.stage-swatch:has(:focus-visible) {
 	outline: 2px solid var(--accent-hi);
 	outline-offset: 5px;
 }
 /* Opens the native picker; shows the picked color in its middle once used. */
-.hero-swatch-custom {
+.stage-swatch-custom {
 	background: conic-gradient(#ff5b5b, #ffd75b, #6bff8f, #5bd8ff, #8f6bff, #ff5bd8, #ff5b5b);
 }
-.hero-swatch-custom[data-active] {
+.stage-swatch-custom[data-active] {
 	background:
 		radial-gradient(closest-side, var(--swatch) 58%, transparent 62%),
 		conic-gradient(#ff5b5b, #ffd75b, #6bff8f, #5bd8ff, #8f6bff, #ff5bd8, #ff5b5b);
 }
-.hero-swatch-custom input {
+.stage-swatch-custom input {
 	position: absolute;
 	inset: 0;
 	width: 100%;
@@ -606,13 +609,13 @@ body.showcase {
 	opacity: 0;
 	cursor: pointer;
 }
-.hero-choice {
+.stage-choice {
 	display: grid;
 	gap: 0.5rem;
 	color: var(--text-2);
 	font-size: 0.8rem;
 }
-.hero-segments {
+.stage-segments {
 	display: grid;
 	grid-auto-columns: minmax(0, 1fr);
 	grid-auto-flow: column;
@@ -622,9 +625,10 @@ body.showcase {
 	border-radius: var(--radius-sm);
 	background: var(--surface);
 }
-.hero-segments button {
+.stage-segments button {
 	min-height: 26px;
 	padding: 0 0.6rem;
+	white-space: nowrap;
 	border: 0;
 	border-radius: 6px;
 	background: transparent;
@@ -636,20 +640,21 @@ body.showcase {
 		background 150ms,
 		color 150ms;
 }
-.hero-segments button:hover {
+.stage-segments button:hover {
 	color: var(--text);
 }
-.hero-segments button[aria-pressed='true'] {
+.stage-segments button[aria-pressed='true'] {
 	background: var(--surface-3);
 	color: var(--text);
 	box-shadow: inset 0 0 0 1px var(--line-strong);
 }
-.hero-segments button:focus-visible {
+.stage-segments button:focus-visible {
 	outline: 2px solid var(--accent-hi);
 	outline-offset: 1px;
 }
-.hero-open {
+.stage-open {
 	display: inline-flex;
+	flex: none;
 	align-items: center;
 	align-self: end;
 	gap: 0.4rem;
@@ -660,11 +665,197 @@ body.showcase {
 	text-decoration: none;
 	white-space: nowrap;
 }
-.hero-open span {
+.stage-open span {
 	transition: transform 200ms var(--ease-out);
 }
-.hero-open:hover span {
+.stage-open:hover span {
 	transform: translateX(3px);
+}
+
+/* Bar ticks under a scene's waveform. */
+.stage-wave-marks {
+	position: absolute;
+	inset: auto 0 -7px;
+	height: 3px;
+	background: linear-gradient(90deg, var(--line-strong) 1px, transparent 1px) 0 0 /
+		calc(100% / var(--marks)) 100% repeat-x;
+	pointer-events: none;
+}
+
+/* Scenes */
+.scene-picks button {
+	min-height: 46px;
+	padding: 0 0.95rem 0 0.35rem;
+	border-radius: 14px;
+	text-align: left;
+}
+.scene-picks button img {
+	width: 48px;
+	height: 27px;
+	border-radius: 7px;
+}
+.scene-picks button span {
+	display: grid;
+	gap: 0.1rem;
+	line-height: 1.2;
+}
+.scene-picks small {
+	color: var(--text-3);
+	font-size: 0.7rem;
+}
+.scene-tune {
+	grid-template-columns: auto minmax(9rem, 1fr) auto auto;
+}
+.scene-swatch {
+	width: 22px;
+	height: 22px;
+	background: conic-gradient(from 210deg, var(--a) 0 120deg, var(--b) 0 240deg, var(--c) 0);
+}
+.scene-energy {
+	display: grid;
+	gap: 0.5rem;
+	color: var(--text-2);
+	font-size: 0.8rem;
+}
+.scene-energy input {
+	min-height: 22px;
+}
+.scene-foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem 1.5rem;
+	padding: 0.75rem 0.75rem 0.55rem;
+	border-top: 1px solid var(--line);
+}
+.scene-layers {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.4rem;
+	min-width: 0;
+}
+.scene-layer {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+.scene-plus,
+.scene-wrap {
+	color: var(--text-3);
+	font: 0.74rem var(--font-mono);
+}
+.scene-wrap {
+	margin-left: 0.25rem;
+}
+.scene-layer button,
+.scene-code-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	min-height: 32px;
+	padding: 0 0.75rem 0 0.25rem;
+	border: 1px solid var(--line-strong);
+	border-radius: 999px;
+	background: transparent;
+	color: var(--text);
+	font: inherit;
+	font-size: 0.8rem;
+	cursor: pointer;
+	transition:
+		color 150ms,
+		border-color 150ms,
+		opacity 150ms;
+}
+.scene-layer button img {
+	width: 28px;
+	height: 16px;
+	border-radius: 999px;
+	object-fit: cover;
+	transition: filter 150ms;
+}
+.scene-layer button:hover,
+.scene-code-toggle:hover {
+	border-color: var(--text-3);
+}
+.scene-layer button[aria-pressed='false'] {
+	border-style: dashed;
+	color: var(--text-3);
+	text-decoration: line-through;
+	text-decoration-color: color-mix(in srgb, currentColor 60%, transparent);
+}
+.scene-layer button[aria-pressed='false'] img {
+	filter: grayscale(1) brightness(0.6);
+}
+.scene-layer button:disabled {
+	cursor: default;
+}
+.scene-code-toggle {
+	padding: 0 0.95rem;
+	border-color: color-mix(in srgb, var(--accent-hi) 45%, transparent);
+	background: var(--accent-wash);
+}
+.scene-code-toggle span {
+	color: var(--accent-hi);
+	font: 0.74rem var(--font-mono);
+}
+.scene-code-toggle[aria-expanded='true'] {
+	background: transparent;
+}
+.scene-code {
+	margin-top: 0.35rem;
+	border: 1px solid var(--line);
+	border-radius: 15px;
+	background: var(--bg);
+	box-shadow: none;
+}
+.scene-code[hidden] {
+	display: none;
+}
+.scene-code pre {
+	max-height: min(32rem, 60vh);
+}
+.scene-code-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+.scene-code-count {
+	color: var(--text-3);
+	font: 0.72rem var(--font-mono);
+}
+
+/* The element tuner in "From preview to project". */
+.tuner .stage-ambient img {
+	opacity: 0.25;
+}
+.tuner .stage-tune {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.tuner-code {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 1rem;
+	margin: 0;
+	padding: 0.3rem 0.75rem 0.65rem 0;
+	border-top: 1px solid var(--line);
+}
+.tuner-code pre {
+	flex: 1;
+	min-width: 0;
+	margin: 0;
+	padding: 0.6rem 0 0;
+	overflow: auto;
+	color: var(--text-2);
+	font: 0.74rem/1.65 var(--font-mono);
+	tab-size: 2;
+	counter-reset: line;
+}
+.tuner-code .stage-open {
+	margin-bottom: 0.2rem;
+	font-size: 0.82rem;
 }
 
 /* Filmstrip --------------------------------------------------------------- */
@@ -2078,12 +2269,8 @@ body.showcase {
 	.element-workbench {
 		grid-template-columns: minmax(0, 1fr) 19rem;
 	}
-	.hero-tune {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
-	.hero-open {
-		grid-column: 1 / -1;
-		justify-self: end;
+	.scene-tune {
+		grid-template-columns: auto minmax(0, 1fr);
 	}
 }
 @media (max-width: 960px) {
@@ -2212,25 +2399,44 @@ body.showcase {
 	.hero h1 {
 		font-size: clamp(2.6rem, 13vw, 3.6rem);
 	}
-	.hero-bar {
+	.stage-bar {
 		flex-direction: column;
 		align-items: stretch;
 	}
-	.hero-transport {
+	.stage-transport {
 		flex-basis: auto;
 	}
-	.hero-picks button {
+	.stage-picks button {
 		padding: 0 0.75rem;
 	}
-	.hero-picks button img {
+	.stage-picks button img {
 		display: none;
 	}
-	.hero-tune {
+	.stage-tune,
+	.scene-tune,
+	.tuner .stage-tune {
 		grid-template-columns: minmax(0, 1fr);
 		gap: 1rem;
 	}
-	.hero-open {
-		justify-self: start;
+	.scene-picks button small {
+		display: none;
+	}
+	.stage-segments button {
+		padding: 0 0.3rem;
+	}
+	.scene-foot {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.scene-code-toggle {
+		justify-content: center;
+	}
+	.tuner-code {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.tuner-code .stage-open {
+		align-self: flex-end;
 	}
 	.filmstrip-row a {
 		width: 168px;
@@ -2288,8 +2494,8 @@ body.showcase {
 		display: none;
 	}
 	.live-dot::after,
-	.hero-meter[data-live='true'] i,
-	.hero-wave-bars {
+	.stage-meter[data-live='true'] i,
+	.stage-wave-bars {
 		animation: none;
 	}
 	.tile:hover video,
