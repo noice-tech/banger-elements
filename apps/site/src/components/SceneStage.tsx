@@ -22,27 +22,35 @@ import {
 	type BuiltScene,
 	type Finish,
 	type Format,
+	type SceneSpec,
 	type SceneState,
 } from './scenes/model';
 import {printScene, sceneFileName} from './scenes/print';
 import {scenes} from './scenes/scenes';
+import {sceneClip} from './scenes/timing';
+import {loadedElements, loadSceneElements} from './scenes/lazy-elements';
 import waves from './scenes/waves.json';
 import {
 	PlayButton,
 	Segments,
 	SoundButton,
+	StageError,
+	isContextLoss,
 	TrackWave,
 	toggleSound,
+	usePlayerRecovery,
 	usePlayerStatus,
 	useVisiblePlayback,
 } from './stage/parts';
 
 /** The live preview renders about as many pixels as 16:9 at 1280 × 720, in any format. */
 const PREVIEW_PIXELS = 1280 * 720;
+/** Phones and touch devices render fewer pixels per layer: three shaders per frame is a lot for them. */
+const COMPACT_PREVIEW_PIXELS = 960 * 540;
 
-const previewSize = (format: Format) => {
+const previewSize = (format: Format, pixels: number) => {
 	const {width, height} = formats[format];
-	const scale = Math.min(1, Math.sqrt(PREVIEW_PIXELS / (width * height)));
+	const scale = Math.min(1, Math.sqrt(pixels / (width * height)));
 	return {width: Math.round(width * scale), height: Math.round(height * scale)};
 };
 
@@ -51,18 +59,20 @@ const levelsOf = waves as Record<string, number[]>;
 // Swap scenes and props without changing the Player's composition.
 const SceneContext = createContext<BuiltScene | null>(null);
 
-// The stage plays the track itself, so tweaks never restart the audio.
+// The stage plays an excerpt of the track itself, so tweaks never restart the audio and
+// visitors never download the whole file. The excerpt keeps the track's own timeline.
 function StageComposition() {
 	const scene = useContext(SceneContext);
 	if (!scene) return null;
+	const clip = sceneClip(scene.spec.timing);
 	return (
 		<>
 			<Html5Audio
-				src={scene.track.src}
+				src={clip.src}
 				trimBefore={Math.round(scene.start * scene.fps)}
 				showInTimeline={false}
 			/>
-			<SceneComposition scene={scene} live />
+			<SceneComposition scene={scene} elements={loadedElements} audioSrc={clip.src} live />
 		</>
 	);
 }
@@ -78,6 +88,20 @@ const formatOptions = (Object.keys(formats) as Format[]).map((value) => ({
 
 type Copy = 'idle' | 'copied' | 'failed';
 
+/** Every element the scene draws in this state, including its overlay and finish. */
+const elementsFor = (spec: SceneSpec, state: SceneState) => buildScene(spec, state).elements;
+
+// Safari has no requestIdleCallback.
+const whenIdle = (task: () => void) => {
+	const idle = (window as Partial<Window>).requestIdleCallback;
+	if (idle) {
+		const handle = idle.call(window, task, {timeout: 1500});
+		return () => window.cancelIdleCallback(handle);
+	}
+	const handle = window.setTimeout(task, 200);
+	return () => window.clearTimeout(handle);
+};
+
 export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	const [sceneId, setSceneId] = useState(scenes[0]!.timing.id);
 	const [states, setStates] = useState<Record<string, SceneState>>(() =>
@@ -85,6 +109,12 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	);
 	const [codeOpen, setCodeOpen] = useState(false);
 	const [copy, setCopy] = useState<Copy>('idle');
+	const [pixels] = useState(() =>
+		typeof window !== 'undefined' &&
+		window.matchMedia('(max-width: 720px), (pointer: coarse)').matches
+			? COMPACT_PREVIEW_PIXELS
+			: PREVIEW_PIXELS,
+	);
 	const [reducedMotion] = useState(
 		() =>
 			typeof window !== 'undefined' &&
@@ -92,14 +122,17 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	);
 	// Render the same shell on the server to avoid layout shift when the Player mounts.
 	const [mounted, setMounted] = useState(false);
-	useEffect(() => setMounted(true), []);
+	const [loadError, setLoadError] = useState<string | null>(null);
 	const rootRef = useRef<HTMLDivElement>(null);
 	const playerRef = useRef<PlayerRef>(null);
 	const codeId = useId();
 
 	const spec = scenes.find((scene) => scene.timing.id === sceneId)!;
 	const state = states[sceneId]!;
-	const live = useMemo(() => buildScene(spec, state, previewSize(state.format)), [spec, state]);
+	const live = useMemo(
+		() => buildScene(spec, state, previewSize(state.format, pixels)),
+		[spec, state, pixels],
+	);
 	const full = useMemo(() => buildScene(spec, state), [spec, state]);
 	const code = useMemo(() => {
 		const lines = printScene(full).split('\n');
@@ -116,9 +149,42 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 		});
 	}, [full, spec, state.format]);
 
-	const ready = usePlayerReady(playerRef, `${sceneId}-${state.format}`, mounted);
-	const {playing, muted} = usePlayerStatus(playerRef, mounted);
-	useVisiblePlayback(rootRef, playerRef, mounted, !reducedMotion);
+	const {playerKey, retry, recover} = usePlayerRecovery(rootRef, mounted);
+	const ready = usePlayerReady(playerRef, `${sceneId}-${state.format}`, mounted, playerKey);
+	const {playing, muted} = usePlayerStatus(playerRef, mounted, playerKey);
+	useVisiblePlayback(rootRef, playerRef, mounted, !reducedMotion, playerKey);
+
+	// Fetch the first scene's shaders, then mount the Player once the page is idle so
+	// WebGL setup never lands in the middle of loading.
+	useEffect(() => {
+		let live = true;
+		let cancelIdle = () => {};
+		setLoadError(null);
+		loadSceneElements(elementsFor(scenes[0]!, initialState(scenes[0]!))).then(
+			() => {
+				if (live) cancelIdle = whenIdle(() => setMounted(true));
+			},
+			(error: unknown) =>
+				live && setLoadError(error instanceof Error ? error.message : String(error)),
+		);
+		return () => {
+			live = false;
+			cancelIdle();
+		};
+	}, [playerKey]);
+
+	// Switching scenes or finishes waits for their shaders, so the old frame keeps playing
+	// instead of going blank. Already-loaded changes apply immediately.
+	const commitWhenLoaded = (target: SceneSpec, targetState: SceneState, commit: () => void) => {
+		const needed = elementsFor(target, targetState);
+		if (needed.every((slug) => loadedElements[slug])) return commit();
+		loadSceneElements(needed).then(commit, (error: unknown) =>
+			setLoadError(error instanceof Error ? error.message : String(error)),
+		);
+	};
+	const prefetch = (target: SceneSpec) => {
+		loadSceneElements(elementsFor(target, states[target.timing.id]!)).catch(() => {});
+	};
 
 	const firstScene = useRef(true);
 	useEffect(() => {
@@ -136,7 +202,9 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	}, [copy]);
 
 	const update = (next: Partial<SceneState>) =>
-		setStates((all) => ({...all, [sceneId]: {...all[sceneId]!, ...next}}));
+		commitWhenLoaded(spec, {...state, ...next}, () =>
+			setStates((all) => ({...all, [sceneId]: {...all[sceneId]!, ...next}})),
+		);
 
 	const toggleLayer = (slug: string) =>
 		update({
@@ -173,9 +241,11 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 							aria-hidden="true"
 						/>
 					) : null}
+					{loadError ? <StageError message={loadError} onRetry={retry} /> : null}
 					{mounted && (
 						<SceneContext value={live}>
 							<Player
+								key={playerKey}
 								ref={playerRef}
 								className="preview-player"
 								component={StageComposition}
@@ -191,10 +261,11 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 								doubleClickToFullscreen={false}
 								style={{width: '100%', aspectRatio: '16 / 9'}}
 								errorFallback={({error}) => (
-									<p role="alert" className="stage-error">
-										Preview unavailable: {error.message}. WebGL2 elements need graphics
-										acceleration.
-									</p>
+									<StageError
+										message={error.message}
+										onRetry={retry}
+										onLost={isContextLoss(error) ? recover : undefined}
+									/>
 								)}
 							/>
 						</SceneContext>
@@ -207,7 +278,13 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 								key={scene.timing.id}
 								type="button"
 								aria-pressed={scene.timing.id === sceneId}
-								onClick={() => setSceneId(scene.timing.id)}
+								onPointerEnter={() => prefetch(scene)}
+								onFocus={() => prefetch(scene)}
+								onClick={() =>
+									commitWhenLoaded(scene, states[scene.timing.id]!, () =>
+										setSceneId(scene.timing.id),
+									)
+								}
 							>
 								<img src={`/scenes/thumbs/${scene.timing.id}.webp`} alt="" width="48" height="27" />
 								<span>
@@ -220,6 +297,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 					<div className="stage-transport">
 						<PlayButton playing={playing} onClick={() => playerRef.current?.toggle()} />
 						<TrackWave
+							generation={playerKey}
 							key={sceneId}
 							playerRef={playerRef}
 							mounted={mounted}
@@ -306,7 +384,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 										disabled={on && visibleLayers === 1}
 										onClick={() => toggleLayer(layer.slug)}
 									>
-										<img src={`/posters/${layer.slug}.webp`} alt="" width="28" height="16" />
+										<img src={`/posters/icons/${layer.slug}.webp`} alt="" width="28" height="16" />
 										{titles[layer.slug] ?? layer.slug}
 									</button>
 								</span>

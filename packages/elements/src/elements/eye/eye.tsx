@@ -897,7 +897,7 @@ function setupEye(canvas: HTMLCanvasElement): EyeState {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
-		antialias: true,
+		antialias: false,
 	});
 	if (!gl)
 		throw new Error('Eye requires WebGL2. Enable browser graphics acceleration and reload Studio.');

@@ -401,7 +401,7 @@ function setupSynthwave(canvas: HTMLCanvasElement): SynthwaveState {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
-		antialias: true,
+		antialias: false,
 	});
 	if (!gl)
 		throw new Error(

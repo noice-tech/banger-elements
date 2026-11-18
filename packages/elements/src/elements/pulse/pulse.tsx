@@ -819,7 +819,7 @@ function setupPulse(canvas: HTMLCanvasElement): PulseState {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
-		antialias: true,
+		antialias: false,
 	});
 	if (!gl)
 		throw new Error(

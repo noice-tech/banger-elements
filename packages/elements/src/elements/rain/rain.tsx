@@ -354,7 +354,7 @@ function setupRain(canvas: HTMLCanvasElement): RainState {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
-		antialias: true,
+		antialias: false,
 	});
 	if (!gl)
 		throw new Error(

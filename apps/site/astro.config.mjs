@@ -1,10 +1,32 @@
+import {createRequire} from 'node:module';
+import path from 'node:path';
 import process from 'node:process';
+import {fileURLToPath, URL} from 'node:url';
 import {defineConfig} from 'astro/config';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 
+// The elements import `@remotion/media-utils`; the live preview gets it with a spectrum cache.
+const mediaUtils = path.join(
+	path.dirname(createRequire(import.meta.url).resolve('@remotion/media-utils/package.json')),
+	'dist/esm/index.mjs',
+);
+
 export default defineConfig({
 	output: 'static',
+	vite: {
+		resolve: {
+			alias: [
+				{
+					find: /^@remotion\/media-utils$/,
+					replacement: fileURLToPath(
+						new URL('./src/components/preview/media-utils.ts', import.meta.url),
+					),
+				},
+				{find: '@banger/media-utils-original', replacement: mediaUtils},
+			],
+		},
+	},
 	// Astro 7 defaults to JSX whitespace rules, which drop the line breaks between
 	// text and tags that this site's templates rely on for spaces.
 	compressHTML: true,

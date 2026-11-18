@@ -303,7 +303,7 @@ function setupPulsar(canvas: HTMLCanvasElement): PulsarState {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
-		antialias: true,
+		antialias: false,
 	});
 	if (!gl)
 		throw new Error(
