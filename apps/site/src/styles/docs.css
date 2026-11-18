@@ -290,6 +290,10 @@ body {
 	.sidebar-content {
 		padding-bottom: 5rem;
 	}
+	/* Starlight 0.43 reserves a scrollbar gutter; the short nav never scrolls. */
+	.sidebar-pane {
+		scrollbar-gutter: auto;
+	}
 	[data-sidebar-collapsed] .sidebar-toggle {
 		width: 38px;
 		padding: 0;

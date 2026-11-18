@@ -92,7 +92,7 @@ test('VHS faithful path uploads captured children and disposes WebGL resources',
 	);
 	cleanupVhsWebGl(state);
 	for (const name of [
-		'texElementImage2D',
+		'texElementSubImage2D',
 		'drawArrays',
 		'deleteTexture',
 		'deleteBuffer',

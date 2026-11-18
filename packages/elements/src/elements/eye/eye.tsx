@@ -1,9 +1,9 @@
-import { Audio } from "@remotion/media";
+import {Audio} from '@remotion/media';
 import {
 	useWindowedAudioData,
 	visualizeAudio,
 	type MediaUtilsAudioData,
-} from "@remotion/media-utils";
+} from '@remotion/media-utils';
 import React, {
 	forwardRef,
 	useId,
@@ -11,7 +11,7 @@ import React, {
 	useLayoutEffect,
 	useMemo,
 	useRef,
-} from "react";
+} from 'react';
 import {
 	cancelRender,
 	Interactive,
@@ -23,7 +23,7 @@ import {
 	type InteractiveTransformProps,
 	type InteractivitySchema,
 	type SequenceControls,
-} from "remotion";
+} from 'remotion';
 
 type EyeOptions = {
 	readonly width?: number;
@@ -49,124 +49,122 @@ type EyeProps = InteractiveBaseProps & InteractiveTransformProps & EyeOptions;
 const eyeSchema = {
 	...Interactive.baseSchema,
 	audioSrc: {
-		type: "asset",
-		default:
-			"https://remotion.media/elements/remotion-made-this-picture-move.mp3",
-		description: "Audio source",
+		type: 'asset',
+		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
+		description: 'Audio source',
 		keyframable: false,
 	},
 	audioOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description: "Audio source offset in seconds",
+		description: 'Audio source offset in seconds',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	playAudio: {
-		type: "boolean",
+		type: 'boolean',
 		default: true,
-		description: "Play audio (disable when stacking)",
+		description: 'Play audio (disable when stacking)',
 		keyframable: false,
 	},
 	inputGainDb: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: -30,
 		max: 30,
 		step: 1,
-		description: "Visual gain in dB",
+		description: 'Visual gain in dB',
 		hiddenFromList: false,
 	},
-	startColor: { type: "color", default: "#0f5f7a", description: "Theme color" },
-	endColor: { type: "color", default: "#db0791", description: "Second color" },
+	startColor: {type: 'color', default: '#0f5f7a', description: 'Theme color'},
+	endColor: {type: 'color', default: '#db0791', description: 'Second color'},
 	responsive: {
-		type: "number",
+		type: 'number',
 		default: 1.5,
 		min: 0,
 		max: 6,
 		step: 0.1,
-		description: "Audio reactivity",
+		description: 'Audio reactivity',
 		hiddenFromList: false,
 	},
 	speed: {
-		type: "number",
+		type: 'number',
 		default: 1,
 		min: 0.1,
 		max: 2,
 		step: 0.01,
-		description: "Speed acceleration",
+		description: 'Speed acceleration',
 		hiddenFromList: false,
 	},
-	dark: { type: "boolean", default: false, description: "Dark mode" },
-	colorful: { type: "boolean", default: false, description: "Colorful mode" },
+	dark: {type: 'boolean', default: false, description: 'Dark mode'},
+	colorful: {type: 'boolean', default: false, description: 'Colorful mode'},
 	volume: {
-		type: "number",
+		type: 'number',
 		default: 0.5,
 		min: 0.1,
 		max: 10,
 		step: 0.1,
-		description: "Volume",
+		description: 'Volume',
 		hiddenFromList: false,
 	},
 	amount: {
-		type: "number",
+		type: 'number',
 		default: 50,
 		min: 1,
 		max: 70,
 		step: 1,
-		description: "Amount",
+		description: 'Amount',
 		hiddenFromList: false,
 	},
 	smoothness: {
-		type: "number",
+		type: 'number',
 		default: 27,
 		min: 1,
 		max: 100,
 		step: 1,
-		description: "Smoothness",
+		description: 'Smoothness',
 		hiddenFromList: false,
 	},
 	bpm: {
-		type: "number",
+		type: 'number',
 		default: 120,
 		min: 1,
 		max: 300,
 		step: 1,
-		description: "Tempo (BPM)",
+		description: 'Tempo (BPM)',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	timeOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description:
-			"Animation phase offset in seconds (independent of audio trim)",
+		description: 'Animation phase offset in seconds (independent of audio trim)',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	width: {
-		type: "number",
+		type: 'number',
 		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Width",
+		description: 'Width',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	height: {
-		type: "number",
+		type: 'number',
 		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Height",
+		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -175,25 +173,15 @@ const eyeSchema = {
 
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
-	return Number.isFinite(value)
-		? Math.min(max, Math.max(min, value))
-		: fallback;
+	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
-function hasCompleteAudioWindow(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
+function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, time: number) {
 	const chunk = Math.floor(time / decodeWindowSeconds);
 	const start = Math.max(0, (chunk - 1) * decodeWindowSeconds);
-	const end = Math.min(
-		audioData.durationInSeconds,
-		(chunk + 2) * decodeWindowSeconds,
-	);
+	const end = Math.min(audioData.durationInSeconds, (chunk + 2) * decodeWindowSeconds);
 	return (
 		Math.abs(offset - start) < 1 / audioData.sampleRate &&
-		audioData.channelWaveforms[0].length >=
-			Math.round((end - start) * audioData.sampleRate) - 2
+		audioData.channelWaveforms[0].length >= Math.round((end - start) * audioData.sampleRate) - 2
 	);
 }
 function useVisualizerAudio(src: string, time: number, fps: number) {
@@ -216,35 +204,27 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		[result.audioData, instanceId],
 	);
 	const complete =
-		audioData === null ||
-		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
-	const { delayRender, continueRender } = useDelayRender();
+		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (complete) return;
-		const handle = delayRender("Waiting for complete Eye audio history");
+		const handle = delayRender('Waiting for complete Eye audio history');
 		return () => continueRender(handle);
 	}, [complete, delayRender, continueRender]);
-	return { ...result, audioData: complete ? audioData : null };
+	return {...result, audioData: complete ? audioData : null};
 }
 function computeBars(values: number[]) {
-	const bars = Array.from({ length: 308 }, () => 0.0025);
+	const bars = Array.from({length: 308}, () => 0.0025);
 	const step = (22000 - 20) / values.length;
 	for (let index = 0; index < values.length; index++) {
 		const frequency = 20 + index * step;
-		const bin = Math.floor(
-			(Math.log10(frequency / 20) / Math.log10(1100)) * 308,
-		);
+		const bin = Math.floor((Math.log10(frequency / 20) / Math.log10(1100)) * 308);
 		if (bin < 308) bars[bin] += bin < 103 ? values[index] * 1.3 : values[index];
 	}
 	return bars.map((value) => (Number.isFinite(value) ? value : 0));
 }
-function spectrumBars(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
-	if (time < 0 || time >= audioData.durationInSeconds)
-		return Array(308).fill(0) as number[];
+function spectrumBars(audioData: MediaUtilsAudioData, offset: number, time: number) {
+	if (time < 0 || time >= audioData.durationInSeconds) return Array(308).fill(0) as number[];
 	return computeBars(
 		visualizeAudio({
 			audioData,
@@ -252,7 +232,7 @@ function spectrumBars(
 			frame: time * 60,
 			fps: 60,
 			numberOfSamples: 4096,
-			optimizeFor: "speed",
+			optimizeFor: 'speed',
 			smoothing: true,
 		}),
 	);
@@ -262,7 +242,7 @@ const silentAudio: MediaUtilsAudioData = {
 	sampleRate: 44100,
 	durationInSeconds: 0,
 	numberOfChannels: 1,
-	resultId: "banger-elements-silence",
+	resultId: 'banger-elements-silence',
 	isRemote: false,
 };
 
@@ -845,20 +825,15 @@ function linearColor(color: string) {
 	const hex = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(color)?.[1];
 	if (hex) {
 		const expanded =
-			hex.length === 3
-				? [...hex].map((character) => character + character).join("")
-				: hex;
-		bytes = [0, 2, 4].map((index) =>
-			parseInt(expanded.slice(index, index + 2), 16),
-		);
+			hex.length === 3 ? [...hex].map((character) => character + character).join('') : hex;
+		bytes = [0, 2, 4].map((index) => parseInt(expanded.slice(index, index + 2), 16));
 	} else {
-		if (!CSS.supports("color", color))
-			throw new Error(`Invalid Eye color: ${color}`);
+		if (!CSS.supports('color', color)) throw new Error(`Invalid Eye color: ${color}`);
 		if (!colorParser) {
-			const canvas = document.createElement("canvas");
+			const canvas = document.createElement('canvas');
 			canvas.width = 1;
 			canvas.height = 1;
-			colorParser = canvas.getContext("2d", { willReadFrequently: true })!;
+			colorParser = canvas.getContext('2d', {willReadFrequently: true})!;
 		}
 		colorParser.clearRect(0, 0, 1, 1);
 		colorParser.fillStyle = color;
@@ -876,16 +851,16 @@ function linearColor(color: string) {
 
 type EyeFrame = Pick<
 	Required<EyeOptions>,
-	| "startColor"
-	| "endColor"
-	| "responsive"
-	| "speed"
-	| "dark"
-	| "colorful"
-	| "volume"
-	| "amount"
-	| "smoothness"
-	| "bpm"
+	| 'startColor'
+	| 'endColor'
+	| 'responsive'
+	| 'speed'
+	| 'dark'
+	| 'colorful'
+	| 'volume'
+	| 'amount'
+	| 'smoothness'
+	| 'bpm'
 > & {
 	readonly width: number;
 	readonly height: number;
@@ -899,37 +874,35 @@ type EyeState = {
 	readonly buffer: WebGLBuffer;
 	readonly vertexCount: number;
 	readonly uniforms: Record<
-		| "iGlobalTime"
-		| "iLowFreq"
-		| "iMidFreq"
-		| "iHighFreq"
-		| "iAspect"
-		| "iStartColor"
-		| "iEndColor"
-		| "iIntensity"
-		| "iSpeed"
-		| "iDark"
-		| "iColorful"
-		| "iVolume"
-		| "iAmount"
-		| "iSmooth"
-		| "iBpm",
+		| 'iGlobalTime'
+		| 'iLowFreq'
+		| 'iMidFreq'
+		| 'iHighFreq'
+		| 'iAspect'
+		| 'iStartColor'
+		| 'iEndColor'
+		| 'iIntensity'
+		| 'iSpeed'
+		| 'iDark'
+		| 'iColorful'
+		| 'iVolume'
+		| 'iAmount'
+		| 'iSmooth'
+		| 'iBpm',
 		WebGLUniformLocation | null
 	>;
 };
 function setupEye(canvas: HTMLCanvasElement): EyeState {
-	const gl = canvas.getContext("webgl2", {
+	const gl = canvas.getContext('webgl2', {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
 		antialias: true,
 	});
 	if (!gl)
-		throw new Error(
-			"Eye requires WebGL2. Enable browser graphics acceleration and reload Studio.",
-		);
+		throw new Error('Eye requires WebGL2. Enable browser graphics acceleration and reload Studio.');
 	const program = gl.createProgram();
-	if (!program) throw new Error("Eye could not create a program.");
+	if (!program) throw new Error('Eye could not create a program.');
 	const shaders: WebGLShader[] = [];
 	let buffer: WebGLBuffer | null = null;
 	try {
@@ -938,30 +911,26 @@ function setupEye(canvas: HTMLCanvasElement): EyeState {
 			[gl.FRAGMENT_SHADER, fragmentShader],
 		] as const) {
 			const shader = gl.createShader(type);
-			if (!shader) throw new Error("Eye could not create a shader.");
+			if (!shader) throw new Error('Eye could not create a shader.');
 			shaders.push(shader);
 			gl.shaderSource(shader, source);
 			gl.compileShader(shader);
 			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
-				throw new Error(
-					`Eye shader compilation failed: ${gl.getShaderInfoLog(shader)}`,
-				);
+				throw new Error(`Eye shader compilation failed: ${gl.getShaderInfoLog(shader)}`);
 			gl.attachShader(program, shader);
 		}
 		gl.linkProgram(program);
 		if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-			throw new Error(
-				`Eye shader linking failed: ${gl.getProgramInfoLog(program)}`,
-			);
+			throw new Error(`Eye shader linking failed: ${gl.getProgramInfoLog(program)}`);
 		gl.useProgram(program);
 		buffer = gl.createBuffer();
-		if (!buffer) throw new Error("Eye could not create a vertex buffer.");
+		if (!buffer) throw new Error('Eye could not create a vertex buffer.');
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		const data = geometry();
 		gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
 		for (const [name, size, offset] of [
-			["position", 3, 0],
-			["uv", 2, 12],
+			['position', 3, 0],
+			['uv', 2, 12],
 		] as const) {
 			const attribute = gl.getAttribLocation(program, name);
 			gl.enableVertexAttribArray(attribute);
@@ -973,21 +942,21 @@ function setupEye(canvas: HTMLCanvasElement): EyeState {
 			buffer,
 			vertexCount: data.length / 5,
 			uniforms: {
-				iGlobalTime: gl.getUniformLocation(program, "iGlobalTime"),
-				iLowFreq: gl.getUniformLocation(program, "iLowFreq"),
-				iMidFreq: gl.getUniformLocation(program, "iMidFreq"),
-				iHighFreq: gl.getUniformLocation(program, "iHighFreq"),
-				iAspect: gl.getUniformLocation(program, "iAspect"),
-				iStartColor: gl.getUniformLocation(program, "iStartColor"),
-				iEndColor: gl.getUniformLocation(program, "iEndColor"),
-				iIntensity: gl.getUniformLocation(program, "iIntensity"),
-				iSpeed: gl.getUniformLocation(program, "iSpeed"),
-				iDark: gl.getUniformLocation(program, "iDark"),
-				iColorful: gl.getUniformLocation(program, "iColorful"),
-				iVolume: gl.getUniformLocation(program, "iVolume"),
-				iAmount: gl.getUniformLocation(program, "iAmount"),
-				iSmooth: gl.getUniformLocation(program, "iSmooth"),
-				iBpm: gl.getUniformLocation(program, "iBpm"),
+				iGlobalTime: gl.getUniformLocation(program, 'iGlobalTime'),
+				iLowFreq: gl.getUniformLocation(program, 'iLowFreq'),
+				iMidFreq: gl.getUniformLocation(program, 'iMidFreq'),
+				iHighFreq: gl.getUniformLocation(program, 'iHighFreq'),
+				iAspect: gl.getUniformLocation(program, 'iAspect'),
+				iStartColor: gl.getUniformLocation(program, 'iStartColor'),
+				iEndColor: gl.getUniformLocation(program, 'iEndColor'),
+				iIntensity: gl.getUniformLocation(program, 'iIntensity'),
+				iSpeed: gl.getUniformLocation(program, 'iSpeed'),
+				iDark: gl.getUniformLocation(program, 'iDark'),
+				iColorful: gl.getUniformLocation(program, 'iColorful'),
+				iVolume: gl.getUniformLocation(program, 'iVolume'),
+				iAmount: gl.getUniformLocation(program, 'iAmount'),
+				iSmooth: gl.getUniformLocation(program, 'iSmooth'),
+				iBpm: gl.getUniformLocation(program, 'iBpm'),
 			},
 		};
 	} catch (error) {
@@ -999,7 +968,7 @@ function setupEye(canvas: HTMLCanvasElement): EyeState {
 	}
 }
 function drawEye(state: EyeState, frame: EyeFrame) {
-	const { gl, program, uniforms } = state;
+	const {gl, program, uniforms} = state;
 	gl.useProgram(program);
 	gl.viewport(0, 0, frame.width, frame.height);
 	gl.clearColor(0, 0, 0, 1);
@@ -1007,14 +976,7 @@ function drawEye(state: EyeState, frame: EyeFrame) {
 	gl.uniform1f(uniforms.iAspect, frame.width / frame.height);
 	gl.uniform1f(uniforms.iGlobalTime, frame.time);
 	const gain =
-		10 **
-		(bounded(
-			(frame as EyeFrame & { inputGainDb?: number }).inputGainDb ?? 0,
-			-30,
-			30,
-			0,
-		) /
-			20);
+		10 ** (bounded((frame as EyeFrame & {inputGainDb?: number}).inputGainDb ?? 0, -30, 30, 0) / 20);
 	gl.uniform1f(uniforms.iLowFreq, (frame.bars[11] ?? 0) * gain);
 	gl.uniform1f(uniforms.iMidFreq, (frame.bars[45] ?? 0) * gain);
 	gl.uniform1f(uniforms.iHighFreq, (frame.bars[85] ?? 0) * gain);
@@ -1038,14 +1000,14 @@ function drawEye(state: EyeState, frame: EyeFrame) {
 	if (error !== gl.NO_ERROR) throw new Error(`Eye WebGL draw failed: ${error}`);
 }
 function cleanupEye(state: EyeState) {
-	const { gl, program, buffer } = state;
+	const {gl, program, buffer} = state;
 	gl.deleteBuffer(buffer);
 	gl.deleteProgram(program);
 }
 function EyeCanvas(frame: EyeFrame) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const state = useRef<EyeState | null>(null);
-	const { delayRender, continueRender } = useDelayRender();
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current!;
 		try {
@@ -1056,23 +1018,22 @@ function EyeCanvas(frame: EyeFrame) {
 		const current = state.current;
 		const lost = (event: Event) => {
 			event.preventDefault();
-			cancelRender(new Error("Eye WebGL context was lost."));
+			cancelRender(new Error('Eye WebGL context was lost.'));
 		};
-		canvas.addEventListener("webglcontextlost", lost);
+		canvas.addEventListener('webglcontextlost', lost);
 		return () => {
-			canvas.removeEventListener("webglcontextlost", lost);
+			canvas.removeEventListener('webglcontextlost', lost);
 			if (!current) return;
 			cleanupEye(current);
 			state.current = null;
 			queueMicrotask(() => {
-				if (!canvas.isConnected)
-					current.gl.getExtension("WEBGL_lose_context")?.loseContext();
+				if (!canvas.isConnected) current.gl.getExtension('WEBGL_lose_context')?.loseContext();
 			});
 		};
 	}, []);
 	useLayoutEffect(() => {
 		if (!state.current) return;
-		const handle = delayRender("Drawing Eye");
+		const handle = delayRender('Drawing Eye');
 		try {
 			drawEye(state.current, frame);
 		} catch (error) {
@@ -1086,38 +1047,22 @@ function EyeCanvas(frame: EyeFrame) {
 			ref={canvasRef}
 			width={frame.width}
 			height={frame.height}
-			style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+			style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
 		/>
 	);
 }
-const EyeContent: React.FC<
-	Required<EyeOptions> & { width: number; height: number }
-> = (props) => {
+const EyeContent: React.FC<Required<EyeOptions> & {width: number; height: number}> = (props) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
-	const offsetFrames = Math.round(
-		bounded(props.audioOffsetInSeconds, 0, 86400, 0) * fps,
-	);
+	const {fps} = useVideoConfig();
+	const offsetFrames = Math.round(bounded(props.audioOffsetInSeconds, 0, 86400, 0) * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
 	const time = frame / fps + bounded(props.timeOffsetInSeconds, 0, 86400, 0);
-	const { audioData, dataOffsetInSeconds } = useVisualizerAudio(
-		props.audioSrc,
-		sourceTime,
-		fps,
-	);
-	const bars = spectrumBars(
-		audioData ?? silentAudio,
-		dataOffsetInSeconds,
-		sourceTime,
-	);
+	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
+	const bars = spectrumBars(audioData ?? silentAudio, dataOffsetInSeconds, sourceTime);
 	return (
 		<>
 			{props.playAudio ? (
-				<Audio
-					src={props.audioSrc}
-					trimBefore={offsetFrames}
-					showInTimeline={false}
-				/>
+				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
 			<EyeCanvas {...props} time={time} bars={bars} />
 		</>
@@ -1125,7 +1070,7 @@ const EyeContent: React.FC<
 };
 const EyeInner = forwardRef<
 	HTMLDivElement,
-	EyeProps & { readonly controls: SequenceControls | undefined }
+	EyeProps & {readonly controls: SequenceControls | undefined}
 >(
 	(
 		{
@@ -1162,17 +1107,17 @@ const EyeInner = forwardRef<
 				layout="none"
 				{...sequenceProps}
 				controls={controls}
-				name={name ?? "Eye"}
+				name={name ?? 'Eye'}
 				outlineRef={outlineRef}
 			>
 				<div
 					ref={outlineRef}
 					style={{
-						position: "relative",
-						boxSizing: "border-box",
+						position: 'relative',
+						boxSizing: 'border-box',
 						width: drawingWidth,
 						height: drawingHeight,
-						overflow: "hidden",
+						overflow: 'hidden',
 						...style,
 					}}
 				>
@@ -1203,7 +1148,7 @@ const EyeInner = forwardRef<
 );
 export const Eye = Interactive.withSchema({
 	Component: EyeInner,
-	componentName: "<Eye>",
+	componentName: '<Eye>',
 	componentIdentity: null,
 	schema: eyeSchema,
 	supportsEffects: false,

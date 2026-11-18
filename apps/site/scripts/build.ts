@@ -12,9 +12,11 @@ const catalog = JSON.parse(await readFile(path.join(producerDist, 'catalog.json'
 }[];
 await rm(dist, {recursive: true, force: true});
 const require = createRequire(import.meta.url);
+const astroManifest = require.resolve('astro/package.json');
+const {bin} = JSON.parse(await readFile(astroManifest, 'utf8')) as {bin: {astro: string}};
 const result = spawnSync(
 	process.execPath,
-	[path.join(path.dirname(require.resolve('astro/package.json')), 'astro.js'), 'build'],
+	[path.join(path.dirname(astroManifest), bin.astro), 'build'],
 	{cwd: workspace, stdio: 'inherit'},
 );
 if (result.status !== 0) process.exit(result.status ?? 1);

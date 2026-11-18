@@ -5,6 +5,9 @@ import react from '@astrojs/react';
 
 export default defineConfig({
 	output: 'static',
+	// Astro 7 defaults to JSX whitespace rules, which drop the line breaks between
+	// text and tags that this site's templates rely on for spaces.
+	compressHTML: true,
 	site: 'https://banger-elements.dev',
 	server: {host: '127.0.0.1', port: Number(process.env.PORT ?? 3300)},
 	publicDir: './static',

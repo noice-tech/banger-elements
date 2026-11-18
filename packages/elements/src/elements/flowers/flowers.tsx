@@ -1,9 +1,9 @@
-import { Audio } from "@remotion/media";
+import {Audio} from '@remotion/media';
 import {
 	useWindowedAudioData,
 	visualizeAudio,
 	type MediaUtilsAudioData,
-} from "@remotion/media-utils";
+} from '@remotion/media-utils';
 import React, {
 	forwardRef,
 	useId,
@@ -11,7 +11,7 @@ import React, {
 	useLayoutEffect,
 	useMemo,
 	useRef,
-} from "react";
+} from 'react';
 import {
 	cancelRender,
 	Interactive,
@@ -23,7 +23,7 @@ import {
 	type InteractiveTransformProps,
 	type InteractivitySchema,
 	type SequenceControls,
-} from "remotion";
+} from 'remotion';
 
 type FlowersOptions = {
 	readonly width?: number;
@@ -42,136 +42,132 @@ type FlowersOptions = {
 	readonly pattern?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type FlowersProps = InteractiveBaseProps &
-	InteractiveTransformProps &
-	FlowersOptions;
+type FlowersProps = InteractiveBaseProps & InteractiveTransformProps & FlowersOptions;
 
 const flowersSchema = {
 	...Interactive.baseSchema,
 	audioSrc: {
-		type: "asset",
-		default:
-			"https://remotion.media/elements/remotion-made-this-picture-move.mp3",
-		description: "Audio source",
+		type: 'asset',
+		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
+		description: 'Audio source',
 		keyframable: false,
 	},
 	audioOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description: "Audio source offset in seconds",
+		description: 'Audio source offset in seconds',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	playAudio: {
-		type: "boolean",
+		type: 'boolean',
 		default: true,
-		description: "Play audio (disable when stacking)",
+		description: 'Play audio (disable when stacking)',
 		keyframable: false,
 	},
 	inputGainDb: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: -30,
 		max: 30,
 		step: 1,
-		description: "Visual gain in dB",
+		description: 'Visual gain in dB',
 		hiddenFromList: false,
 	},
 	strokeColor: {
-		type: "color",
-		default: "#a1a1a1",
-		description: "Stroke color",
+		type: 'color',
+		default: '#a1a1a1',
+		description: 'Stroke color',
 	},
 	backgroundColor: {
-		type: "color",
-		default: "#000000",
-		description: "Background color",
+		type: 'color',
+		default: '#000000',
+		description: 'Background color',
 	},
 	scale: {
-		type: "number",
+		type: 'number',
 		default: 15,
 		min: 2,
 		max: 30,
 		step: 0.5,
-		description: "Scale",
+		description: 'Scale',
 		hiddenFromList: false,
 	},
 	responsive: {
-		type: "number",
+		type: 'number',
 		default: 1,
 		min: 0.1,
 		max: 2.7,
 		step: 0.1,
-		description: "Audio reactivity",
+		description: 'Audio reactivity',
 		hiddenFromList: false,
 	},
 	rotationSpeed: {
-		type: "number",
+		type: 'number',
 		default: 1,
 		min: 0.1,
 		max: 10,
 		step: 0.1,
-		description: "Rotation speed",
+		description: 'Rotation speed',
 		hiddenFromList: false,
 	},
 	flowersSpeed: {
-		type: "number",
+		type: 'number',
 		default: 0.2,
 		min: 0.1,
 		max: 3,
 		step: 0.1,
-		description: "Flowers speed",
+		description: 'Flowers speed',
 		hiddenFromList: false,
 	},
 	volume: {
-		type: "number",
+		type: 'number',
 		default: 3,
 		min: 1,
 		max: 4,
 		step: 0.5,
-		description: "Volume",
+		description: 'Volume',
 		hiddenFromList: false,
 	},
 	pattern: {
-		type: "number",
+		type: 'number',
 		default: 2,
 		min: 0.1,
 		max: 2,
 		step: 0.1,
-		description: "Pattern",
+		description: 'Pattern',
 		hiddenFromList: false,
 	},
 	timeOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description:
-			"Animation phase offset in seconds (independent of audio trim)",
+		description: 'Animation phase offset in seconds (independent of audio trim)',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	width: {
-		type: "number",
+		type: 'number',
 		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Width",
+		description: 'Width',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	height: {
-		type: "number",
+		type: 'number',
 		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Height",
+		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -180,25 +176,15 @@ const flowersSchema = {
 
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
-	return Number.isFinite(value)
-		? Math.min(max, Math.max(min, value))
-		: fallback;
+	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
-function hasCompleteAudioWindow(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
+function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, time: number) {
 	const chunk = Math.floor(time / decodeWindowSeconds);
 	const start = Math.max(0, (chunk - 1) * decodeWindowSeconds);
-	const end = Math.min(
-		audioData.durationInSeconds,
-		(chunk + 2) * decodeWindowSeconds,
-	);
+	const end = Math.min(audioData.durationInSeconds, (chunk + 2) * decodeWindowSeconds);
 	return (
 		Math.abs(offset - start) < 1 / audioData.sampleRate &&
-		audioData.channelWaveforms[0].length >=
-			Math.round((end - start) * audioData.sampleRate) - 2
+		audioData.channelWaveforms[0].length >= Math.round((end - start) * audioData.sampleRate) - 2
 	);
 }
 function useVisualizerAudio(src: string, time: number, fps: number) {
@@ -221,35 +207,27 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		[result.audioData, instanceId],
 	);
 	const complete =
-		audioData === null ||
-		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
-	const { delayRender, continueRender } = useDelayRender();
+		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (complete) return;
-		const handle = delayRender("Waiting for complete Flowers audio history");
+		const handle = delayRender('Waiting for complete Flowers audio history');
 		return () => continueRender(handle);
 	}, [complete, delayRender, continueRender]);
-	return { ...result, audioData: complete ? audioData : null };
+	return {...result, audioData: complete ? audioData : null};
 }
 function computeBars(values: number[]) {
-	const bars = Array.from({ length: 308 }, () => 0.0025);
+	const bars = Array.from({length: 308}, () => 0.0025);
 	const step = (22000 - 20) / values.length;
 	for (let index = 0; index < values.length; index++) {
 		const frequency = 20 + index * step;
-		const bin = Math.floor(
-			(Math.log10(frequency / 20) / Math.log10(1100)) * 308,
-		);
+		const bin = Math.floor((Math.log10(frequency / 20) / Math.log10(1100)) * 308);
 		if (bin < 308) bars[bin] += bin < 103 ? values[index] * 1.3 : values[index];
 	}
 	return bars.map((value) => (Number.isFinite(value) ? value : 0));
 }
-function spectrumBars(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
-	if (time < 0 || time >= audioData.durationInSeconds)
-		return Array(308).fill(0) as number[];
+function spectrumBars(audioData: MediaUtilsAudioData, offset: number, time: number) {
+	if (time < 0 || time >= audioData.durationInSeconds) return Array(308).fill(0) as number[];
 	return computeBars(
 		visualizeAudio({
 			audioData,
@@ -257,7 +235,7 @@ function spectrumBars(
 			frame: time * 60,
 			fps: 60,
 			numberOfSamples: 4096,
-			optimizeFor: "speed",
+			optimizeFor: 'speed',
 			smoothing: true,
 		}),
 	);
@@ -267,7 +245,7 @@ const silentAudio: MediaUtilsAudioData = {
 	sampleRate: 44100,
 	durationInSeconds: 0,
 	numberOfChannels: 1,
-	resultId: "banger-elements-silence",
+	resultId: 'banger-elements-silence',
 	isRemote: false,
 };
 
@@ -623,20 +601,15 @@ function linearColor(color: string) {
 	const hex = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(color)?.[1];
 	if (hex) {
 		const expanded =
-			hex.length === 3
-				? [...hex].map((character) => character + character).join("")
-				: hex;
-		bytes = [0, 2, 4].map((index) =>
-			parseInt(expanded.slice(index, index + 2), 16),
-		);
+			hex.length === 3 ? [...hex].map((character) => character + character).join('') : hex;
+		bytes = [0, 2, 4].map((index) => parseInt(expanded.slice(index, index + 2), 16));
 	} else {
-		if (!CSS.supports("color", color))
-			throw new Error(`Invalid Flowers color: ${color}`);
+		if (!CSS.supports('color', color)) throw new Error(`Invalid Flowers color: ${color}`);
 		if (!colorParser) {
-			const canvas = document.createElement("canvas");
+			const canvas = document.createElement('canvas');
 			canvas.width = 1;
 			canvas.height = 1;
-			colorParser = canvas.getContext("2d", { willReadFrequently: true })!;
+			colorParser = canvas.getContext('2d', {willReadFrequently: true})!;
 		}
 		colorParser.clearRect(0, 0, 1, 1);
 		colorParser.fillStyle = color;
@@ -654,14 +627,14 @@ function linearColor(color: string) {
 
 type FlowersFrame = Pick<
 	Required<FlowersOptions>,
-	| "strokeColor"
-	| "backgroundColor"
-	| "scale"
-	| "responsive"
-	| "rotationSpeed"
-	| "flowersSpeed"
-	| "volume"
-	| "pattern"
+	| 'strokeColor'
+	| 'backgroundColor'
+	| 'scale'
+	| 'responsive'
+	| 'rotationSpeed'
+	| 'flowersSpeed'
+	| 'volume'
+	| 'pattern'
 > & {
 	readonly width: number;
 	readonly height: number;
@@ -675,24 +648,24 @@ type FlowersState = {
 	readonly buffer: WebGLBuffer;
 	readonly vertexCount: number;
 	readonly uniforms: Record<
-		| "iGlobalTime"
-		| "iLowFreq"
-		| "iMidFreq"
-		| "iHighFreq"
-		| "iAspect"
-		| "iStartColor"
-		| "iEndColor"
-		| "iScale"
-		| "iIntensity"
-		| "iSpeed"
-		| "iFlowersSpeed"
-		| "iVolume"
-		| "iPattern",
+		| 'iGlobalTime'
+		| 'iLowFreq'
+		| 'iMidFreq'
+		| 'iHighFreq'
+		| 'iAspect'
+		| 'iStartColor'
+		| 'iEndColor'
+		| 'iScale'
+		| 'iIntensity'
+		| 'iSpeed'
+		| 'iFlowersSpeed'
+		| 'iVolume'
+		| 'iPattern',
 		WebGLUniformLocation | null
 	>;
 };
 function setupFlowers(canvas: HTMLCanvasElement): FlowersState {
-	const gl = canvas.getContext("webgl2", {
+	const gl = canvas.getContext('webgl2', {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
@@ -700,10 +673,10 @@ function setupFlowers(canvas: HTMLCanvasElement): FlowersState {
 	});
 	if (!gl)
 		throw new Error(
-			"Flowers requires WebGL2. Enable browser graphics acceleration and reload Studio.",
+			'Flowers requires WebGL2. Enable browser graphics acceleration and reload Studio.',
 		);
 	const program = gl.createProgram();
-	if (!program) throw new Error("Flowers could not create a program.");
+	if (!program) throw new Error('Flowers could not create a program.');
 	const shaders: WebGLShader[] = [];
 	let buffer: WebGLBuffer | null = null;
 	try {
@@ -712,30 +685,26 @@ function setupFlowers(canvas: HTMLCanvasElement): FlowersState {
 			[gl.FRAGMENT_SHADER, fragmentShader],
 		] as const) {
 			const shader = gl.createShader(type);
-			if (!shader) throw new Error("Flowers could not create a shader.");
+			if (!shader) throw new Error('Flowers could not create a shader.');
 			shaders.push(shader);
 			gl.shaderSource(shader, source);
 			gl.compileShader(shader);
 			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
-				throw new Error(
-					`Flowers shader compilation failed: ${gl.getShaderInfoLog(shader)}`,
-				);
+				throw new Error(`Flowers shader compilation failed: ${gl.getShaderInfoLog(shader)}`);
 			gl.attachShader(program, shader);
 		}
 		gl.linkProgram(program);
 		if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-			throw new Error(
-				`Flowers shader linking failed: ${gl.getProgramInfoLog(program)}`,
-			);
+			throw new Error(`Flowers shader linking failed: ${gl.getProgramInfoLog(program)}`);
 		gl.useProgram(program);
 		buffer = gl.createBuffer();
-		if (!buffer) throw new Error("Flowers could not create a vertex buffer.");
+		if (!buffer) throw new Error('Flowers could not create a vertex buffer.');
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		const data = geometry();
 		gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
 		for (const [name, size, offset] of [
-			["position", 3, 0],
-			["uv", 2, 12],
+			['position', 3, 0],
+			['uv', 2, 12],
 		] as const) {
 			const attribute = gl.getAttribLocation(program, name);
 			gl.enableVertexAttribArray(attribute);
@@ -747,19 +716,19 @@ function setupFlowers(canvas: HTMLCanvasElement): FlowersState {
 			buffer,
 			vertexCount: data.length / 5,
 			uniforms: {
-				iGlobalTime: gl.getUniformLocation(program, "iGlobalTime"),
-				iLowFreq: gl.getUniformLocation(program, "iLowFreq"),
-				iMidFreq: gl.getUniformLocation(program, "iMidFreq"),
-				iHighFreq: gl.getUniformLocation(program, "iHighFreq"),
-				iAspect: gl.getUniformLocation(program, "iAspect"),
-				iStartColor: gl.getUniformLocation(program, "iStartColor"),
-				iEndColor: gl.getUniformLocation(program, "iEndColor"),
-				iScale: gl.getUniformLocation(program, "iScale"),
-				iIntensity: gl.getUniformLocation(program, "iIntensity"),
-				iSpeed: gl.getUniformLocation(program, "iSpeed"),
-				iFlowersSpeed: gl.getUniformLocation(program, "iFlowersSpeed"),
-				iVolume: gl.getUniformLocation(program, "iVolume"),
-				iPattern: gl.getUniformLocation(program, "iPattern"),
+				iGlobalTime: gl.getUniformLocation(program, 'iGlobalTime'),
+				iLowFreq: gl.getUniformLocation(program, 'iLowFreq'),
+				iMidFreq: gl.getUniformLocation(program, 'iMidFreq'),
+				iHighFreq: gl.getUniformLocation(program, 'iHighFreq'),
+				iAspect: gl.getUniformLocation(program, 'iAspect'),
+				iStartColor: gl.getUniformLocation(program, 'iStartColor'),
+				iEndColor: gl.getUniformLocation(program, 'iEndColor'),
+				iScale: gl.getUniformLocation(program, 'iScale'),
+				iIntensity: gl.getUniformLocation(program, 'iIntensity'),
+				iSpeed: gl.getUniformLocation(program, 'iSpeed'),
+				iFlowersSpeed: gl.getUniformLocation(program, 'iFlowersSpeed'),
+				iVolume: gl.getUniformLocation(program, 'iVolume'),
+				iPattern: gl.getUniformLocation(program, 'iPattern'),
 			},
 		};
 	} catch (error) {
@@ -771,7 +740,7 @@ function setupFlowers(canvas: HTMLCanvasElement): FlowersState {
 	}
 }
 function drawFlowers(state: FlowersState, frame: FlowersFrame) {
-	const { gl, program, uniforms } = state;
+	const {gl, program, uniforms} = state;
 	gl.useProgram(program);
 	gl.viewport(0, 0, frame.width, frame.height);
 	gl.clearColor(0, 0, 0, 1);
@@ -780,13 +749,7 @@ function drawFlowers(state: FlowersState, frame: FlowersFrame) {
 	gl.uniform1f(uniforms.iGlobalTime, frame.time);
 	const gain =
 		10 **
-		(bounded(
-			(frame as FlowersFrame & { inputGainDb?: number }).inputGainDb ?? 0,
-			-30,
-			30,
-			0,
-		) /
-			20);
+		(bounded((frame as FlowersFrame & {inputGainDb?: number}).inputGainDb ?? 0, -30, 30, 0) / 20);
 	gl.uniform1f(uniforms.iLowFreq, (frame.bars[11] ?? 0) * gain);
 	gl.uniform1f(uniforms.iMidFreq, (frame.bars[45] ?? 0) * gain);
 	gl.uniform1f(uniforms.iHighFreq, (frame.bars[85] ?? 0) * gain);
@@ -795,10 +758,7 @@ function drawFlowers(state: FlowersState, frame: FlowersFrame) {
 	gl.uniform1f(uniforms.iScale, bounded(frame.scale, 2, 30, 15));
 	gl.uniform1f(uniforms.iIntensity, bounded(frame.responsive, 0.1, 2.7, 1));
 	gl.uniform1f(uniforms.iSpeed, bounded(frame.rotationSpeed, 0.1, 10, 1));
-	gl.uniform1f(
-		uniforms.iFlowersSpeed,
-		bounded(frame.flowersSpeed, 0.1, 3, 0.2),
-	);
+	gl.uniform1f(uniforms.iFlowersSpeed, bounded(frame.flowersSpeed, 0.1, 3, 0.2));
 	gl.uniform1f(uniforms.iVolume, bounded(frame.volume, 1, 4, 3));
 	gl.uniform1f(uniforms.iPattern, bounded(frame.pattern, 0.1, 2, 2));
 	gl.disable(gl.BLEND);
@@ -808,18 +768,17 @@ function drawFlowers(state: FlowersState, frame: FlowersFrame) {
 	gl.drawArrays(gl.TRIANGLES, 0, state.vertexCount);
 	gl.finish();
 	const error = gl.getError();
-	if (error !== gl.NO_ERROR)
-		throw new Error(`Flowers WebGL draw failed: ${error}`);
+	if (error !== gl.NO_ERROR) throw new Error(`Flowers WebGL draw failed: ${error}`);
 }
 function cleanupFlowers(state: FlowersState) {
-	const { gl, program, buffer } = state;
+	const {gl, program, buffer} = state;
 	gl.deleteBuffer(buffer);
 	gl.deleteProgram(program);
 }
 function FlowersCanvas(frame: FlowersFrame) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const state = useRef<FlowersState | null>(null);
-	const { delayRender, continueRender } = useDelayRender();
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current!;
 		try {
@@ -830,23 +789,22 @@ function FlowersCanvas(frame: FlowersFrame) {
 		const current = state.current;
 		const lost = (event: Event) => {
 			event.preventDefault();
-			cancelRender(new Error("Flowers WebGL context was lost."));
+			cancelRender(new Error('Flowers WebGL context was lost.'));
 		};
-		canvas.addEventListener("webglcontextlost", lost);
+		canvas.addEventListener('webglcontextlost', lost);
 		return () => {
-			canvas.removeEventListener("webglcontextlost", lost);
+			canvas.removeEventListener('webglcontextlost', lost);
 			if (!current) return;
 			cleanupFlowers(current);
 			state.current = null;
 			queueMicrotask(() => {
-				if (!canvas.isConnected)
-					current.gl.getExtension("WEBGL_lose_context")?.loseContext();
+				if (!canvas.isConnected) current.gl.getExtension('WEBGL_lose_context')?.loseContext();
 			});
 		};
 	}, []);
 	useLayoutEffect(() => {
 		if (!state.current) return;
-		const handle = delayRender("Drawing Flowers");
+		const handle = delayRender('Drawing Flowers');
 		try {
 			drawFlowers(state.current, frame);
 		} catch (error) {
@@ -860,38 +818,24 @@ function FlowersCanvas(frame: FlowersFrame) {
 			ref={canvasRef}
 			width={frame.width}
 			height={frame.height}
-			style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+			style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
 		/>
 	);
 }
-const FlowersContent: React.FC<
-	Required<FlowersOptions> & { width: number; height: number }
-> = (props) => {
+const FlowersContent: React.FC<Required<FlowersOptions> & {width: number; height: number}> = (
+	props,
+) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
-	const offsetFrames = Math.round(
-		bounded(props.audioOffsetInSeconds, 0, 86400, 0) * fps,
-	);
+	const {fps} = useVideoConfig();
+	const offsetFrames = Math.round(bounded(props.audioOffsetInSeconds, 0, 86400, 0) * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
 	const time = frame / fps + bounded(props.timeOffsetInSeconds, 0, 86400, 0);
-	const { audioData, dataOffsetInSeconds } = useVisualizerAudio(
-		props.audioSrc,
-		sourceTime,
-		fps,
-	);
-	const bars = spectrumBars(
-		audioData ?? silentAudio,
-		dataOffsetInSeconds,
-		sourceTime,
-	);
+	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
+	const bars = spectrumBars(audioData ?? silentAudio, dataOffsetInSeconds, sourceTime);
 	return (
 		<>
 			{props.playAudio ? (
-				<Audio
-					src={props.audioSrc}
-					trimBefore={offsetFrames}
-					showInTimeline={false}
-				/>
+				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
 			<FlowersCanvas {...props} time={time} bars={bars} />
 		</>
@@ -899,7 +843,7 @@ const FlowersContent: React.FC<
 };
 const FlowersInner = forwardRef<
 	HTMLDivElement,
-	FlowersProps & { readonly controls: SequenceControls | undefined }
+	FlowersProps & {readonly controls: SequenceControls | undefined}
 >(
 	(
 		{
@@ -934,17 +878,17 @@ const FlowersInner = forwardRef<
 				layout="none"
 				{...sequenceProps}
 				controls={controls}
-				name={name ?? "Flowers"}
+				name={name ?? 'Flowers'}
 				outlineRef={outlineRef}
 			>
 				<div
 					ref={outlineRef}
 					style={{
-						position: "relative",
-						boxSizing: "border-box",
+						position: 'relative',
+						boxSizing: 'border-box',
 						width: drawingWidth,
 						height: drawingHeight,
-						overflow: "hidden",
+						overflow: 'hidden',
 						...style,
 					}}
 				>
@@ -973,7 +917,7 @@ const FlowersInner = forwardRef<
 );
 export const Flowers = Interactive.withSchema({
 	Component: FlowersInner,
-	componentName: "<Flowers>",
+	componentName: '<Flowers>',
 	componentIdentity: null,
 	schema: flowersSchema,
 	supportsEffects: false,

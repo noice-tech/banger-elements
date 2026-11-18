@@ -22,7 +22,7 @@ See the [setup and usage guide](apps/site/src/content/docs/getting-started.mdx) 
 
 ## Run locally
 
-Requires Node.js 24.18.1 and Bun 1.3.8.
+Requires Node.js 24.22.3 and Bun 1.3.8.
 
 ```bash
 bun install
