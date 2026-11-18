@@ -1,0 +1,11 @@
+---
+import type {StarlightRouteData} from '@astrojs/starlight/route-data';
+
+const {entry} = (Astro.locals as {starlightRoute: StarlightRouteData}).starlightRoute;
+const {title, description} = entry.data;
+---
+<div class="docs-hero">
+	<nav class="docs-kicker" aria-label="Breadcrumb"><span>Docs</span><span aria-hidden="true">/</span><span aria-current="page">{title}</span></nav>
+	<h1 id="_top">{title}</h1>
+	{description && <p class="docs-lede">{description}</p>}
+</div>

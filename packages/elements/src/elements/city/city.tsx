@@ -1,9 +1,9 @@
-import { Audio } from "@remotion/media";
+import {Audio} from '@remotion/media';
 import {
 	useWindowedAudioData,
 	visualizeAudio,
 	type MediaUtilsAudioData,
-} from "@remotion/media-utils";
+} from '@remotion/media-utils';
 import React, {
 	forwardRef,
 	useId,
@@ -11,7 +11,7 @@ import React, {
 	useLayoutEffect,
 	useMemo,
 	useRef,
-} from "react";
+} from 'react';
 import {
 	cancelRender,
 	Interactive,
@@ -23,7 +23,7 @@ import {
 	type InteractiveTransformProps,
 	type InteractivitySchema,
 	type SequenceControls,
-} from "remotion";
+} from 'remotion';
 
 type CityOptions = {
 	readonly width?: number;
@@ -48,115 +48,113 @@ type CityProps = InteractiveBaseProps & InteractiveTransformProps & CityOptions;
 const citySchema = {
 	...Interactive.baseSchema,
 	audioSrc: {
-		type: "asset",
-		default:
-			"https://remotion.media/elements/remotion-made-this-picture-move.mp3",
-		description: "Audio source",
+		type: 'asset',
+		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
+		description: 'Audio source',
 		keyframable: false,
 	},
 	audioOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description: "Audio source offset in seconds",
+		description: 'Audio source offset in seconds',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	playAudio: {
-		type: "boolean",
+		type: 'boolean',
 		default: true,
-		description: "Play audio (disable when stacking)",
+		description: 'Play audio (disable when stacking)',
 		keyframable: false,
 	},
 	inputGainDb: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: -30,
 		max: 30,
 		step: 1,
-		description: "Visual gain in dB",
+		description: 'Visual gain in dB',
 		hiddenFromList: false,
 	},
-	startColor: { type: "color", default: "#324952", description: "Theme color" },
+	startColor: {type: 'color', default: '#324952', description: 'Theme color'},
 	endColor: {
-		type: "color",
-		default: "#001361",
-		description: "Sky shine color",
+		type: 'color',
+		default: '#001361',
+		description: 'Sky shine color',
 	},
 	lightsColor: {
-		type: "color",
-		default: "#f5fff7",
-		description: "Lights color",
+		type: 'color',
+		default: '#f5fff7',
+		description: 'Lights color',
 	},
-	groundColor: { type: "color", default: "#0cb8cf", description: "Grid color" },
+	groundColor: {type: 'color', default: '#0cb8cf', description: 'Grid color'},
 	shineColor: {
-		type: "color",
-		default: "#949494",
-		description: "Grid shine color",
+		type: 'color',
+		default: '#949494',
+		description: 'Grid shine color',
 	},
 	responsive: {
-		type: "number",
+		type: 'number',
 		default: 1,
 		min: 0.1,
 		max: 10,
 		step: 0.1,
-		description: "Audio reactivity",
+		description: 'Audio reactivity',
 		hiddenFromList: false,
 	},
 	stars: {
-		type: "number",
+		type: 'number',
 		default: 1,
 		min: 0.1,
 		max: 5,
 		step: 0.1,
-		description: "Stars density",
+		description: 'Stars density',
 		hiddenFromList: false,
 	},
 	speed: {
-		type: "number",
+		type: 'number',
 		default: 1,
 		min: 0,
 		max: 20,
 		step: 0.25,
-		description: "Speed",
+		description: 'Speed',
 		hiddenFromList: false,
 	},
 	textureSrc: {
-		type: "asset",
-		default: "",
-		description: "Lights pattern",
+		type: 'asset',
+		default: '',
+		description: 'Lights pattern',
 		keyframable: false,
 	},
 	timeOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description:
-			"Animation phase offset in seconds (independent of audio trim)",
+		description: 'Animation phase offset in seconds (independent of audio trim)',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	width: {
-		type: "number",
+		type: 'number',
 		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Width",
+		description: 'Width',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	height: {
-		type: "number",
+		type: 'number',
 		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Height",
+		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -165,25 +163,15 @@ const citySchema = {
 
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
-	return Number.isFinite(value)
-		? Math.min(max, Math.max(min, value))
-		: fallback;
+	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
-function hasCompleteAudioWindow(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
+function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, time: number) {
 	const chunk = Math.floor(time / decodeWindowSeconds);
 	const start = Math.max(0, (chunk - 1) * decodeWindowSeconds);
-	const end = Math.min(
-		audioData.durationInSeconds,
-		(chunk + 2) * decodeWindowSeconds,
-	);
+	const end = Math.min(audioData.durationInSeconds, (chunk + 2) * decodeWindowSeconds);
 	return (
 		Math.abs(offset - start) < 1 / audioData.sampleRate &&
-		audioData.channelWaveforms[0].length >=
-			Math.round((end - start) * audioData.sampleRate) - 2
+		audioData.channelWaveforms[0].length >= Math.round((end - start) * audioData.sampleRate) - 2
 	);
 }
 function useVisualizerAudio(src: string, time: number, fps: number) {
@@ -206,35 +194,27 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		[result.audioData, instanceId],
 	);
 	const complete =
-		audioData === null ||
-		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
-	const { delayRender, continueRender } = useDelayRender();
+		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (complete) return;
-		const handle = delayRender("Waiting for complete City audio history");
+		const handle = delayRender('Waiting for complete City audio history');
 		return () => continueRender(handle);
 	}, [complete, delayRender, continueRender]);
-	return { ...result, audioData: complete ? audioData : null };
+	return {...result, audioData: complete ? audioData : null};
 }
 function computeBars(values: number[]) {
-	const bars = Array.from({ length: 308 }, () => 0.0025);
+	const bars = Array.from({length: 308}, () => 0.0025);
 	const step = (22000 - 20) / values.length;
 	for (let index = 0; index < values.length; index++) {
 		const frequency = 20 + index * step;
-		const bin = Math.floor(
-			(Math.log10(frequency / 20) / Math.log10(1100)) * 308,
-		);
+		const bin = Math.floor((Math.log10(frequency / 20) / Math.log10(1100)) * 308);
 		if (bin < 308) bars[bin] += bin < 103 ? values[index] * 1.3 : values[index];
 	}
 	return bars.map((value) => (Number.isFinite(value) ? value : 0));
 }
-function spectrumBars(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
-	if (time < 0 || time >= audioData.durationInSeconds)
-		return Array(308).fill(0) as number[];
+function spectrumBars(audioData: MediaUtilsAudioData, offset: number, time: number) {
+	if (time < 0 || time >= audioData.durationInSeconds) return Array(308).fill(0) as number[];
 	return computeBars(
 		visualizeAudio({
 			audioData,
@@ -242,7 +222,7 @@ function spectrumBars(
 			frame: time * 60,
 			fps: 60,
 			numberOfSamples: 4096,
-			optimizeFor: "speed",
+			optimizeFor: 'speed',
 			smoothing: true,
 		}),
 	);
@@ -252,7 +232,7 @@ const silentAudio: MediaUtilsAudioData = {
 	sampleRate: 44100,
 	durationInSeconds: 0,
 	numberOfChannels: 1,
-	resultId: "banger-elements-silence",
+	resultId: 'banger-elements-silence',
 	isRemote: false,
 };
 
@@ -712,20 +692,15 @@ function linearColor(color: string) {
 	const hex = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(color)?.[1];
 	if (hex) {
 		const expanded =
-			hex.length === 3
-				? [...hex].map((character) => character + character).join("")
-				: hex;
-		bytes = [0, 2, 4].map((index) =>
-			parseInt(expanded.slice(index, index + 2), 16),
-		);
+			hex.length === 3 ? [...hex].map((character) => character + character).join('') : hex;
+		bytes = [0, 2, 4].map((index) => parseInt(expanded.slice(index, index + 2), 16));
 	} else {
-		if (!CSS.supports("color", color))
-			throw new Error(`Invalid City color: ${color}`);
+		if (!CSS.supports('color', color)) throw new Error(`Invalid City color: ${color}`);
 		if (!colorParser) {
-			const canvas = document.createElement("canvas");
+			const canvas = document.createElement('canvas');
 			canvas.width = 1;
 			canvas.height = 1;
-			colorParser = canvas.getContext("2d", { willReadFrequently: true })!;
+			colorParser = canvas.getContext('2d', {willReadFrequently: true})!;
 		}
 		colorParser.clearRect(0, 0, 1, 1);
 		colorParser.fillStyle = color;
@@ -743,14 +718,14 @@ function linearColor(color: string) {
 
 type CityFrame = Pick<
 	Required<CityOptions>,
-	| "startColor"
-	| "endColor"
-	| "lightsColor"
-	| "groundColor"
-	| "shineColor"
-	| "responsive"
-	| "stars"
-	| "speed"
+	| 'startColor'
+	| 'endColor'
+	| 'lightsColor'
+	| 'groundColor'
+	| 'shineColor'
+	| 'responsive'
+	| 'stars'
+	| 'speed'
 > & {
 	readonly width: number;
 	readonly height: number;
@@ -765,25 +740,25 @@ type CityState = {
 	readonly vertexCount: number;
 	readonly imageTexture: WebGLTexture;
 	readonly uniforms: Record<
-		| "iGlobalTime"
-		| "iLowFreq"
-		| "iMidFreq"
-		| "iHighFreq"
-		| "iAspect"
-		| "iStartColor"
-		| "iEndColor"
-		| "iLightsColor"
-		| "iGroundColor"
-		| "iShineColor"
-		| "iIntensity"
-		| "iStars"
-		| "iSpeed"
-		| "iTexture",
+		| 'iGlobalTime'
+		| 'iLowFreq'
+		| 'iMidFreq'
+		| 'iHighFreq'
+		| 'iAspect'
+		| 'iStartColor'
+		| 'iEndColor'
+		| 'iLightsColor'
+		| 'iGroundColor'
+		| 'iShineColor'
+		| 'iIntensity'
+		| 'iStars'
+		| 'iSpeed'
+		| 'iTexture',
 		WebGLUniformLocation | null
 	>;
 };
 function setupCity(canvas: HTMLCanvasElement): CityState {
-	const gl = canvas.getContext("webgl2", {
+	const gl = canvas.getContext('webgl2', {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
@@ -791,10 +766,10 @@ function setupCity(canvas: HTMLCanvasElement): CityState {
 	});
 	if (!gl)
 		throw new Error(
-			"City requires WebGL2. Enable browser graphics acceleration and reload Studio.",
+			'City requires WebGL2. Enable browser graphics acceleration and reload Studio.',
 		);
 	const program = gl.createProgram();
-	if (!program) throw new Error("City could not create a program.");
+	if (!program) throw new Error('City could not create a program.');
 	const shaders: WebGLShader[] = [];
 	let buffer: WebGLBuffer | null = null;
 	try {
@@ -803,58 +778,41 @@ function setupCity(canvas: HTMLCanvasElement): CityState {
 			[gl.FRAGMENT_SHADER, fragmentShader],
 		] as const) {
 			const shader = gl.createShader(type);
-			if (!shader) throw new Error("City could not create a shader.");
+			if (!shader) throw new Error('City could not create a shader.');
 			shaders.push(shader);
 			gl.shaderSource(shader, source);
 			gl.compileShader(shader);
 			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
-				throw new Error(
-					`City shader compilation failed: ${gl.getShaderInfoLog(shader)}`,
-				);
+				throw new Error(`City shader compilation failed: ${gl.getShaderInfoLog(shader)}`);
 			gl.attachShader(program, shader);
 		}
 		gl.linkProgram(program);
 		if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-			throw new Error(
-				`City shader linking failed: ${gl.getProgramInfoLog(program)}`,
-			);
+			throw new Error(`City shader linking failed: ${gl.getProgramInfoLog(program)}`);
 		gl.useProgram(program);
 		buffer = gl.createBuffer();
-		if (!buffer) throw new Error("City could not create a vertex buffer.");
+		if (!buffer) throw new Error('City could not create a vertex buffer.');
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		const data = geometry();
 		gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
 		for (const [name, size, offset] of [
-			["position", 3, 0],
-			["uv", 2, 12],
+			['position', 3, 0],
+			['uv', 2, 12],
 		] as const) {
 			const attribute = gl.getAttribLocation(program, name);
 			gl.enableVertexAttribArray(attribute);
 			gl.vertexAttribPointer(attribute, size, gl.FLOAT, false, 20, offset);
 		}
 		const imageTexture = gl.createTexture();
-		if (!imageTexture) throw new Error("City could not create a texture.");
+		if (!imageTexture) throw new Error('City could not create a texture.');
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, imageTexture);
 		const noise = new Uint8Array(64 * 64 * 4);
 		for (let index = 0; index < 64 * 64; index++) {
 			const value = (Math.imul(index + 17, 1103515245) >>> 16) & 255;
-			noise.set(
-				[value, (value * 73) & 255, (value * 151) & 255, 255],
-				index * 4,
-			);
+			noise.set([value, (value * 73) & 255, (value * 151) & 255, 255], index * 4);
 		}
-		gl.texImage2D(
-			gl.TEXTURE_2D,
-			0,
-			gl.RGBA,
-			64,
-			64,
-			0,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE,
-			noise,
-		);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 64, 64, 0, gl.RGBA, gl.UNSIGNED_BYTE, noise);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
@@ -866,20 +824,20 @@ function setupCity(canvas: HTMLCanvasElement): CityState {
 			vertexCount: data.length / 5,
 			imageTexture,
 			uniforms: {
-				iGlobalTime: gl.getUniformLocation(program, "iGlobalTime"),
-				iLowFreq: gl.getUniformLocation(program, "iLowFreq"),
-				iMidFreq: gl.getUniformLocation(program, "iMidFreq"),
-				iHighFreq: gl.getUniformLocation(program, "iHighFreq"),
-				iAspect: gl.getUniformLocation(program, "iAspect"),
-				iStartColor: gl.getUniformLocation(program, "iStartColor"),
-				iEndColor: gl.getUniformLocation(program, "iEndColor"),
-				iLightsColor: gl.getUniformLocation(program, "iLightsColor"),
-				iGroundColor: gl.getUniformLocation(program, "iGroundColor"),
-				iShineColor: gl.getUniformLocation(program, "iShineColor"),
-				iIntensity: gl.getUniformLocation(program, "iIntensity"),
-				iStars: gl.getUniformLocation(program, "iStars"),
-				iSpeed: gl.getUniformLocation(program, "iSpeed"),
-				iTexture: gl.getUniformLocation(program, "iTexture"),
+				iGlobalTime: gl.getUniformLocation(program, 'iGlobalTime'),
+				iLowFreq: gl.getUniformLocation(program, 'iLowFreq'),
+				iMidFreq: gl.getUniformLocation(program, 'iMidFreq'),
+				iHighFreq: gl.getUniformLocation(program, 'iHighFreq'),
+				iAspect: gl.getUniformLocation(program, 'iAspect'),
+				iStartColor: gl.getUniformLocation(program, 'iStartColor'),
+				iEndColor: gl.getUniformLocation(program, 'iEndColor'),
+				iLightsColor: gl.getUniformLocation(program, 'iLightsColor'),
+				iGroundColor: gl.getUniformLocation(program, 'iGroundColor'),
+				iShineColor: gl.getUniformLocation(program, 'iShineColor'),
+				iIntensity: gl.getUniformLocation(program, 'iIntensity'),
+				iStars: gl.getUniformLocation(program, 'iStars'),
+				iSpeed: gl.getUniformLocation(program, 'iSpeed'),
+				iTexture: gl.getUniformLocation(program, 'iTexture'),
 			},
 		};
 	} catch (error) {
@@ -891,7 +849,7 @@ function setupCity(canvas: HTMLCanvasElement): CityState {
 	}
 }
 function drawCity(state: CityState, frame: CityFrame) {
-	const { gl, program, uniforms } = state;
+	const {gl, program, uniforms} = state;
 	gl.useProgram(program);
 	gl.viewport(0, 0, frame.width, frame.height);
 	gl.clearColor(0, 0, 0, 1);
@@ -900,13 +858,7 @@ function drawCity(state: CityState, frame: CityFrame) {
 	gl.uniform1f(uniforms.iGlobalTime, frame.time);
 	const gain =
 		10 **
-		(bounded(
-			(frame as CityFrame & { inputGainDb?: number }).inputGainDb ?? 0,
-			-30,
-			30,
-			0,
-		) /
-			20);
+		(bounded((frame as CityFrame & {inputGainDb?: number}).inputGainDb ?? 0, -30, 30, 0) / 20);
 	gl.uniform1f(uniforms.iLowFreq, (frame.bars[11] ?? 0) * gain);
 	gl.uniform1f(uniforms.iMidFreq, (frame.bars[45] ?? 0) * gain);
 	gl.uniform1f(uniforms.iHighFreq, (frame.bars[85] ?? 0) * gain);
@@ -928,11 +880,10 @@ function drawCity(state: CityState, frame: CityFrame) {
 	gl.drawArrays(gl.TRIANGLES, 0, state.vertexCount);
 	gl.finish();
 	const error = gl.getError();
-	if (error !== gl.NO_ERROR)
-		throw new Error(`City WebGL draw failed: ${error}`);
+	if (error !== gl.NO_ERROR) throw new Error(`City WebGL draw failed: ${error}`);
 }
 function cleanupCity(state: CityState) {
-	const { gl, program, buffer } = state;
+	const {gl, program, buffer} = state;
 	gl.deleteTexture(state.imageTexture);
 	gl.deleteBuffer(buffer);
 	gl.deleteProgram(program);
@@ -942,7 +893,7 @@ function CityCanvas(frame: CityFrame) {
 	const state = useRef<CityState | null>(null);
 	const latestFrame = useRef(frame);
 	latestFrame.current = frame;
-	const { delayRender, continueRender } = useDelayRender();
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current!;
 		try {
@@ -953,40 +904,32 @@ function CityCanvas(frame: CityFrame) {
 		const current = state.current;
 		const lost = (event: Event) => {
 			event.preventDefault();
-			cancelRender(new Error("City WebGL context was lost."));
+			cancelRender(new Error('City WebGL context was lost.'));
 		};
-		canvas.addEventListener("webglcontextlost", lost);
+		canvas.addEventListener('webglcontextlost', lost);
 		return () => {
-			canvas.removeEventListener("webglcontextlost", lost);
+			canvas.removeEventListener('webglcontextlost', lost);
 			if (!current) return;
 			cleanupCity(current);
 			state.current = null;
 			queueMicrotask(() => {
-				if (!canvas.isConnected)
-					current.gl.getExtension("WEBGL_lose_context")?.loseContext();
+				if (!canvas.isConnected) current.gl.getExtension('WEBGL_lose_context')?.loseContext();
 			});
 		};
 	}, []);
 	useLayoutEffect(() => {
 		const current = state.current;
 		if (!current || !frame.textureSrc) return;
-		const handle = delayRender("Loading City texture");
+		const handle = delayRender('Loading City texture');
 		let disposed = false;
 		const image = new Image();
-		image.crossOrigin = "anonymous";
+		image.crossOrigin = 'anonymous';
 		image.onload = () => {
 			if (disposed) return;
 			try {
-				const { gl } = current;
+				const {gl} = current;
 				gl.bindTexture(gl.TEXTURE_2D, current.imageTexture);
-				gl.texImage2D(
-					gl.TEXTURE_2D,
-					0,
-					gl.RGBA,
-					gl.RGBA,
-					gl.UNSIGNED_BYTE,
-					image,
-				);
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 				drawCity(current, latestFrame.current);
 			} catch (error) {
 				cancelRender(error);
@@ -997,9 +940,7 @@ function CityCanvas(frame: CityFrame) {
 		image.onerror = () => {
 			if (!disposed) {
 				continueRender(handle);
-				cancelRender(
-					new Error(`City could not load texture: ${frame.textureSrc}`),
-				);
+				cancelRender(new Error(`City could not load texture: ${frame.textureSrc}`));
 			}
 		};
 		image.src = frame.textureSrc;
@@ -1013,7 +954,7 @@ function CityCanvas(frame: CityFrame) {
 
 	useLayoutEffect(() => {
 		if (!state.current) return;
-		const handle = delayRender("Drawing City");
+		const handle = delayRender('Drawing City');
 		try {
 			drawCity(state.current, frame);
 		} catch (error) {
@@ -1027,38 +968,22 @@ function CityCanvas(frame: CityFrame) {
 			ref={canvasRef}
 			width={frame.width}
 			height={frame.height}
-			style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+			style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
 		/>
 	);
 }
-const CityContent: React.FC<
-	Required<CityOptions> & { width: number; height: number }
-> = (props) => {
+const CityContent: React.FC<Required<CityOptions> & {width: number; height: number}> = (props) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
-	const offsetFrames = Math.round(
-		bounded(props.audioOffsetInSeconds, 0, 86400, 0) * fps,
-	);
+	const {fps} = useVideoConfig();
+	const offsetFrames = Math.round(bounded(props.audioOffsetInSeconds, 0, 86400, 0) * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
 	const time = frame / fps + bounded(props.timeOffsetInSeconds, 0, 86400, 0);
-	const { audioData, dataOffsetInSeconds } = useVisualizerAudio(
-		props.audioSrc,
-		sourceTime,
-		fps,
-	);
-	const bars = spectrumBars(
-		audioData ?? silentAudio,
-		dataOffsetInSeconds,
-		sourceTime,
-	);
+	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
+	const bars = spectrumBars(audioData ?? silentAudio, dataOffsetInSeconds, sourceTime);
 	return (
 		<>
 			{props.playAudio ? (
-				<Audio
-					src={props.audioSrc}
-					trimBefore={offsetFrames}
-					showInTimeline={false}
-				/>
+				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
 			<CityCanvas {...props} time={time} bars={bars} />
 		</>
@@ -1066,7 +991,7 @@ const CityContent: React.FC<
 };
 const CityInner = forwardRef<
 	HTMLDivElement,
-	CityProps & { readonly controls: SequenceControls | undefined }
+	CityProps & {readonly controls: SequenceControls | undefined}
 >(
 	(
 		{
@@ -1102,17 +1027,17 @@ const CityInner = forwardRef<
 				layout="none"
 				{...sequenceProps}
 				controls={controls}
-				name={name ?? "City"}
+				name={name ?? 'City'}
 				outlineRef={outlineRef}
 			>
 				<div
 					ref={outlineRef}
 					style={{
-						position: "relative",
-						boxSizing: "border-box",
+						position: 'relative',
+						boxSizing: 'border-box',
 						width: drawingWidth,
 						height: drawingHeight,
-						overflow: "hidden",
+						overflow: 'hidden',
 						...style,
 					}}
 				>
@@ -1142,7 +1067,7 @@ const CityInner = forwardRef<
 );
 export const City = Interactive.withSchema({
 	Component: CityInner,
-	componentName: "<City>",
+	componentName: '<City>',
 	componentIdentity: null,
 	schema: citySchema,
 	supportsEffects: false,

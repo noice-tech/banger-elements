@@ -57,8 +57,7 @@ const ferrofluidSchema = {
 	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
-		default:
-			'https://raw.githubusercontent.com/remotion-dev/remotion/main/packages/template-music-visualization/public/demo-track.mp3',
+		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
 	},

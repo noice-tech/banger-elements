@@ -1,0 +1,31 @@
+---
+interface Props {
+	slug: string;
+	title: string;
+	tagline: string;
+	description: string;
+	layout?: string;
+	featured?: boolean;
+	hidden?: boolean;
+}
+const {slug, title, tagline, description, layout = '', featured = true, hidden = false} = Astro.props;
+---
+<a
+	class:list={['tile', layout]}
+	href={`/${slug}.html`}
+	data-search={`${title} ${tagline} ${description}`.toLowerCase()}
+	data-featured={featured ? 'true' : 'false'}
+	hidden={hidden}
+>
+	<video muted loop playsinline preload="none" poster={`/posters/${slug}.webp`} aria-hidden="true" data-play-visible>
+		<source src={`/previews/${slug}.webm`} type="video/webm" />
+	</video>
+	<span class="tile-shade" aria-hidden="true"></span>
+	<span class="tile-copy">
+		<span class="tile-title">{title}</span>
+		<span class="tile-tagline">{tagline}</span>
+	</span>
+	<span class="tile-arrow" aria-hidden="true">
+		<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3.5 8.5l5-5M4.5 3.5h4v4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" /></svg>
+	</span>
+</a>

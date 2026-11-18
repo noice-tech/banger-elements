@@ -24,6 +24,7 @@ for (const [slug, name, schema] of [
 		};
 		const gl = new Proxy(canvas.getContext('webgl2')!, {
 			get(target, key) {
+				if (key === 'texElementSubImage2D') return undefined;
 				return key === 'texElementImage2D' ? upload : Reflect.get(target, key);
 			},
 		});
@@ -37,6 +38,52 @@ for (const [slug, name, schema] of [
 		draw({...state, gl}, image, {...props, time: 2}, ...(name === 'Vhs' ? [2, 1] : [1]));
 		assert.equal(uploads.length, 1);
 		assert.deepEqual(uploads[0], [gl.TEXTURE_2D, gl.RGBA8, image]);
+	});
+
+	test(`${name}: copies captures into sized storage on Chromium 158+`, () => {
+		const helpers = loadHelpers(slug, [`create${name}WebGl`, `draw${name}WebGl`, schema]) as Record<
+			string,
+			unknown
+		>;
+		const setup = helpers[`create${name}WebGl`] as (
+			canvas: HTMLCanvasElement,
+		) => Record<string, unknown>;
+		const draw = helpers[`draw${name}WebGl`] as (...args: unknown[]) => void;
+		const {canvas, calls} = mockCanvas();
+		const state = setup(canvas);
+		const gl = canvas.getContext('webgl2')!;
+		const fields = helpers[schema] as Record<string, {default: unknown}>;
+		const props = Object.fromEntries(
+			Object.entries(fields)
+				.filter(([, field]) => field && typeof field === 'object' && 'default' in field)
+				.map(([key, field]) => [key, field.default]),
+		);
+		const image = {};
+		const frame = (width: number, density: number) =>
+			draw(
+				state,
+				image,
+				{...props, width, height: 360, time: 2},
+				...(name === 'Vhs' ? [2, density] : [density]),
+			);
+		frame(640, 2);
+		frame(640, 2);
+		frame(320, 2);
+		const named = (method: string) => calls.filter((call) => call.name === method);
+		// Storage is (re)allocated only when the pixel size changes, at that size.
+		const allocations = named('texImage2D').map((call) => call.args.slice(3, 5));
+		assert.deepEqual(allocations, [
+			[1280, 720],
+			[640, 720],
+		]);
+		const copies = named('texElementSubImage2D');
+		assert.equal(copies.length, 3);
+		// The copy config comes from the element's own realm, so compare its fields.
+		const size = (args: unknown[]) => ({...(args[5] as {width: number; height: number})});
+		assert.deepEqual(copies[0]!.args.slice(0, 5), [gl.TEXTURE_2D, 0, 0, 0, image]);
+		assert.deepEqual(size(copies[0]!.args), {width: 1280, height: 720});
+		assert.deepEqual(size(copies[2]!.args), {width: 640, height: 720});
+		assert.equal(named('texElementImage2D').length, 0);
 	});
 }
 

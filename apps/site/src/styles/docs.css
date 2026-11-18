@@ -1,0 +1,359 @@
+:root {
+	scrollbar-gutter: stable;
+	color-scheme: dark;
+	/* Showcase pages define this in showcase.css, which the docs do not load. */
+	--gutter: clamp(16px, 4vw, 40px);
+	--sl-font: var(--font-sans);
+	--sl-font-mono: var(--font-mono);
+	--sl-color-accent-low: #23123b;
+	--sl-color-accent: #9333ea;
+	--sl-color-accent-high: #d4b0ff;
+	--sl-color-text-accent: var(--accent-hi);
+	--sl-color-white: var(--text);
+	--sl-color-gray-1: #dddce4;
+	--sl-color-gray-2: var(--text-2);
+	--sl-color-gray-3: var(--text-3);
+	--sl-color-gray-4: #33323c;
+	--sl-color-gray-5: #1d1d25;
+	--sl-color-gray-6: #111218;
+	--sl-color-black: var(--bg);
+	--sl-color-bg-nav: rgb(7 8 12 / 0.72);
+	--sl-color-bg-sidebar: var(--bg);
+	--sl-color-hairline: var(--line);
+	--sl-color-hairline-light: var(--line);
+	--sl-color-hairline-shade: var(--line);
+	--sl-content-width: 46rem;
+	--sl-sidebar-width: 15rem;
+	--sl-nav-height: 64px;
+	--sl-nav-pad-x: var(--gutter);
+	--sl-text-h1: clamp(2.6rem, 5.5vw, 4.25rem);
+	--sl-text-h2: 1.75rem;
+	--sl-text-h3: 1.2rem;
+}
+body {
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Header ------------------------------------------------------------------ */
+/* Blur on a pseudo-element: backdrop-filter on .header itself would make it the
+   containing block for the fixed sidebar toggle rendered inside it. */
+.header::before {
+	position: absolute;
+	z-index: -1;
+	inset: 0;
+	backdrop-filter: blur(16px) saturate(150%);
+	-webkit-backdrop-filter: blur(16px) saturate(150%);
+	content: '';
+}
+.docs-header {
+	display: flex;
+	align-items: center;
+	gap: 2rem;
+	height: 100%;
+}
+.docs-header-end {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-left: auto;
+}
+.docs-header site-search button[data-open-modal] {
+	min-width: 0;
+	height: 36px;
+	padding-inline: 0.85rem;
+	border: 1px solid var(--line-strong);
+	border-radius: 999px;
+	background: var(--surface);
+	color: var(--text-3);
+	font-size: 0.82rem;
+}
+.docs-header site-search button[data-open-modal]:hover {
+	border-color: var(--text-3);
+	color: var(--text-2);
+}
+@media (min-width: 50rem) {
+	.docs-header site-search button[data-open-modal] {
+		width: 13rem;
+	}
+}
+@media (max-width: 1100px) {
+	.docs-header .site-nav,
+	.docs-header .header-studio {
+		display: none;
+	}
+}
+@media (max-width: 50rem) {
+	.docs-header .icon-link {
+		display: none;
+	}
+}
+
+/* Title and type ---------------------------------------------------------- */
+.content-panel {
+	border-top: 0;
+}
+.content-panel:first-of-type {
+	padding-top: clamp(2.5rem, 6vw, 4.5rem);
+}
+.docs-hero {
+	padding-bottom: 0.5rem;
+}
+.docs-kicker {
+	display: flex;
+	gap: 0.55rem;
+	color: var(--text-3);
+	font: 0.75rem/1.4 var(--font-mono);
+}
+.docs-kicker [aria-current] {
+	color: var(--text-2);
+}
+.docs-hero h1 {
+	margin-top: 1rem;
+	color: var(--text);
+	font-size: var(--sl-text-h1);
+	font-weight: 600;
+	line-height: 0.98;
+	letter-spacing: -0.052em;
+}
+.docs-lede {
+	max-width: 36rem;
+	margin-top: 1.25rem;
+	color: var(--text-2);
+	font-size: 1.1rem;
+	line-height: 1.6;
+}
+.sl-markdown-content {
+	color: var(--text-2);
+	line-height: 1.75;
+}
+.sl-markdown-content :is(h2, h3) {
+	color: var(--text);
+	font-weight: 600;
+}
+/* Starlight renders headings inline inside a wrapper, so space the wrapper. */
+.sl-markdown-content .sl-heading-wrapper.level-h2 {
+	margin-top: 4rem;
+	padding-top: 3rem;
+	border-top: 1px solid var(--line);
+}
+.sl-markdown-content .sl-heading-wrapper.level-h2:first-child {
+	margin-top: 1.5rem;
+	padding-top: 0;
+	border-top: 0;
+}
+.sl-markdown-content .sl-heading-wrapper.level-h3 {
+	margin-top: 2.5rem;
+}
+.sl-markdown-content h2 {
+	letter-spacing: -0.04em;
+}
+.sl-markdown-content h3 {
+	letter-spacing: -0.025em;
+}
+.sl-markdown-content strong {
+	color: var(--text);
+	font-weight: 600;
+}
+.sl-markdown-content a {
+	color: var(--accent-hi);
+	text-decoration-color: color-mix(in srgb, var(--accent-hi) 40%, transparent);
+	text-underline-offset: 3px;
+}
+.sl-markdown-content a:hover {
+	text-decoration-color: currentColor;
+}
+.sl-markdown-content :not(pre) > code {
+	padding: 0.12em 0.4em;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	background: var(--surface-2);
+	color: var(--text);
+	font-size: 0.85em;
+}
+
+.sl-markdown-content ol {
+	padding-left: 0;
+	list-style: none;
+	counter-reset: step;
+}
+.sl-markdown-content ol > li {
+	position: relative;
+	padding: 0.15rem 0 0.15rem 2.6rem;
+	counter-increment: step;
+}
+.sl-markdown-content ol > li + li {
+	margin-top: 0.6rem;
+}
+.sl-markdown-content ol > li::before {
+	position: absolute;
+	top: 0.3rem;
+	left: 0;
+	display: grid;
+	place-items: center;
+	width: 1.6rem;
+	height: 1.6rem;
+	border: 1px solid var(--line-strong);
+	border-radius: 50%;
+	color: var(--accent-hi);
+	font: 0.68rem var(--font-mono);
+	content: counter(step);
+}
+.sl-markdown-content ul {
+	padding-left: 1.1rem;
+}
+.sl-markdown-content ul > li::marker {
+	color: var(--text-3);
+}
+
+/* Code frames: the frame colors come from expressiveCode in astro.config.mjs. */
+.sl-markdown-content .expressive-code {
+	margin-block: 1.5rem;
+}
+
+/* On this page ------------------------------------------------------------ */
+.right-sidebar {
+	border-inline-start: 0;
+}
+.right-sidebar-panel h2 {
+	color: var(--text-3);
+	font: 0.72rem var(--font-mono);
+}
+.right-sidebar-panel a {
+	color: var(--text-3);
+	font-size: 0.82rem;
+	transition: color 150ms;
+}
+.right-sidebar-panel a:hover {
+	color: var(--text);
+}
+.right-sidebar-panel a[aria-current='true'] {
+	color: var(--text);
+	box-shadow: inset 2px 0 0 var(--accent-hi);
+}
+
+/* Previous and next ------------------------------------------------------- */
+.pagination-links a {
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--surface);
+	box-shadow: none;
+	color: var(--text-2);
+	transition:
+		border-color 150ms,
+		background 150ms;
+}
+.pagination-links a:hover {
+	border-color: var(--line-strong);
+	background: var(--surface-2);
+}
+.pagination-links .link-title {
+	color: var(--text);
+	font-size: 1.1rem;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+}
+
+/* Sidebar ----------------------------------------------------------------- */
+.sidebar-toggle {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	position: fixed;
+	bottom: 1rem;
+	left: 1rem;
+	gap: 0.65rem;
+	width: calc(var(--sl-sidebar-width) - 2rem);
+	height: 38px;
+	padding: 0 0.75rem;
+	border: 1px solid var(--line-strong);
+	border-radius: 999px;
+	color: var(--text-2);
+	background: var(--sl-color-bg-sidebar);
+	cursor: pointer;
+}
+.sidebar-toggle:hover {
+	color: var(--text);
+	background: var(--surface);
+}
+@media (min-width: 50rem) {
+	.sidebar-toggle {
+		display: flex;
+	}
+	.sidebar-toggle span {
+		font-size: 0.75rem;
+	}
+	.sidebar-content {
+		padding-bottom: 5rem;
+	}
+	/* Starlight 0.43 reserves a scrollbar gutter; the short nav never scrolls. */
+	.sidebar-pane {
+		scrollbar-gutter: auto;
+	}
+	[data-sidebar-collapsed] .sidebar-toggle {
+		width: 38px;
+		padding: 0;
+	}
+	[data-sidebar-collapsed] .sidebar-toggle span {
+		display: none;
+	}
+	:root[data-sidebar-collapsed] {
+		--sl-content-inline-start: 0rem;
+	}
+	[data-sidebar-collapsed] .sidebar-pane {
+		display: none;
+	}
+}
+.docs-nav {
+	display: grid;
+	gap: 2px;
+	padding: 0.5rem 0;
+	font-size: 0.875rem;
+}
+.docs-nav-label {
+	margin: 1.6rem 0.75rem 0.5rem;
+	color: var(--text-3);
+	font: 0.72rem var(--font-mono);
+}
+.docs-nav-label:first-child {
+	margin-top: 0.5rem;
+}
+.docs-nav a {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 38px;
+	padding: 0 0.75rem;
+	border-radius: 999px;
+	color: var(--text-2);
+	text-decoration: none;
+	transition:
+		color 150ms,
+		background 150ms;
+}
+.docs-nav a:hover {
+	color: var(--text);
+	background: rgb(255 255 255 / 0.05);
+}
+.docs-nav a[aria-current='page'] {
+	color: var(--text);
+	background: rgb(255 255 255 / 0.08);
+}
+.docs-nav a span {
+	color: var(--text-3);
+	font: 0.7rem var(--font-mono);
+}
+
+/* Footer ------------------------------------------------------------------ */
+.site-footer {
+	margin-top: 3rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid var(--line);
+	color: var(--text-3);
+	font-size: 0.78rem;
+}
+.site-footer p {
+	margin: 0.75rem 0 0;
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+}

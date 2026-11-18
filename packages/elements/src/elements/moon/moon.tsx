@@ -1,9 +1,9 @@
-import { Audio } from "@remotion/media";
+import {Audio} from '@remotion/media';
 import {
 	useWindowedAudioData,
 	visualizeAudio,
 	type MediaUtilsAudioData,
-} from "@remotion/media-utils";
+} from '@remotion/media-utils';
 import React, {
 	forwardRef,
 	useId,
@@ -11,7 +11,7 @@ import React, {
 	useLayoutEffect,
 	useMemo,
 	useRef,
-} from "react";
+} from 'react';
 import {
 	cancelRender,
 	Interactive,
@@ -23,7 +23,7 @@ import {
 	type InteractiveTransformProps,
 	type InteractivitySchema,
 	type SequenceControls,
-} from "remotion";
+} from 'remotion';
 
 type MoonOptions = {
 	readonly width?: number;
@@ -48,118 +48,116 @@ type MoonProps = InteractiveBaseProps & InteractiveTransformProps & MoonOptions;
 const moonSchema = {
 	...Interactive.baseSchema,
 	audioSrc: {
-		type: "asset",
-		default:
-			"https://remotion.media/elements/remotion-made-this-picture-move.mp3",
-		description: "Audio source",
+		type: 'asset',
+		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
+		description: 'Audio source',
 		keyframable: false,
 	},
 	audioOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description: "Audio source offset in seconds",
+		description: 'Audio source offset in seconds',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	playAudio: {
-		type: "boolean",
+		type: 'boolean',
 		default: true,
-		description: "Play audio (disable when stacking)",
+		description: 'Play audio (disable when stacking)',
 		keyframable: false,
 	},
 	inputGainDb: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: -30,
 		max: 30,
 		step: 1,
-		description: "Visual gain in dB",
+		description: 'Visual gain in dB',
 		hiddenFromList: false,
 	},
-	startColor: { type: "color", default: "#c21aff", description: "Theme color" },
-	moonColor: { type: "color", default: "#000000", description: "Moon color" },
+	startColor: {type: 'color', default: '#c21aff', description: 'Theme color'},
+	moonColor: {type: 'color', default: '#000000', description: 'Moon color'},
 	responsive: {
-		type: "number",
+		type: 'number',
 		default: 1.3,
 		min: 0,
 		max: 4,
 		step: 0.1,
-		description: "Audio reactivity",
+		description: 'Audio reactivity',
 		hiddenFromList: false,
 	},
-	hideMoon: { type: "boolean", default: false, description: "Hide moon" },
+	hideMoon: {type: 'boolean', default: false, description: 'Hide moon'},
 	hideAudio: {
-		type: "boolean",
+		type: 'boolean',
 		default: false,
-		description: "Hide sound texture",
+		description: 'Hide sound texture',
 	},
 	stars: {
-		type: "number",
+		type: 'number',
 		default: 6,
 		min: 1,
 		max: 60,
 		step: 1,
-		description: "Stars density",
+		description: 'Stars density',
 		hiddenFromList: false,
 	},
 	pattern: {
-		type: "number",
+		type: 'number',
 		default: 0.25,
 		min: 0.1,
 		max: 5,
 		step: 0.05,
-		description: "Flickering",
+		description: 'Flickering',
 		hiddenFromList: false,
 	},
 	speed: {
-		type: "number",
+		type: 'number',
 		default: 0.25,
 		min: 0.1,
 		max: 2,
 		step: 0.1,
-		description: "Movement speed",
+		description: 'Movement speed',
 		hiddenFromList: false,
 	},
 	volume: {
-		type: "number",
+		type: 'number',
 		default: 0.5,
 		min: 0.1,
 		max: 2,
 		step: 0.1,
-		description: "Volume",
+		description: 'Volume',
 		hiddenFromList: false,
 	},
 	timeOffsetInSeconds: {
-		type: "number",
+		type: 'number',
 		default: 0,
 		min: 0,
 		max: 86400,
 		step: 0.01,
-		description:
-			"Animation phase offset in seconds (independent of audio trim)",
+		description: 'Animation phase offset in seconds (independent of audio trim)',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	width: {
-		type: "number",
+		type: 'number',
 		default: 1280,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Width",
+		description: 'Width',
 		hiddenFromList: false,
 		keyframable: false,
 	},
 	height: {
-		type: "number",
+		type: 'number',
 		default: 720,
 		min: 16,
 		max: 3840,
 		step: 1,
-		description: "Height",
+		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -168,25 +166,15 @@ const moonSchema = {
 
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
-	return Number.isFinite(value)
-		? Math.min(max, Math.max(min, value))
-		: fallback;
+	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
-function hasCompleteAudioWindow(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
+function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, time: number) {
 	const chunk = Math.floor(time / decodeWindowSeconds);
 	const start = Math.max(0, (chunk - 1) * decodeWindowSeconds);
-	const end = Math.min(
-		audioData.durationInSeconds,
-		(chunk + 2) * decodeWindowSeconds,
-	);
+	const end = Math.min(audioData.durationInSeconds, (chunk + 2) * decodeWindowSeconds);
 	return (
 		Math.abs(offset - start) < 1 / audioData.sampleRate &&
-		audioData.channelWaveforms[0].length >=
-			Math.round((end - start) * audioData.sampleRate) - 2
+		audioData.channelWaveforms[0].length >= Math.round((end - start) * audioData.sampleRate) - 2
 	);
 }
 function useVisualizerAudio(src: string, time: number, fps: number) {
@@ -209,35 +197,27 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		[result.audioData, instanceId],
 	);
 	const complete =
-		audioData === null ||
-		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
-	const { delayRender, continueRender } = useDelayRender();
+		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		if (complete) return;
-		const handle = delayRender("Waiting for complete Moon audio history");
+		const handle = delayRender('Waiting for complete Moon audio history');
 		return () => continueRender(handle);
 	}, [complete, delayRender, continueRender]);
-	return { ...result, audioData: complete ? audioData : null };
+	return {...result, audioData: complete ? audioData : null};
 }
 function computeBars(values: number[]) {
-	const bars = Array.from({ length: 308 }, () => 0.0025);
+	const bars = Array.from({length: 308}, () => 0.0025);
 	const step = (22000 - 20) / values.length;
 	for (let index = 0; index < values.length; index++) {
 		const frequency = 20 + index * step;
-		const bin = Math.floor(
-			(Math.log10(frequency / 20) / Math.log10(1100)) * 308,
-		);
+		const bin = Math.floor((Math.log10(frequency / 20) / Math.log10(1100)) * 308);
 		if (bin < 308) bars[bin] += bin < 103 ? values[index] * 1.3 : values[index];
 	}
 	return bars.map((value) => (Number.isFinite(value) ? value : 0));
 }
-function spectrumBars(
-	audioData: MediaUtilsAudioData,
-	offset: number,
-	time: number,
-) {
-	if (time < 0 || time >= audioData.durationInSeconds)
-		return Array(308).fill(0) as number[];
+function spectrumBars(audioData: MediaUtilsAudioData, offset: number, time: number) {
+	if (time < 0 || time >= audioData.durationInSeconds) return Array(308).fill(0) as number[];
 	return computeBars(
 		visualizeAudio({
 			audioData,
@@ -245,7 +225,7 @@ function spectrumBars(
 			frame: time * 60,
 			fps: 60,
 			numberOfSamples: 4096,
-			optimizeFor: "speed",
+			optimizeFor: 'speed',
 			smoothing: true,
 		}),
 	);
@@ -255,7 +235,7 @@ const silentAudio: MediaUtilsAudioData = {
 	sampleRate: 44100,
 	durationInSeconds: 0,
 	numberOfChannels: 1,
-	resultId: "banger-elements-silence",
+	resultId: 'banger-elements-silence',
 	isRemote: false,
 };
 
@@ -756,20 +736,15 @@ function linearColor(color: string) {
 	const hex = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(color)?.[1];
 	if (hex) {
 		const expanded =
-			hex.length === 3
-				? [...hex].map((character) => character + character).join("")
-				: hex;
-		bytes = [0, 2, 4].map((index) =>
-			parseInt(expanded.slice(index, index + 2), 16),
-		);
+			hex.length === 3 ? [...hex].map((character) => character + character).join('') : hex;
+		bytes = [0, 2, 4].map((index) => parseInt(expanded.slice(index, index + 2), 16));
 	} else {
-		if (!CSS.supports("color", color))
-			throw new Error(`Invalid Moon color: ${color}`);
+		if (!CSS.supports('color', color)) throw new Error(`Invalid Moon color: ${color}`);
 		if (!colorParser) {
-			const canvas = document.createElement("canvas");
+			const canvas = document.createElement('canvas');
 			canvas.width = 1;
 			canvas.height = 1;
-			colorParser = canvas.getContext("2d", { willReadFrequently: true })!;
+			colorParser = canvas.getContext('2d', {willReadFrequently: true})!;
 		}
 		colorParser.clearRect(0, 0, 1, 1);
 		colorParser.fillStyle = color;
@@ -787,15 +762,15 @@ function linearColor(color: string) {
 
 type MoonFrame = Pick<
 	Required<MoonOptions>,
-	| "startColor"
-	| "moonColor"
-	| "responsive"
-	| "hideMoon"
-	| "hideAudio"
-	| "stars"
-	| "pattern"
-	| "speed"
-	| "volume"
+	| 'startColor'
+	| 'moonColor'
+	| 'responsive'
+	| 'hideMoon'
+	| 'hideAudio'
+	| 'stars'
+	| 'pattern'
+	| 'speed'
+	| 'volume'
 > & {
 	readonly width: number;
 	readonly height: number;
@@ -810,26 +785,26 @@ type MoonState = {
 	readonly vertexCount: number;
 	readonly soundTexture: WebGLTexture;
 	readonly uniforms: Record<
-		| "iGlobalTime"
-		| "iLowFreq"
-		| "iMidFreq"
-		| "iHighFreq"
-		| "iAspect"
-		| "iStartColor"
-		| "iMoonColor"
-		| "iIntensity"
-		| "iHideMoon"
-		| "iHideAudio"
-		| "iStars"
-		| "iPattern"
-		| "iSpeed"
-		| "iVolume"
-		| "iSoundTexture",
+		| 'iGlobalTime'
+		| 'iLowFreq'
+		| 'iMidFreq'
+		| 'iHighFreq'
+		| 'iAspect'
+		| 'iStartColor'
+		| 'iMoonColor'
+		| 'iIntensity'
+		| 'iHideMoon'
+		| 'iHideAudio'
+		| 'iStars'
+		| 'iPattern'
+		| 'iSpeed'
+		| 'iVolume'
+		| 'iSoundTexture',
 		WebGLUniformLocation | null
 	>;
 };
 function setupMoon(canvas: HTMLCanvasElement): MoonState {
-	const gl = canvas.getContext("webgl2", {
+	const gl = canvas.getContext('webgl2', {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
@@ -837,10 +812,10 @@ function setupMoon(canvas: HTMLCanvasElement): MoonState {
 	});
 	if (!gl)
 		throw new Error(
-			"Moon requires WebGL2. Enable browser graphics acceleration and reload Studio.",
+			'Moon requires WebGL2. Enable browser graphics acceleration and reload Studio.',
 		);
 	const program = gl.createProgram();
-	if (!program) throw new Error("Moon could not create a program.");
+	if (!program) throw new Error('Moon could not create a program.');
 	const shaders: WebGLShader[] = [];
 	let buffer: WebGLBuffer | null = null;
 	try {
@@ -849,38 +824,33 @@ function setupMoon(canvas: HTMLCanvasElement): MoonState {
 			[gl.FRAGMENT_SHADER, fragmentShader],
 		] as const) {
 			const shader = gl.createShader(type);
-			if (!shader) throw new Error("Moon could not create a shader.");
+			if (!shader) throw new Error('Moon could not create a shader.');
 			shaders.push(shader);
 			gl.shaderSource(shader, source);
 			gl.compileShader(shader);
 			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
-				throw new Error(
-					`Moon shader compilation failed: ${gl.getShaderInfoLog(shader)}`,
-				);
+				throw new Error(`Moon shader compilation failed: ${gl.getShaderInfoLog(shader)}`);
 			gl.attachShader(program, shader);
 		}
 		gl.linkProgram(program);
 		if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-			throw new Error(
-				`Moon shader linking failed: ${gl.getProgramInfoLog(program)}`,
-			);
+			throw new Error(`Moon shader linking failed: ${gl.getProgramInfoLog(program)}`);
 		gl.useProgram(program);
 		buffer = gl.createBuffer();
-		if (!buffer) throw new Error("Moon could not create a vertex buffer.");
+		if (!buffer) throw new Error('Moon could not create a vertex buffer.');
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 		const data = geometry();
 		gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
 		for (const [name, size, offset] of [
-			["position", 3, 0],
-			["uv", 2, 12],
+			['position', 3, 0],
+			['uv', 2, 12],
 		] as const) {
 			const attribute = gl.getAttribLocation(program, name);
 			gl.enableVertexAttribArray(attribute);
 			gl.vertexAttribPointer(attribute, size, gl.FLOAT, false, 20, offset);
 		}
 		const soundTexture = gl.createTexture();
-		if (!soundTexture)
-			throw new Error("Moon could not create an audio texture.");
+		if (!soundTexture) throw new Error('Moon could not create an audio texture.');
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, soundTexture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -894,21 +864,21 @@ function setupMoon(canvas: HTMLCanvasElement): MoonState {
 			vertexCount: data.length / 5,
 			soundTexture,
 			uniforms: {
-				iGlobalTime: gl.getUniformLocation(program, "iGlobalTime"),
-				iLowFreq: gl.getUniformLocation(program, "iLowFreq"),
-				iMidFreq: gl.getUniformLocation(program, "iMidFreq"),
-				iHighFreq: gl.getUniformLocation(program, "iHighFreq"),
-				iAspect: gl.getUniformLocation(program, "iAspect"),
-				iStartColor: gl.getUniformLocation(program, "iStartColor"),
-				iMoonColor: gl.getUniformLocation(program, "iMoonColor"),
-				iIntensity: gl.getUniformLocation(program, "iIntensity"),
-				iHideMoon: gl.getUniformLocation(program, "iHideMoon"),
-				iHideAudio: gl.getUniformLocation(program, "iHideAudio"),
-				iStars: gl.getUniformLocation(program, "iStars"),
-				iPattern: gl.getUniformLocation(program, "iPattern"),
-				iSpeed: gl.getUniformLocation(program, "iSpeed"),
-				iVolume: gl.getUniformLocation(program, "iVolume"),
-				iSoundTexture: gl.getUniformLocation(program, "iSoundTexture"),
+				iGlobalTime: gl.getUniformLocation(program, 'iGlobalTime'),
+				iLowFreq: gl.getUniformLocation(program, 'iLowFreq'),
+				iMidFreq: gl.getUniformLocation(program, 'iMidFreq'),
+				iHighFreq: gl.getUniformLocation(program, 'iHighFreq'),
+				iAspect: gl.getUniformLocation(program, 'iAspect'),
+				iStartColor: gl.getUniformLocation(program, 'iStartColor'),
+				iMoonColor: gl.getUniformLocation(program, 'iMoonColor'),
+				iIntensity: gl.getUniformLocation(program, 'iIntensity'),
+				iHideMoon: gl.getUniformLocation(program, 'iHideMoon'),
+				iHideAudio: gl.getUniformLocation(program, 'iHideAudio'),
+				iStars: gl.getUniformLocation(program, 'iStars'),
+				iPattern: gl.getUniformLocation(program, 'iPattern'),
+				iSpeed: gl.getUniformLocation(program, 'iSpeed'),
+				iVolume: gl.getUniformLocation(program, 'iVolume'),
+				iSoundTexture: gl.getUniformLocation(program, 'iSoundTexture'),
 			},
 		};
 	} catch (error) {
@@ -920,7 +890,7 @@ function setupMoon(canvas: HTMLCanvasElement): MoonState {
 	}
 }
 function drawMoon(state: MoonState, frame: MoonFrame) {
-	const { gl, program, uniforms } = state;
+	const {gl, program, uniforms} = state;
 	gl.useProgram(program);
 	gl.viewport(0, 0, frame.width, frame.height);
 	gl.clearColor(0, 0, 0, 1);
@@ -929,13 +899,7 @@ function drawMoon(state: MoonState, frame: MoonFrame) {
 	gl.uniform1f(uniforms.iGlobalTime, frame.time);
 	const gain =
 		10 **
-		(bounded(
-			(frame as MoonFrame & { inputGainDb?: number }).inputGainDb ?? 0,
-			-30,
-			30,
-			0,
-		) /
-			20);
+		(bounded((frame as MoonFrame & {inputGainDb?: number}).inputGainDb ?? 0, -30, 30, 0) / 20);
 	gl.uniform1f(uniforms.iLowFreq, (frame.bars[11] ?? 0) * gain);
 	gl.uniform1f(uniforms.iMidFreq, (frame.bars[45] ?? 0) * gain);
 	gl.uniform1f(uniforms.iHighFreq, (frame.bars[85] ?? 0) * gain);
@@ -957,17 +921,7 @@ function drawMoon(state: MoonState, frame: MoonFrame) {
 		);
 		audioBytes[index * 4 + 3] = 255;
 	}
-	gl.texImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RGBA,
-		308,
-		1,
-		0,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
-		audioBytes,
-	);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 308, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, audioBytes);
 	gl.uniform1i(uniforms.iSoundTexture, 0);
 	gl.disable(gl.BLEND);
 	gl.disable(gl.DEPTH_TEST);
@@ -976,11 +930,10 @@ function drawMoon(state: MoonState, frame: MoonFrame) {
 	gl.drawArrays(gl.TRIANGLES, 0, state.vertexCount);
 	gl.finish();
 	const error = gl.getError();
-	if (error !== gl.NO_ERROR)
-		throw new Error(`Moon WebGL draw failed: ${error}`);
+	if (error !== gl.NO_ERROR) throw new Error(`Moon WebGL draw failed: ${error}`);
 }
 function cleanupMoon(state: MoonState) {
-	const { gl, program, buffer } = state;
+	const {gl, program, buffer} = state;
 	gl.deleteTexture(state.soundTexture);
 	gl.deleteBuffer(buffer);
 	gl.deleteProgram(program);
@@ -988,7 +941,7 @@ function cleanupMoon(state: MoonState) {
 function MoonCanvas(frame: MoonFrame) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const state = useRef<MoonState | null>(null);
-	const { delayRender, continueRender } = useDelayRender();
+	const {delayRender, continueRender} = useDelayRender();
 	useLayoutEffect(() => {
 		const canvas = canvasRef.current!;
 		try {
@@ -999,23 +952,22 @@ function MoonCanvas(frame: MoonFrame) {
 		const current = state.current;
 		const lost = (event: Event) => {
 			event.preventDefault();
-			cancelRender(new Error("Moon WebGL context was lost."));
+			cancelRender(new Error('Moon WebGL context was lost.'));
 		};
-		canvas.addEventListener("webglcontextlost", lost);
+		canvas.addEventListener('webglcontextlost', lost);
 		return () => {
-			canvas.removeEventListener("webglcontextlost", lost);
+			canvas.removeEventListener('webglcontextlost', lost);
 			if (!current) return;
 			cleanupMoon(current);
 			state.current = null;
 			queueMicrotask(() => {
-				if (!canvas.isConnected)
-					current.gl.getExtension("WEBGL_lose_context")?.loseContext();
+				if (!canvas.isConnected) current.gl.getExtension('WEBGL_lose_context')?.loseContext();
 			});
 		};
 	}, []);
 	useLayoutEffect(() => {
 		if (!state.current) return;
-		const handle = delayRender("Drawing Moon");
+		const handle = delayRender('Drawing Moon');
 		try {
 			drawMoon(state.current, frame);
 		} catch (error) {
@@ -1029,38 +981,22 @@ function MoonCanvas(frame: MoonFrame) {
 			ref={canvasRef}
 			width={frame.width}
 			height={frame.height}
-			style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+			style={{position: 'absolute', inset: 0, width: '100%', height: '100%'}}
 		/>
 	);
 }
-const MoonContent: React.FC<
-	Required<MoonOptions> & { width: number; height: number }
-> = (props) => {
+const MoonContent: React.FC<Required<MoonOptions> & {width: number; height: number}> = (props) => {
 	const frame = useCurrentFrame();
-	const { fps } = useVideoConfig();
-	const offsetFrames = Math.round(
-		bounded(props.audioOffsetInSeconds, 0, 86400, 0) * fps,
-	);
+	const {fps} = useVideoConfig();
+	const offsetFrames = Math.round(bounded(props.audioOffsetInSeconds, 0, 86400, 0) * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
 	const time = frame / fps + bounded(props.timeOffsetInSeconds, 0, 86400, 0);
-	const { audioData, dataOffsetInSeconds } = useVisualizerAudio(
-		props.audioSrc,
-		sourceTime,
-		fps,
-	);
-	const bars = spectrumBars(
-		audioData ?? silentAudio,
-		dataOffsetInSeconds,
-		sourceTime,
-	);
+	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
+	const bars = spectrumBars(audioData ?? silentAudio, dataOffsetInSeconds, sourceTime);
 	return (
 		<>
 			{props.playAudio ? (
-				<Audio
-					src={props.audioSrc}
-					trimBefore={offsetFrames}
-					showInTimeline={false}
-				/>
+				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
 			<MoonCanvas {...props} time={time} bars={bars} />
 		</>
@@ -1068,7 +1004,7 @@ const MoonContent: React.FC<
 };
 const MoonInner = forwardRef<
 	HTMLDivElement,
-	MoonProps & { readonly controls: SequenceControls | undefined }
+	MoonProps & {readonly controls: SequenceControls | undefined}
 >(
 	(
 		{
@@ -1104,17 +1040,17 @@ const MoonInner = forwardRef<
 				layout="none"
 				{...sequenceProps}
 				controls={controls}
-				name={name ?? "Moon"}
+				name={name ?? 'Moon'}
 				outlineRef={outlineRef}
 			>
 				<div
 					ref={outlineRef}
 					style={{
-						position: "relative",
-						boxSizing: "border-box",
+						position: 'relative',
+						boxSizing: 'border-box',
 						width: drawingWidth,
 						height: drawingHeight,
-						overflow: "hidden",
+						overflow: 'hidden',
 						...style,
 					}}
 				>
@@ -1144,7 +1080,7 @@ const MoonInner = forwardRef<
 );
 export const Moon = Interactive.withSchema({
 	Component: MoonInner,
-	componentName: "<Moon>",
+	componentName: '<Moon>',
 	componentIdentity: null,
 	schema: moonSchema,
 	supportsEffects: false,

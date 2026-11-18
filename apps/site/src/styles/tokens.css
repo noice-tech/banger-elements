@@ -1,0 +1,59 @@
+@font-face {
+	font-family: Geist;
+	src: url('/fonts/Geist.woff2') format('woff2');
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Geist Mono';
+	src: url('/fonts/GeistMono.woff2') format('woff2');
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+}
+
+/* Shared by the showcase and docs. Reserve purple for focus, live states and prose links. */
+:root {
+	color-scheme: dark;
+	--bg: #07080c;
+	--bg-raised: #0b0c11;
+	--surface: #101117;
+	--surface-2: #16171f;
+	--surface-3: #1e1f28;
+	--line: rgb(255 255 255 / 0.075);
+	--line-strong: rgb(255 255 255 / 0.13);
+	--text: #f3f2f7;
+	--text-2: #a6a4b2;
+	--text-3: #6d6b79;
+	--accent: #9333ea;
+	--accent-hi: #c38bff;
+	--accent-wash: rgb(147 51 234 / 0.14);
+	--on-light: #07080c;
+	--stage: #080a10;
+	--font-sans: Geist, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+	--font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+	--radius-sm: 8px;
+	--radius: 14px;
+	--radius-lg: 22px;
+	--ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+	--shadow-raised: 0 40px 80px -24px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
+	--bg: #fbfbfc;
+	--bg-raised: #ffffff;
+	--surface: #f4f4f7;
+	--surface-2: #ececf1;
+	--surface-3: #e2e2e9;
+	--line: rgb(12 12 24 / 0.08);
+	--line-strong: rgb(12 12 24 / 0.15);
+	--text: #0c0d12;
+	--text-2: #4f4e5c;
+	--text-3: #85848f;
+	--accent: #7e22ce;
+	--accent-hi: #7e22ce;
+	--accent-wash: rgb(126 34 206 / 0.08);
+	--shadow-raised: 0 30px 60px -28px rgb(12 12 24 / 0.35), 0 0 0 1px rgb(12 12 24 / 0.08);
+}

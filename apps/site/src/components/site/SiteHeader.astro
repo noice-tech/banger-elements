@@ -1,0 +1,28 @@
+---
+import Brand from '../Brand.astro';
+import GitHubIcon from '../GitHubIcon.astro';
+import StudioActions from '../StudioActions';
+import SiteNav from './SiteNav.astro';
+---
+<header class="site-header">
+	<div class="site-header-inner">
+		<Brand />
+		<SiteNav class="site-nav" label="Main" />
+		<div class="site-header-end">
+			<a class="icon-link" href="https://github.com/noice-tech/banger-elements" aria-label="Banger Elements on GitHub">
+				<GitHubIcon />
+			</a>
+			<div class="header-studio">
+				<StudioActions client:only="react" />
+			</div>
+			<details class="mobile-menu">
+				<summary aria-label="Menu">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 8h16M4 16h16" /></svg>
+				</summary>
+				<SiteNav class="mobile-menu-panel" label="Mobile">
+					<a href="https://github.com/noice-tech/banger-elements">GitHub</a>
+				</SiteNav>
+			</details>
+		</div>
+	</div>
+</header>

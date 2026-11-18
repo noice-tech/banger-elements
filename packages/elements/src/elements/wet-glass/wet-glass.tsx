@@ -309,6 +309,7 @@ type WetGlassWebGlState = {
 	readonly vao: WebGLVertexArrayObject;
 	readonly buffer: WebGLBuffer;
 	readonly texture: WebGLTexture;
+	readonly textureSize: {width: number; height: number};
 	readonly uniforms: Record<string, WebGLUniformLocation | null>;
 };
 
@@ -376,6 +377,7 @@ function createWetGlassWebGl(canvas: OffscreenCanvas): WetGlassWebGlState {
 			vao,
 			buffer,
 			texture,
+			textureSize: {width: 0, height: 0},
 			uniforms: Object.fromEntries(
 				names.map((name) => [name, gl.getUniformLocation(program, name)]),
 			),
@@ -398,21 +400,28 @@ function cleanupWetGlassWebGl({gl, program, vao, buffer, texture}: WetGlassWebGl
 	gl.deleteProgram(program);
 }
 
-function drawWetGlassWebGl(
-	state: WetGlassWebGlState,
+/**
+ * Upload the captured children into the bound texture at `width` x `height`
+ * pixels. The HTML-in-canvas API is experimental and its WebGL entry point has
+ * changed between Chrome releases: 158+ copies into storage you allocate (and
+ * its ElementImage no longer reports a size), 156-157 take (target, format,
+ * image), and 149 takes the full texImage2D-style overload.
+ */
+function uploadElementImage(
+	gl: WebGL2RenderingContext,
+	size: {width: number; height: number},
 	elementImage: ElementImage,
-	props: Omit<ResolvedWetGlassProps, 'children'> & {time: number},
-	pixelDensity: number,
+	width: number,
+	height: number,
 ) {
-	const {gl, uniforms} = state;
-	gl.viewport(0, 0, Math.ceil(props.width * pixelDensity), Math.ceil(props.height * pixelDensity));
-	gl.useProgram(state.program);
-	gl.bindVertexArray(state.vao);
-	gl.activeTexture(gl.TEXTURE0);
-	gl.bindTexture(gl.TEXTURE_2D, state.texture);
-	gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-	// Chromium 156 simplified this experimental API; retain the Chrome 149 overload too.
-	if (gl.texElementImage2D.length === 3) {
+	if (typeof gl.texElementSubImage2D === 'function') {
+		if (size.width !== width || size.height !== height) {
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+			size.width = width;
+			size.height = height;
+		}
+		gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, elementImage, {width, height});
+	} else if (gl.texElementImage2D.length === 3) {
 		(
 			gl.texElementImage2D as unknown as (
 				target: GLenum,
@@ -423,6 +432,24 @@ function drawWetGlassWebGl(
 	} else {
 		gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, elementImage);
 	}
+}
+
+function drawWetGlassWebGl(
+	state: WetGlassWebGlState,
+	elementImage: ElementImage,
+	props: Omit<ResolvedWetGlassProps, 'children'> & {time: number},
+	pixelDensity: number,
+) {
+	const {gl, uniforms} = state;
+	const width = Math.ceil(props.width * pixelDensity);
+	const height = Math.ceil(props.height * pixelDensity);
+	gl.viewport(0, 0, width, height);
+	gl.useProgram(state.program);
+	gl.bindVertexArray(state.vao);
+	gl.activeTexture(gl.TEXTURE0);
+	gl.bindTexture(gl.TEXTURE_2D, state.texture);
+	gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+	uploadElementImage(gl, state.textureSize, elementImage, width, height);
 	gl.uniform1i(uniforms.inputTexture, 0);
 	gl.uniform1f(uniforms.amount, bounded(props.amount, 0, 1, 0.65));
 	gl.uniform1f(uniforms.speed, bounded(props.speed, 0, 4, 1));

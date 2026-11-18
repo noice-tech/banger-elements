@@ -8,6 +8,7 @@ import {
 import {examples, type PreviewKind} from './examples';
 import {booleanControl, numberControl, type Control} from './controls';
 import {ControlField} from './ControlField';
+import {highlightCode} from '../highlight';
 import type {PreviewProps, PreviewValue} from './types';
 import type {usePreviewAudio, usePreviewArtwork} from './use-preview-assets';
 
@@ -404,7 +405,12 @@ export function PreviewControls({
 					{copyMessage}
 				</p>
 				<pre tabIndex={0} aria-label="Configured JSX">
-					<code>{configuredJsx(slug, inputProps, Boolean(localAudio))}</code>
+					<code
+						// highlightCode escapes the source before adding its token spans.
+						dangerouslySetInnerHTML={{
+							__html: highlightCode(configuredJsx(slug, inputProps, Boolean(localAudio))),
+						}}
+					/>
 				</pre>
 			</details>
 		</section>

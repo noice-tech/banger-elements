@@ -1,4 +1,348 @@
 ---
+import Showcase from '../layouts/Showcase.astro';
 import Collection from '../components/Collection.astro';
+import SceneStage from '../components/SceneStage';
+import ElementTuner from '../components/ElementTuner';
+import type {PreviewKind} from '../components/Preview';
+import {elements, elementCategories} from '../data/elements';
+import {REEL_FPS, REEL_FRAMES, reelScenes} from '../components/reel/scenes';
+import {wrapDemos} from '../components/wrap/demos';
+import {shaderDetails} from '../data/shader-updates';
+import {version} from '../../../../packages/elements/package.json';
+
+const byCategory = elementCategories.map((category) => elements.filter((entry) => entry.category === category.id));
+// Interleave the categories so the filmstrip alternates looks instead of running in blocks.
+const filmstrip = Array.from({length: Math.max(...byCategory.map((list) => list.length))}).flatMap((_, index) =>
+	byCategory.map((list) => list[index]).filter((entry) => entry !== undefined),
+);
+const pick = (slug: string) => {
+	const entry = elements.find((element) => element.slug === slug)!;
+	return {slug: entry.slug as PreviewKind, title: entry.title, name: entry.name};
+};
+const tunerPicks = [pick('ferrofluid'), pick('halo'), pick('trip'), pick('liquid')];
+const titles = Object.fromEntries(elements.map((entry) => [entry.slug, entry.title]));
+const reelLayerCount = new Set(reelScenes.slice(0, -1).flatMap((scene) => scene.layers)).size;
+const wraps = wrapDemos.map((demo) => {
+	const entry = elements.find((element) => element.slug === demo.slug)!;
+	return {...demo, title: entry.title, name: entry.name};
+});
+const release = {
+	version: version.split('.').slice(0, 2).join('.'),
+	added: ['wet-glass', ...Object.keys(shaderDetails)].map((slug) => elements.find((entry) => entry.slug === slug)!),
+};
 ---
-<Collection />
+<Showcase
+	title="Banger Elements — audio-reactive visuals for Remotion"
+	description={`${elements.length} source-installable visualizers, shaders and effects for Remotion.`}
+	pageClass="page-home"
+>
+	<section class="hero">
+		<div class="wrap hero-copy">
+			<a class="announce" href="/wet-glass.html">
+				<span class="announce-deck" aria-hidden="true">
+					{release.added.map((entry, index) => (
+						<img src={`/posters/${entry.slug}.webp`} alt="" width="32" height="18" decoding="async" style={`--i: ${index}`} />
+					))}
+				</span>
+				<span class="announce-text">
+					<strong>Wet Glass</strong> and {release.added.length - 1} shaders
+				</span>
+				<span class="announce-version">new in {release.version}</span>
+			</a>
+			<h1>
+				Give your sound
+				<span class="tone">
+					a
+					<span class="halo-word"><span class="halo-word-glow" aria-hidden="true"><video muted loop playsinline preload="auto" tabindex="-1" disablepictureinpicture data-play-visible><source src="/hero/shape.webm" type="video/webm" /></video></span>shape.</span>
+				</span>
+			</h1>
+			<p class="lede">
+				{elements.length} audio-reactive visualizers, shaders and effects for Remotion. Stack them into scenes like
+				these, tune them in the browser, and own every line of the source.
+			</p>
+			<div class="hero-ctas">
+				<a class="button primary large" href="#collection">Browse the collection</a>
+				<a class="button ghost large" href="/getting-started.html">How it works</a>
+			</div>
+		</div>
+		<div class="wrap wrap-wide">
+			<SceneStage titles={titles} client:load />
+		</div>
+	</section>
+
+	<section class="filmstrip" aria-label="Every element">
+		<div class="filmstrip-track">
+			{[0, 1].map((copy) => (
+				<ul class="filmstrip-row" aria-hidden={copy === 1 ? 'true' : undefined}>
+					{filmstrip.map((entry) => (
+						<li>
+							<a href={`/${entry.slug}.html`} tabindex={copy === 1 ? -1 : undefined}>
+								<img src={`/posters/${entry.slug}.webp`} alt="" width="224" height="126" loading="lazy" decoding="async" />
+								<span>{entry.title}</span>
+							</a>
+						</li>
+					))}
+				</ul>
+			))}
+		</div>
+	</section>
+
+	<section class="section how" aria-labelledby="how">
+		<div class="wrap how-grid">
+			<div>
+				<h2 id="how" class="section-title">From preview to project. <span class="tone">No package to install, no runtime to keep up with.</span></h2>
+				<ol class="steps">
+					<li>
+						<span class="step-number">01</span>
+						<div>
+							<h3>Tune it live</h3>
+							<p>Every element plays in the browser against real audio. Change colors, gain and motion until it sits right with your track.</p>
+						</div>
+					</li>
+					<li>
+						<span class="step-number">02</span>
+						<div>
+							<h3>Send it to Studio</h3>
+							<p>Install in Studio, or drag it onto your canvas. Your settings travel with it, and you confirm the request in Remotion Studio.</p>
+						</div>
+					</li>
+					<li>
+						<span class="step-number">03</span>
+						<div>
+							<h3>Own the source</h3>
+							<p>It lands as a single editable TSX file in your project. Read it, fork it, break it. Nothing to update later.</p>
+						</div>
+					</li>
+				</ol>
+				<a class="arrow-link" href="/getting-started.html">Read the getting started guide <span aria-hidden="true">→</span></a>
+			</div>
+			<ElementTuner picks={tunerPicks} client:visible />
+		</div>
+	</section>
+
+	<section class="section" id="collection" aria-labelledby="collection-title">
+		<div class="wrap">
+			<div class="section-head">
+				<h2 id="collection-title" class="section-title">The collection. <span class="tone">Visualizers for the beat, shaders for the room, effects for everything else.</span></h2>
+			</div>
+			<Collection />
+		</div>
+	</section>
+
+	<section class="band" aria-labelledby="effects-title">
+		<div class="wrap band-grid">
+			<div class="band-copy">
+				<p class="kicker">Effects</p>
+				<h2 id="effects-title" class="section-title">Wrap anything. <span class="tone">Effects filter whatever sits inside them.</span></h2>
+				<div class="effect-switch" role="group" aria-label="Choose an effect">
+					{wraps.map((demo, index) => (
+						<button type="button" data-effect={demo.slug} data-name={demo.name} aria-pressed={index === 0 ? 'true' : 'false'}>{demo.title}</button>
+					))}
+				</div>
+				{wraps.map((demo, index) => (
+<div class="band-code" data-effect-code={demo.slug} hidden={index !== 0}><pre><code>&lt;<span class="tc">{demo.name}</span>{Object.entries(demo.props).map(([key, value]) => <Fragment> <span class="tp">{key}</span>={'{'}<span class="tn">{value}</span>{'}'}</Fragment>)}&gt;
+{demo.children.map((child) => <Fragment>  &lt;<span class="tc">{child}</span> /&gt;
+</Fragment>)}&lt;/<span class="tc">{demo.name}</span>&gt;</code></pre><p>Inside: {demo.inside}. No audio, no elements.</p></div>
+				))}
+				<a class="arrow-link" href="/effects">See all effects <span aria-hidden="true">→</span></a>
+			</div>
+			<div class="band-shot compare" data-compare style="--split: 50%">
+				<video muted loop playsinline preload="none" poster={`/wrap/${wraps[0]!.slug}.webp`} aria-hidden="true" data-play-visible>
+					<source src={`/wrap/${wraps[0]!.slug}.webm`} type="video/webm" />
+				</video>
+				<canvas aria-hidden="true"></canvas>
+				<span class="compare-tag compare-before" aria-hidden="true">Children</span>
+				<span class="compare-tag compare-after" aria-hidden="true" data-compare-label>&lt;{wraps[0]!.name}&gt;</span>
+				<span class="compare-handle" aria-hidden="true"></span>
+				<input type="range" min="0" max="100" step="0.5" value="50" aria-label="Split between the plain children and the effect" />
+			</div>
+		</div>
+	</section>
+
+	<section class="section closing" aria-labelledby="closing-title">
+		<div class="wrap closing-inner">
+			<h2 id="closing-title">Make something <span class="tone">loud.</span></h2>
+			<p class="lede">
+				{reelLayerCount} elements, one track, cut on the beat. Every frame below is a Remotion render, layered the way you
+				would in your own project.
+			</p>
+			<figure class="reel" data-reel>
+				<div class="reel-stage">
+					<video muted loop playsinline preload="none" poster="/reel/reel.webp" data-play-visible>
+						<source src="/reel/reel.webm" type="video/webm" />
+					</video>
+				</div>
+				<div class="reel-bar">
+					<div class="reel-timeline" role="group" aria-label="Scenes in the reel" style={`--frames: ${REEL_FRAMES}`}>
+						<ol>
+							{reelScenes.map((scene, index) => (
+								<li style={`--span: ${scene.to - scene.from}`}>
+									<button
+										type="button"
+										data-seek={scene.from / REEL_FPS}
+										aria-current={index === 0 ? 'true' : undefined}
+									>
+										<span class="reel-index">{String(index + 1).padStart(2, '0')}</span>
+										<span class="reel-layers">{scene.layers.join(' × ')}</span>
+									</button>
+								</li>
+							))}
+						</ol>
+						<span class="reel-playhead" aria-hidden="true"></span>
+					</div>
+					<button class="reel-sound" type="button" aria-pressed="false" data-reel-sound>
+						<svg viewBox="0 0 16 16" aria-hidden="true">
+							<path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor"></path>
+							<path
+								class="reel-sound-waves"
+								d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.4"
+								stroke-linecap="round"></path>
+							<path
+								class="reel-sound-muted"
+								d="m10.5 6 4 4m0-4-4 4"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.4"
+								stroke-linecap="round"></path>
+						</svg>
+						<span>Sound</span>
+					</button>
+				</div>
+				<figcaption class="reel-now" aria-live="off">{reelScenes[0]!.layers.join(' × ')}</figcaption>
+			</figure>
+			<div class="hero-ctas">
+				<a class="button primary large" href="/visualizers">Start with a visualizer</a>
+				<a class="button ghost large" href="https://github.com/noice-tech/banger-elements">Star on GitHub</a>
+			</div>
+		</div>
+	</section>
+</Showcase>
+<script>
+	// Keep the plain headline until the video actually plays.
+	const glow = document.querySelector<HTMLVideoElement>('.halo-word-glow video');
+	glow?.addEventListener('playing', () => glow.toggleAttribute('data-playing', true), {once: true});
+
+	const reel = document.querySelector<HTMLElement>('[data-reel]');
+	const reelVideo = reel?.querySelector('video');
+	if (reel && reelVideo) {
+		const sound = reel.querySelector<HTMLButtonElement>('[data-reel-sound]')!;
+		const timeline = reel.querySelector<HTMLElement>('.reel-timeline')!;
+		const now = reel.querySelector<HTMLElement>('.reel-now')!;
+		const seekers = Array.from(reel.querySelectorAll<HTMLButtonElement>('[data-seek]'));
+		const starts = seekers.map((button) => Number(button.dataset.seek));
+		const follow = () => {
+			const duration = reelVideo.duration || 1;
+			const time = reelVideo.currentTime;
+			timeline.style.setProperty('--progress', String(time / duration));
+			const current = starts.filter((start) => start <= time + 0.01).length - 1;
+			seekers.forEach((button, index) => {
+				if (index === current) button.setAttribute('aria-current', 'true');
+				else button.removeAttribute('aria-current');
+			});
+			now.textContent = seekers[current]?.querySelector('.reel-layers')?.textContent ?? '';
+		};
+		let frame = 0;
+		const tick = () => {
+			follow();
+			frame = requestAnimationFrame(tick);
+		};
+		reelVideo.addEventListener('play', () => {
+			cancelAnimationFrame(frame);
+			tick();
+		});
+		reelVideo.addEventListener('pause', () => cancelAnimationFrame(frame));
+		reelVideo.addEventListener('seeked', follow);
+		sound.addEventListener('click', () => {
+			reelVideo.muted = !reelVideo.muted;
+			sound.setAttribute('aria-pressed', String(!reelVideo.muted));
+			// Turning sound on is a request to hear it, even under reduced motion.
+			if (!reelVideo.muted && reelVideo.paused) void reelVideo.play().catch(() => {});
+		});
+		for (const button of seekers) {
+			button.addEventListener('click', () => {
+				reelVideo.currentTime = Number(button.dataset.seek);
+				follow();
+				if (reelVideo.paused) void reelVideo.play().catch(() => {});
+			});
+		}
+	}
+
+	// Paint the plain half from the same frame so both sides stay in sync.
+	const compare = document.querySelector<HTMLElement>('[data-compare]');
+	const compareVideo = compare?.querySelector('video');
+	const canvas = compare?.querySelector('canvas');
+	const range = compare?.querySelector<HTMLInputElement>('input[type="range"]');
+	const compareLabel = compare?.querySelector<HTMLElement>('[data-compare-label]');
+	const context = canvas?.getContext('2d');
+	if (compare && compareVideo && canvas && range && compareLabel && context) {
+		let poster = new Image();
+		let frame = 0;
+		const split = () => Number(range.value) / 100;
+		const draw = () => {
+			const {clientWidth: width, clientHeight: height} = canvas;
+			const scale = window.devicePixelRatio || 1;
+			if (canvas.width !== Math.round(width * scale)) canvas.width = Math.round(width * scale);
+			if (canvas.height !== Math.round(height * scale)) canvas.height = Math.round(height * scale);
+			context.clearRect(0, 0, canvas.width, canvas.height);
+			const live = compareVideo.readyState >= 2;
+			const source = live ? compareVideo : poster;
+			const sourceWidth = live ? compareVideo.videoWidth : poster.naturalWidth;
+			const sourceHeight = (live ? compareVideo.videoHeight : poster.naturalHeight) / 2;
+			if (!sourceWidth || !sourceHeight) return;
+			const share = split();
+			if (share <= 0) return;
+			context.drawImage(
+				source,
+				0,
+				sourceHeight,
+				sourceWidth * share,
+				sourceHeight,
+				0,
+				0,
+				canvas.width * share,
+				canvas.height,
+			);
+		};
+		const tick = () => {
+			draw();
+			frame = compareVideo.paused ? 0 : requestAnimationFrame(tick);
+		};
+		const setSplit = () => {
+			compare.style.setProperty('--split', `${range.value}%`);
+			draw();
+		};
+		const loadPoster = (src: string) => {
+			poster = new Image();
+			poster.addEventListener('load', draw);
+			poster.src = src;
+		};
+		loadPoster(compareVideo.poster);
+		range.addEventListener('input', setSplit);
+		compareVideo.addEventListener('play', () => {
+			cancelAnimationFrame(frame);
+			tick();
+		});
+		for (const event of ['loadeddata', 'seeked', 'pause']) compareVideo.addEventListener(event, draw);
+		new ResizeObserver(draw).observe(canvas);
+
+		const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-effect]'));
+		for (const button of buttons) {
+			button.addEventListener('click', () => {
+				const slug = button.dataset.effect!;
+				for (const other of buttons) other.setAttribute('aria-pressed', String(other === button));
+				for (const code of document.querySelectorAll<HTMLElement>('[data-effect-code]')) {
+					code.hidden = code.dataset.effectCode !== slug;
+				}
+				compareLabel.textContent = `<${button.dataset.name}>`;
+				compareVideo.poster = `/wrap/${slug}.webp`;
+				compareVideo.querySelector('source')!.src = `/wrap/${slug}.webm`;
+				compareVideo.load();
+				loadPoster(compareVideo.poster);
+				document.dispatchEvent(new Event('showcase:sync-media'));
+			});
+		}
+	}
+</script>
