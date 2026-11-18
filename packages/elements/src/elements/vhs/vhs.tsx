@@ -212,7 +212,6 @@ type VhsWebGlState = {
 	readonly vao: WebGLVertexArrayObject;
 	readonly buffer: WebGLBuffer;
 	readonly texture: WebGLTexture;
-	/** Size of the texture storage, for Chrome 158+'s copy-into-storage upload. */
 	readonly textureSize: {width: number; height: number};
 	readonly uniforms: Record<string, WebGLUniformLocation | null>;
 };

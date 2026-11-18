@@ -13,7 +13,6 @@ import {
 	WetGlass,
 } from '../../../../../packages/elements/dist/components';
 
-/** The elements the home page scenes use, by slug. */
 export const sceneElements = {
 	'audio-particles': AudioParticles,
 	cathedral: Cathedral,

@@ -1,4 +1,3 @@
-// A vertical loop for Reels, Shorts and streaming canvases: 1080 × 1920 at 30 fps.
 // Four bars at 122 BPM, so it loops on the beat.
 import {AbsoluteFill, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Ferrofluid, Liquid} from '../../../../../packages/elements/dist/components';

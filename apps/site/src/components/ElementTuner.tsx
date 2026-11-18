@@ -1,6 +1,4 @@
 /* eslint-disable @remotion/warn-native-media-tag -- Landing-page UI around the Player, not part of a rendered composition. */
-// "Tune it live" on the home page: one element at a time, a few of its
-// controls, and the props you set written out as code.
 import {
 	createContext,
 	useContext,
@@ -35,19 +33,17 @@ type Pick = {slug: PreviewKind; title: string; name: string};
 
 const FPS = 60;
 
-/** Every pick plays the same song. It goes silent after 50 s, so the loop ends there. */
+// End the shared loop before the track goes silent.
 const AUDIO = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
 const SECONDS = 50;
 const DURATION_IN_FRAMES = SECONDS * FPS;
 
-/** Where the tuner departs from the element pages' examples. */
 const TUNER_PROPS: Partial<Record<PreviewKind, PreviewProps>> = {
 	halo: {centerMode: 'transparent'},
 	// The song's tempo, so Trip's motion lands on the beat.
 	trip: {bpm: 122},
 };
 
-/** The handful of controls worth showing here, per element. */
 const TUNER_CONTROLS: Partial<Record<PreviewKind, readonly string[]>> = {
 	ferrofluid: ['intensity', 'pattern', 'shineColor'],
 	halo: ['intensity', 'radius', 'centerMode'],
@@ -55,17 +51,14 @@ const TUNER_CONTROLS: Partial<Record<PreviewKind, readonly string[]>> = {
 	liquid: ['swirl', 'distortion', 'color1'],
 };
 
-/** One-click colors for the color control. The first is the example's own. */
+// The first swatch is the example's default.
 const SWATCHES: Partial<Record<PreviewKind, readonly string[]>> = {
 	ferrofluid: ['#ffbc8e', '#7cc4ff', '#ff6fae', '#b9f26b', '#f2efe9'],
 	trip: ['#ff00ff', '#00e5ff', '#ff5a1f', '#7dff6b', '#ffe14d'],
 	liquid: ['#1e00ff', '#ff1f6b', '#00b8ff', '#8a2be2', '#ff8a00'],
 };
 
-/**
- * 5.5 s in, just after the song's intro. static/tuner/<slug>.webp are captures
- * of this player at this frame, so the poster and the first live frame match.
- */
+// Keep this in sync with the poster frames in static/tuner/.
 const POSTER_FRAME = 330;
 
 const baseProps = (slug: PreviewKind): PreviewProps => {
@@ -128,15 +121,13 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 			typeof window !== 'undefined' &&
 			window.matchMedia('(prefers-reduced-motion: reduce)').matches,
 	);
-	// The Player only mounts in the browser; the server renders the same shell
-	// around the poster so the page doesn't shift when it loads.
+	// Render the same shell on the server to avoid layout shift when the Player mounts.
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
 	const rootRef = useRef<HTMLDivElement>(null);
 	const playerRef = useRef<PlayerRef>(null);
 	const ready = usePlayerReady(playerRef, selected, mounted);
 	const {playing, muted} = usePlayerStatus(playerRef, mounted);
-	// It sits below the fold, so it plays once it scrolls into view.
 	useVisiblePlayback(rootRef, playerRef, mounted, !reducedMotion);
 	const props = useMemo<VisualProps>(
 		() => ({...baseProps(selected), ...tweaks[selected], previewKind: selected}),
@@ -165,7 +156,6 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 	const update = (key: string, value: PreviewValue) =>
 		setTweaks((all) => ({...all, [selected]: {...all[selected], [key]: value}}));
 
-	// The tuned props as they land in your project.
 	const code = useMemo(() => {
 		const tuned = tweaks[selected] ?? {};
 		const lines = [

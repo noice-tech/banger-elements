@@ -1,8 +1,3 @@
-/*
- * Writes a built scene as the composition you would keep in your project: one
- * import per element file, the shared audio props, and the same tree the live
- * player renders. Laid out the way Prettier would, with tabs.
- */
 import type {BuiltScene, PropValue, SceneNode, Style} from './model';
 
 /** Columns per line, counting a tab as two. */
@@ -28,7 +23,6 @@ const attribute = (name: string, value: PropValue) => {
 
 const text = (value: string) => value.replace(/[{}<>]/g, (char) => `{'${char}'}`);
 
-/** One attribute, either on one line or, for a long style, spread over several. */
 const attributeLines = (attr: string | Style, depth: number): string[] => {
 	if (typeof attr === 'string') return [indent(depth) + attr];
 	const inline = `style={{${styleEntries(attr).join(', ')}}}`;

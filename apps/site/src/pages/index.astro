@@ -19,17 +19,13 @@ const pick = (slug: string) => {
 	const entry = elements.find((element) => element.slug === slug)!;
 	return {slug: entry.slug as PreviewKind, title: entry.title, name: entry.name};
 };
-// "Tune it live": one element at a time, under the scenes in the hero.
 const tunerPicks = [pick('ferrofluid'), pick('halo'), pick('trip'), pick('liquid')];
 const titles = Object.fromEntries(elements.map((entry) => [entry.slug, entry.title]));
-// The closing reel, a render of src/components/reel/reel.tsx (npm run reel).
 const reelLayerCount = new Set(reelScenes.slice(0, -1).flatMap((scene) => scene.layers)).size;
-// "Wrap anything": each effect over plain children, from src/components/wrap (npm run wrap).
 const wraps = wrapDemos.map((demo) => {
 	const entry = elements.find((element) => element.slug === demo.slug)!;
 	return {...demo, title: entry.title, name: entry.name};
 });
-// The release line above the headline: what shipped in this minor version.
 const release = {
 	version: version.split('.').slice(0, 2).join('.'),
 	added: ['wet-glass', ...Object.keys(shaderDetails)].map((slug) => elements.find((entry) => entry.slug === slug)!),
@@ -225,12 +221,10 @@ const release = {
 	</section>
 </Showcase>
 <script>
-	// The headline halo fades in once it actually plays. Until then, and under
-	// reduced motion, the word stands on its own.
+	// Keep the plain headline until the video actually plays.
 	const glow = document.querySelector<HTMLVideoElement>('.halo-word-glow video');
 	glow?.addEventListener('playing', () => glow.toggleAttribute('data-playing', true), {once: true});
 
-	// The closing reel: a sound toggle, and a timeline that follows and seeks the clip.
 	const reel = document.querySelector<HTMLElement>('[data-reel]');
 	const reelVideo = reel?.querySelector('video');
 	if (reel && reelVideo) {
@@ -276,9 +270,7 @@ const release = {
 		}
 	}
 
-	// "Wrap anything": each clip stacks the wrapped children over the plain ones.
-	// The video shows the top half; the canvas paints the plain half left of the
-	// split from the same frame, so the two sides never drift apart.
+	// Paint the plain half from the same frame so both sides stay in sync.
 	const compare = document.querySelector<HTMLElement>('[data-compare]');
 	const compareVideo = compare?.querySelector('video');
 	const canvas = compare?.querySelector('canvas');

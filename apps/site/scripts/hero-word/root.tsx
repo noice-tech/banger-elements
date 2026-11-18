@@ -1,15 +1,6 @@
-// One-off render source for the home page headline: the Halo element's audio
-// analysis and fragment shader, copied from packages/elements/src/elements/halo,
-// with the word "shape." in place of the circle. Only the shader's circle maths
-// changed (marked "Banger hero"): the distance from the center becomes the
-// distance from the word's outline, and the angle around the circle becomes the
-// position along that outline. Everything else is Halo at its defaults, with a
-// transparent center: rainbow trails, wave delay, motion blur, shake and bass.
-//
-// The letters stay live HTML. This video only carries the rings, on black, for
-// `mix-blend-mode: screen`. Render with `bun run hero-word` from apps/site.
-// Re-render after changing the headline font, weight or letter spacing, and keep
-// the offsets in showcase.css in sync with the layout constants below.
+// Adapted from packages/elements/src/elements/halo (shader changes marked "Banger hero").
+// The video carries only the rings; showcase.css blends them over live text.
+// Re-run `bun run hero-word` from apps/site after changing the headline typography.
 import {useAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
 import {useLayoutEffect, useMemo, useRef, useState, type FC} from 'react';
 import {
@@ -24,7 +15,7 @@ import {
 	useVideoConfig,
 } from 'remotion';
 
-// Layout in render pixels. showcase.css positions the video with these numbers.
+// Keep these render dimensions and offsets in sync with showcase.css.
 const EM = 240;
 const WIDTH = 968;
 const HEIGHT = 498;
@@ -41,9 +32,7 @@ const UNIT = 1.8 * EM;
 const RIM_OFFSET = 0.07 * EM;
 // Gaps and counters narrower than twice this are filled, so the outline stays smooth.
 const CLOSING = 0.14 * EM;
-// Halo spreads its mirrored spectrum once around a 1.5-unit circumference. The
-// capsule around the word is a little over twice that, so the spectrum runs
-// around it three times (an odd count keeps bass at the top, treble at the bottom).
+// Three cycles cover the longer perimeter; an odd count keeps bass at the top.
 const SPECTRUM_CYCLES = 3;
 
 // A silence-to-silence slice of the demo track, so the loop has no seam. Halo's
@@ -52,7 +41,7 @@ const AUDIO = 'https://remotion.media/elements/remotion-made-this-picture-move.m
 const HALO_FPS = 60;
 const FPS = 30;
 const START_SECONDS = 2.5;
-const DURATION = 123; // 4.1 s
+const DURATION = 123;
 const LOOP_FADE = 8;
 
 // Halo's defaults, as in the site's Halo example.
@@ -371,13 +360,9 @@ function measureWord(context: CanvasRenderingContext2D) {
 	return context.measureText(WORD);
 }
 
-// Halo's two circle measurements, for the word: the distance outside the rim
-// (in Halo units) and the spectrum position. Halo reads the position from the
-// angle around its center: lowest frequency at the top, highest at the bottom,
-// mirrored left and right. For the word, the angle becomes the position around a
-// capsule fitted to the letters, by arc length from its top center. Like Halo's
-// angle it changes smoothly and stays constant straight out from the edge, so
-// spikes grow straight up and down along the word and radially at its ends.
+// Replace Halo's radius and angle with distance from the word and arc length
+// along a fitted capsule. Spikes stay vertical above and below the word and
+// fan out at its ends.
 function wordShape(): Shape {
 	const canvas = document.createElement('canvas');
 	canvas.width = WIDTH;
@@ -829,9 +814,7 @@ const HaloWord: FC<{showWord: boolean}> = ({showWord}) => {
 	}, [fontReady, showWord]);
 	if (fps !== FPS) throw new Error(`HeroWord renders at ${FPS} fps.`);
 	const sourceTime = START_SECONDS + frame / fps;
-	// Halo's shake and wobble follow the running time and bass, so they would jump
-	// where the loop restarts. The last frames fade into the silent moments just
-	// before the slice, which lead straight into its first frame.
+	// Fade into the frames before the slice to hide the shake and wobble jump at the loop seam.
 	const fade = Math.max(0, (frame - (DURATION - LOOP_FADE)) / LOOP_FADE);
 	return (
 		<AbsoluteFill style={{backgroundColor: '#000'}}>

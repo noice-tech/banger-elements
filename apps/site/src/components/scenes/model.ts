@@ -1,10 +1,4 @@
-/*
- * A home page scene is data: layers of elements, an overlay of type, and how
- * the palette and energy controls map onto their props. buildScene() resolves a
- * scene and its control state into one tree. The live player renders that tree
- * (SceneComposition.tsx) and print.ts writes it out as the code you copy, so
- * what you see and what you copy cannot drift apart.
- */
+// The player and code printer consume the same tree from buildScene().
 import catalog from '../../../../../packages/elements/dist/catalog.json';
 import {
 	SCENE_BARS,
@@ -26,7 +20,7 @@ export const formats = {
 
 export type Finish = 'none' | 'vhs' | 'wet-glass' | 'fisheye';
 
-/** The effect wrapped around the visual layers. The type always stays outside it. */
+/** Finishes wrap the visual layers but leave the text overlay untouched. */
 export const finishes = {
 	none: {label: 'None', props: {}},
 	vhs: {label: 'VHS', props: {strength: 0.75, glitch: 0.04, line: 0.25}},
@@ -74,11 +68,9 @@ export type SceneContext = {
 	readonly format: Format;
 	readonly palette: Palette;
 	readonly track: Track;
-	/** A value between a scene's calm and loud setting, by the Energy control. */
 	readonly energy: (calm: number, loud: number, step?: number) => number;
 	/** A length designed against a 720 px short side, scaled to this format. */
 	readonly px: (size: number) => number;
-	/** Places an element from the collection, for the overlay. */
 	readonly element: (slug: string, props: Record<string, PropValue>, style?: Style) => ElementNode;
 };
 
@@ -90,7 +82,6 @@ export type LayerSpec = {
 export type SceneSpec = {
 	readonly timing: SceneTiming;
 	readonly title: string;
-	/** What you would make with it, in a few words. */
 	readonly use: string;
 	/** The first line of the generated code. */
 	readonly about: string;
@@ -108,7 +99,6 @@ export type SceneState = {
 	readonly energy: number;
 	readonly finish: Finish;
 	readonly format: Format;
-	/** Layers switched off, by slug. */
 	readonly hidden: readonly string[];
 };
 
@@ -173,10 +163,6 @@ const collect = (node: SceneNode | string, into: string[]) => {
 	for (const child of node.children ?? []) collect(child, into);
 };
 
-/**
- * Resolves a scene at its format's size, or at `size` for a lighter live
- * preview: everything in the overlay scales with the frame.
- */
 export const buildScene = (
 	spec: SceneSpec,
 	state: SceneState,

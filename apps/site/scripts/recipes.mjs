@@ -6,7 +6,6 @@ import {createRequire} from 'node:module';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import sharp from 'sharp';
-// Node strips the types from this plain-data module.
 import {recipes} from '../src/components/recipes/recipes.ts';
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -27,7 +26,6 @@ const render = (args) => {
 		[
 			cli,
 			...args,
-			// The recipes use Geist, loaded with staticFile().
 			`--public-dir=${path.join(workspace, 'static')}`,
 			`--gl=${process.env.REMOTION_GL ?? 'angle'}`,
 			'--log=error',

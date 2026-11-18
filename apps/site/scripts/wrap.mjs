@@ -1,13 +1,10 @@
-// Render the home page's "Wrap anything" demos (src/components/wrap): each
-// effect over its children, stacked on the plain children, plus a poster.
-// usage: node scripts/wrap.mjs [slug,...]
+// Render comparison clips and posters. Usage: node scripts/wrap.mjs [slug,...]
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, rmSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import sharp from 'sharp';
-// Node strips the types from this plain-data module.
 import {wrapDemos} from '../src/components/wrap/demos.ts';
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,7 +27,6 @@ const render = (args) => {
 		[
 			cli,
 			...args,
-			// The demos load Geist with staticFile().
 			`--public-dir=${path.join(workspace, 'static')}`,
 			`--gl=${process.env.REMOTION_GL ?? 'angle'}`,
 			'--scale=0.75',

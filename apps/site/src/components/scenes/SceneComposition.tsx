@@ -31,7 +31,6 @@ const renderNode = (
 	return createElement(component, {key, ...props}, ...(children ?? []));
 };
 
-/** Renders a built scene: the tree the copied code describes. */
 export const SceneComposition = ({
 	scene,
 	audioSrc,

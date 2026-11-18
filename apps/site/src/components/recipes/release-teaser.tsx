@@ -1,6 +1,3 @@
-// A single announcement for socials and YouTube: 1280 × 720 at 30 fps.
-// The clip opens on the drop; the date lands on the last bar. VHS treats the
-// picture, while the type sits above it and stays sharp.
 import {AbsoluteFill, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Spectre, Synthwave, Vhs} from '../../../../../packages/elements/dist/components';
 

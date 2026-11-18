@@ -13,12 +13,7 @@
 	font-display: swap;
 }
 
-/*
- * One token layer for both the showcase (always dark) and the Starlight docs
- * (dark by default, light on request). Purple is a signal colour: primary
- * focus, the live state and links in prose. Everything else is neutral so the
- * elements themselves carry the colour.
- */
+/* Shared by the showcase and docs. Reserve purple for focus, live states and prose links. */
 :root {
 	color-scheme: dark;
 	--bg: #07080c;

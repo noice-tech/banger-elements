@@ -1,9 +1,5 @@
-/*
- * When each home page scene plays: its track, where it starts and how long it
- * loops. Plain data with no imports, so scripts/scenes.mjs can read it directly.
- */
+// Keep this module dependency-free so scripts/scenes.mjs can import it directly.
 export const SCENE_FPS = 30;
-/** Every scene loops eight bars of its track. */
 export const SCENE_BARS = 8;
 
 export type TrackId = 'time-travel' | 'demo';
@@ -59,7 +55,6 @@ export const sceneTimings: readonly SceneTiming[] = [
 	{id: 'after-hours', component: 'AfterHours', track: 'demo', bar: 16},
 ];
 
-/** Where a scene starts in its track, in seconds, rounded to the hundredth. */
 export const sceneStart = (timing: SceneTiming) => {
 	const track = tracks[timing.track];
 	return Math.round((track.downbeat + timing.bar * barSeconds(track)) * 100) / 100;

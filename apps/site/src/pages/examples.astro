@@ -144,7 +144,6 @@ const cards = recipes.map((recipe, index) => {
 	</div>
 </Showcase>
 <script>
-	// Copy a recipe's code; the line numbers are generated content.
 	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy-recipe]')) {
 		const lines = button.closest('details')!.querySelectorAll('.line');
 		let reset: number | undefined;

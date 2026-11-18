@@ -1,8 +1,4 @@
-/*
- * The "Wrap anything" demos: an effect around children that have nothing to
- * do with audio. The render stacks the wrapped version on top of the plain
- * children, frame for frame, and the page draws the split between them.
- */
+// Stack the wrapped and plain versions so the page can compare them in sync.
 import type {CSSProperties, FC, ReactNode} from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {Fisheye, Vhs, WetGlass} from '../../../../../packages/elements/dist/components';
@@ -18,7 +14,7 @@ import {
 const MONO = '"Geist Mono", ui-monospace, monospace';
 const SANS = 'Geist, Inter, system-ui, sans-serif';
 
-/** Where the loop is, from 0 to 1. Motion that turns whole cycles over it loops cleanly. */
+// Use whole cycles of this phase to keep motion seamless.
 const useLoop = () => useCurrentFrame() / WRAP_FRAMES;
 const TURN = Math.PI * 2;
 
@@ -38,7 +34,6 @@ const lights = Array.from({length: 46}, (_, index) => ({
 	cycles: 1 + Math.floor(scatter(index + 200) * 3),
 }));
 
-/** Out-of-focus street lights through a window, in plain CSS. */
 const CityLights = () => {
 	const loop = useLoop();
 	return (
@@ -127,7 +122,6 @@ const osd: CSSProperties = {
 	textShadow: '3px 3px 0 rgb(0 0 0 / 0.55)',
 };
 
-/** A camcorder's on-screen display, counting up from 1:24:16. */
 const Timecode = () => {
 	const frame = useCurrentFrame() + (84 * 60 + 16) * WRAP_FPS;
 	const seconds = Math.floor(frame / WRAP_FPS);
@@ -222,7 +216,6 @@ const half: CSSProperties = {
 	overflow: 'hidden',
 };
 
-/** The wrapped children over the plain ones, 1280 × 1440. */
 export const WrapDemo = ({slug}: {slug: WrapEffect}) => {
 	const Inside = insides[slug];
 	return (

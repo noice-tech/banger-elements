@@ -1,6 +1,4 @@
 /* eslint-disable @remotion/warn-native-media-tag -- Landing-page UI around the Player, not part of a rendered composition. */
-// The home page hero: finished scenes built from the collection. Pick one,
-// tweak its palette, energy, finish, format and layers, and copy the code.
 import {
 	createContext,
 	useContext,
@@ -92,8 +90,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 			typeof window !== 'undefined' &&
 			window.matchMedia('(prefers-reduced-motion: reduce)').matches,
 	);
-	// The Player only mounts in the browser; the server renders the same shell
-	// around the poster so the page doesn't shift when it loads.
+	// Render the same shell on the server to avoid layout shift when the Player mounts.
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -123,7 +120,6 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	const {playing, muted} = usePlayerStatus(playerRef, mounted);
 	useVisiblePlayback(rootRef, playerRef, mounted, !reducedMotion);
 
-	// A new scene starts from its first bar.
 	const firstScene = useRef(true);
 	useEffect(() => {
 		if (firstScene.current) {

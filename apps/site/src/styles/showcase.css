@@ -201,7 +201,6 @@ body.showcase {
 .hero-copy {
 	text-align: center;
 }
-/* The release line: the new elements' posters fanned like a deck of cards. */
 .announce {
 	display: inline-flex;
 	align-items: center;
@@ -284,9 +283,7 @@ body.showcase {
 	color: var(--text);
 	white-space: nowrap;
 }
-/* Zero-size anchor on the baseline, at the start of the word. The video carries
-   only Halo's rings (scripts/hero-word/root.tsx) and lines up with the live
-   text using that render's pixel layout: 240px em, 144px origin, 317px baseline. */
+/* Anchor at the word's baseline. Match the video offsets in scripts/hero-word/root.tsx. */
 .halo-word-glow {
 	position: relative;
 	display: inline-block;
@@ -324,7 +321,7 @@ body.showcase {
 	margin-top: clamp(3rem, 6vw, 4.75rem);
 }
 
-/* Live stages: the hero's scenes and the element tuner further down. */
+/* Live stages ------------------------------------------------------------- */
 .stage {
 	position: relative;
 	isolation: isolate;
@@ -713,7 +710,6 @@ body.showcase {
 	transform: translateX(3px);
 }
 
-/* Bar ticks under a scene's waveform. */
 .stage-wave-marks {
 	position: absolute;
 	inset: auto 0 -7px;
@@ -867,7 +863,6 @@ body.showcase {
 	font: 0.72rem var(--font-mono);
 }
 
-/* The element tuner in "From preview to project". */
 .tuner .stage-ambient img {
 	opacity: 0.25;
 }
@@ -1092,7 +1087,6 @@ body.showcase {
 	opacity: 0.6;
 	user-select: none;
 }
-/* The props you set in the preview, which travel with the element. */
 .code-lines .line[data-tuned] {
 	background: linear-gradient(90deg, var(--accent-wash), transparent 75%);
 	box-shadow: inset 2px 0 0 var(--accent-hi);
@@ -1475,8 +1469,7 @@ body.showcase {
 	box-shadow: var(--shadow-raised);
 }
 
-/* Before and after: the clip stacks the wrapped children over the plain ones.
-   The video shows its top half; the canvas paints the bottom half up to the split. */
+/* Show only the upper half of the clip; the canvas draws the lower half. */
 .compare {
 	touch-action: pan-y;
 	user-select: none;
@@ -1566,7 +1559,6 @@ body.showcase {
 	margin: 1.4rem auto 0;
 }
 
-/* The reel: a rendered arrangement with its scene timeline. */
 .reel {
 	max-width: 1120px;
 	margin: clamp(2.5rem, 5vw, 3.75rem) auto clamp(2.5rem, 5vw, 3.5rem);

@@ -1,4 +1,3 @@
-// A looping scene for a livestream or a "beats to study to" upload: 1280 × 720 at 30 fps.
 // The city sits behind wet glass; the title and now-playing card stay crisp in front.
 import {AbsoluteFill, staticFile} from 'remotion';
 import {City, Waveform, WetGlass} from '../../../../../packages/elements/dist/components';

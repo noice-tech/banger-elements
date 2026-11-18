@@ -1,4 +1,4 @@
-/* Shared by the showcase layout and the Starlight docs (Examples embeds Preview). */
+/* Shared by the showcase and docs. */
 
 [hidden] {
 	display: none !important;
@@ -299,7 +299,6 @@ summary {
 	justify-content: start !important;
 }
 
-/* Range input: a thin track with a solid thumb. */
 input[type='range'] {
 	width: 100%;
 	height: 18px;
@@ -457,7 +456,6 @@ input[type='range']:focus-visible {
 	color: var(--text);
 	text-decoration: none;
 }
-/* 37px tall: the text block is 34px, the star pokes above it. */
 .brand-mark {
 	display: block;
 	width: auto;

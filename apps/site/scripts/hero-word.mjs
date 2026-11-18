@@ -1,6 +1,4 @@
-// Render the home page headline loop (Halo rings around "shape.") as WebM.
-// Browsers without WebM never fire `playing`, so they keep the plain word.
-// Source: scripts/hero-word/root.tsx. Pass `--still=<frame>` to render one PNG instead.
+// Render the headline loop as WebM, or pass `--still=<frame>` for a PNG.
 import {spawnSync} from 'node:child_process';
 import {mkdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';

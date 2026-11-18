@@ -1,13 +1,10 @@
-// Prepare the home page scenes (src/components/scenes): a waveform of each
-// scene's stretch of its track, and a poster plus picker thumbnail rendered
-// from the scene as it ships. usage: node scripts/scenes.mjs [id,...]
+// Build scene waveforms, posters and thumbnails. Usage: node scripts/scenes.mjs [id,...]
 import {spawnSync} from 'node:child_process';
 import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import sharp from 'sharp';
-// Node strips the types from this plain-data module.
 import {
 	SCENE_POSTER_FRAME,
 	barSeconds,
@@ -66,7 +63,6 @@ const render = (args) => {
 		[
 			cli,
 			...args,
-			// The scenes set their type in Geist, loaded with staticFile().
 			`--public-dir=${path.join(workspace, 'static')}`,
 			`--gl=${process.env.REMOTION_GL ?? 'angle'}`,
 			'--log=error',

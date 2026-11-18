@@ -1,5 +1,3 @@
-// The pieces both home page stages share: transport, waveform seek bar and
-// compact controls around a Remotion Player.
 import {
 	useEffect,
 	useId,
@@ -14,7 +12,6 @@ import type {PlayerRef} from '@remotion/player';
 export const formatTime = (seconds: number) =>
 	`${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
-/** Follows the player's play and mute state. */
 export function usePlayerStatus(playerRef: RefObject<PlayerRef | null>, mounted: boolean) {
 	const [playing, setPlaying] = useState(false);
 	const [muted, setMuted] = useState(true);
@@ -96,13 +93,9 @@ export function SoundButton({
 }
 
 const WAVE_HEIGHT = 28;
-/** Each bar is half its pitch wide, so bars and gaps are equal. */
 const WAVE_PITCH = 4;
 
-/**
- * A stretch of the track as bars, filled up to the playhead. Doubles as the
- * seek bar. `levels` are loudness slices scaled so the loudest is 1.
- */
+/** `levels` are loudness slices normalized to a peak of 1. */
 export function TrackWave({
 	playerRef,
 	mounted,
@@ -118,7 +111,6 @@ export function TrackWave({
 	fps: number;
 	durationInFrames: number;
 	initialFrame: number;
-	/** Evenly spaced ticks, such as one per bar. */
 	marks?: number;
 }) {
 	const waveRef = useRef<HTMLDivElement>(null);
@@ -135,8 +127,7 @@ export function TrackWave({
 		return () => observer.disconnect();
 	}, []);
 
-	// The playhead moves every frame, so it is written straight to the DOM
-	// instead of re-rendering the stage on every frame.
+	// Update the DOM directly to avoid re-rendering the stage every frame.
 	useEffect(() => {
 		if (!mounted) return;
 		const player = playerRef.current;
@@ -230,7 +221,6 @@ export function TrackWave({
 	);
 }
 
-/** A few options shown as a segmented switch. */
 export function Segments<V extends string>({
 	label,
 	options,
@@ -264,7 +254,6 @@ export function Segments<V extends string>({
 	);
 }
 
-/** One-click colors, plus the native picker for anything else. */
 export function Swatches({
 	label,
 	value,

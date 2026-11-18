@@ -1,8 +1,3 @@
-/*
- * The home page's closing reel: elements arranged into one beat-cut piece on
- * the demo song. `npm run reel` renders it to static/reel/reel.webm. The cut
- * list lives in scenes.ts, which the page's timeline reads too.
- */
 import {useEffect, useState, type CSSProperties, type FC} from 'react';
 import {
 	AbsoluteFill,
@@ -37,7 +32,6 @@ const fill: CSSProperties = {position: 'absolute', inset: 0};
 const DROP = reelScenes[1]!.from;
 const MONTAGE = reelScenes[5]!.from;
 
-/** Shared element props for a layer that starts `from` frames into the reel. */
 const layer = (from: number) => ({
 	audioSrc: TRACK,
 	audioOffsetInSeconds: (SONG_FRAME + from) / REEL_FPS,

@@ -43,8 +43,6 @@ const fullTitle = title.includes('Banger Elements') ? title : `${title} | Banger
 		</main>
 		<SiteFooter />
 		<script>
-			// Play looping previews only while they are on screen, the tab is visible and
-			// the visitor has not asked for reduced motion. Posters stay up otherwise.
 			const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 			const visible = new Set<HTMLVideoElement>();
 			const videos = () => Array.from(document.querySelectorAll<HTMLVideoElement>('video[data-play-visible]'));
@@ -74,7 +72,6 @@ const fullTitle = title.includes('Banger Elements') ? title : `${title} | Banger
 			document.addEventListener('visibilitychange', sync);
 			document.addEventListener('showcase:sync-media', sync);
 
-			// Close the mobile menu when navigating within the page or clicking outside.
 			const menu = document.querySelector<HTMLDetailsElement>('.mobile-menu');
 			document.addEventListener('click', (event) => {
 				if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;

@@ -1,5 +1,3 @@
-// Render the home page's closing reel from src/components/reel/reel.tsx, with
-// its soundtrack, plus the poster it shows before it plays.
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, rmSync} from 'node:fs';
 import {createRequire} from 'node:module';
@@ -18,7 +16,7 @@ const cli = path.join(
 const out = path.join(workspace, 'static/reel');
 mkdirSync(out, {recursive: true});
 
-/** A frame from the Liquid × Ferrofluid scene, which reads well as a still. */
+// A frame from the Liquid × Ferrofluid scene.
 const POSTER_FRAME = 450;
 const render = (args) => {
 	const result = spawnSync(
@@ -26,7 +24,6 @@ const render = (args) => {
 		[
 			cli,
 			...args,
-			// The HUD loads Geist Mono with staticFile().
 			`--public-dir=${path.join(workspace, 'static')}`,
 			`--gl=${process.env.REMOTION_GL ?? 'angle'}`,
 			'--log=error',

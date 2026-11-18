@@ -1,14 +1,5 @@
-/**
- * Bento layout for a six-column grid, laid out in blocks of six tiles:
- *
- *   ┌───────────┬─────┐   A large feature tile, two tiles stacked beside it,
- *   │  feature  │  2  │   then a row of three. Every other block mirrors the
- *   │           ├─────┤   feature to the right. Short final blocks stretch
- *   │           │  3  │   their last tiles so the grid never ends with a hole.
- *   ├─────┬─────┼─────┤
- *   │  4  │  5  │  6  │
- *   └─────┴─────┴─────┘
- */
+// Each block has a feature beside two stacked tiles, then a row of three.
+// Alternate blocks mirror the feature; partial blocks stretch to fill the row.
 export function bentoClass(index: number, count: number): string {
 	const block = Math.floor(index / 6);
 	const position = index % 6;

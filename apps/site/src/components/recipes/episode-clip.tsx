@@ -1,4 +1,3 @@
-// A square audiogram for a podcast or interview: 1080 × 1080 at 30 fps.
 // Put the episode in public/episode.mp3 and set START to the moment you want.
 import {AbsoluteFill, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {AudioParticles, Circle, Waveform} from '../../../../../packages/elements/dist/components';
@@ -30,7 +29,6 @@ export const EpisodeClip = ({audioSrc = staticFile('episode.mp3')}: {audioSrc?: 
 				size={1.3}
 			/>
 
-			{/* Cover art with a ring that breathes with the voice. */}
 			<AbsoluteFill style={{top: -150}}>
 				<Circle
 					{...audio}

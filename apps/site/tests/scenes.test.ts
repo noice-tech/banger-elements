@@ -22,7 +22,6 @@ const site = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const allFormats = Object.keys(formats) as Format[];
 const allFinishes = Object.keys(finishes) as Finish[];
 
-/** Every way a visitor can set a scene up, short of palette and energy. */
 const variants = (spec: SceneSpec): SceneState[] =>
 	allFormats.flatMap((format) =>
 		allFinishes.flatMap((finish) =>
@@ -109,8 +108,7 @@ test('every scene has a waveform of its loop', () => {
 });
 
 test('the copied code type-checks against the elements', () => {
-	// Each scene in every finish, compiled next to stand-ins for the element
-	// files a reader installs, which re-export the collection's build.
+	// Stub source-installed files with re-exports from the collection build.
 	const dir = path.join(site, 'tests/.scenes');
 	const components = path.resolve(site, '../../packages/elements/dist/components');
 	const files = new Map<string, string>();

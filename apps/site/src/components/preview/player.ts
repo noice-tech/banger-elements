@@ -3,19 +3,13 @@ import type {PlayerRef} from '@remotion/player';
 import type {PreviewKind} from './examples';
 import {isWrapper} from '../preview-config';
 
-/**
- * Previews loop with their track. The default demo track is 9 seconds, so a
- * longer loop would sit in silence; only the Audio Particles track is longer.
- */
+// Match the track length so previews don't loop through silence.
 const LONG_PREVIEWS: readonly string[] = ['audio-particles', 'combined'];
 
 export const previewDurationInSeconds = (kind: PreviewKind) =>
 	isWrapper(kind) || LONG_PREVIEWS.includes(kind) ? 16 : 9;
 
-/**
- * Reports which preview kind has rendered two settled frames, so the player can
- * fade in without flashing a half-loaded first frame.
- */
+// Wait for two settled frames to avoid flashing a half-loaded preview.
 export function usePlayerReady<K extends string>(
 	playerRef: RefObject<PlayerRef | null>,
 	kind: K,

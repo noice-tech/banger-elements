@@ -1,8 +1,4 @@
-/*
- * A tiny TSX highlighter for the site's own snippets: strings, keywords,
- * components, props, literals, calls and line comments. It returns escaped
- * HTML whose spans use the token classes in components.css (.ts, .tk, …).
- */
+// Highlights site snippets as escaped HTML using the token classes in components.css.
 const escapeHtml = (text: string) =>
 	text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -10,7 +6,6 @@ const tokenClasses = ['tm', 'ts', 'tk', 'tc', 'tp', 'tp', 'tn', 'tf'];
 const tokenPattern =
 	/(\/\/.*$)|('[^']*'|"[^"]*"|`[^`]*`)|\b(import|from|export|const|return)\b|(?<=<\/?)([A-Z]\w*)|\b([a-z]\w*)(?==)|(?<=<[A-Z][^>]*\s)([a-z]\w*)(?=\s*\/?>|\s+[a-z])|\b(\d+(?:\.\d+)?|true|false)\b|\b(\w+)(?=\(| = \()/g;
 
-/** Highlight one line of TSX. */
 export const highlightLine = (line: string) => {
 	let html = '';
 	let last = 0;
@@ -24,5 +19,4 @@ export const highlightLine = (line: string) => {
 	return html + escapeHtml(line.slice(last));
 };
 
-/** Highlight a whole snippet, line by line. */
 export const highlightCode = (code: string) => code.split('\n').map(highlightLine).join('\n');

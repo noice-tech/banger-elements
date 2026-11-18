@@ -1,8 +1,3 @@
-/*
- * The home page scenes. Each is a finished composition you can pick, tweak and
- * copy: the palette and energy controls feed the props below, so every value
- * here is what lands in the copied code.
- */
 import type {ComponentProps} from 'react';
 import type {sceneElements, SceneElementSlug} from './elements';
 import {box, br, fill, type LayerSpec, type SceneContext, type SceneSpec} from './model';
@@ -20,7 +15,6 @@ type LayerFor = {
 	};
 }[SceneElementSlug];
 
-/** A full-frame layer. Its props are checked against the element's own types. */
 const layer = (spec: LayerFor): LayerSpec => spec as unknown as LayerSpec;
 
 const timing = (id: string) => sceneTimings.find((entry) => entry.id === id)!;

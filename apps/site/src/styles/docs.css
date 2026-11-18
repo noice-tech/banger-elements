@@ -1,6 +1,3 @@
-/* Starlight docs. Maps Starlight onto the shared tokens and dresses it in the
-   site's header, type and surfaces. The docs are dark only, like the site. */
-
 :root {
 	scrollbar-gutter: stable;
 	color-scheme: dark;
@@ -175,7 +172,6 @@ body {
 	font-size: 0.85em;
 }
 
-/* Numbered steps, as on the home page. */
 .sl-markdown-content ol {
 	padding-left: 0;
 	list-style: none;

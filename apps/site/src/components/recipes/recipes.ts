@@ -1,8 +1,4 @@
-/*
- * The curated compositions on /examples. Each recipe's .tsx file is both the
- * code shown on the page and the composition `npm run recipes` renders to
- * static/recipes/<id>.webm, so the clip and the code cannot disagree.
- */
+// /examples shows the same TSX that `bun run recipes` renders.
 export const RECIPE_FPS = 30;
 /** Four bars of the 122 BPM demo song, so every clip loops on the beat. */
 export const RECIPE_FRAMES = Math.round((60 / 122) * 4 * 4 * RECIPE_FPS);
@@ -16,13 +12,11 @@ export type Recipe = {
 	readonly description: string;
 	readonly width: number;
 	readonly height: number;
-	/** Render scale for the site clip. */
 	readonly scale: number;
 	/** VP9 quality for the site clip; noisy pictures need a higher value to stay small. */
 	readonly crf?: number;
 	/** Element slugs, back to front. */
 	readonly layers: readonly string[];
-	/** A frame that reads well as a still. */
 	readonly poster: number;
 };
 

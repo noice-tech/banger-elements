@@ -1,10 +1,4 @@
-/*
- * The cut list of the home page's closing reel, shared by the composition
- * (reel.tsx) and the timeline under the clip, so the two cannot drift apart.
- *
- * The demo song runs at 122 BPM and its drop lands at 2.685 s. The reel opens
- * one bar before the drop and runs eight bars past it.
- */
+// Shared by the reel composition and the timeline under the clip.
 export const REEL_FPS = 30;
 export const BEAT = (60 / 122) * REEL_FPS;
 export const BAR = BEAT * 4;
@@ -18,7 +12,7 @@ export type ReelScene = {
 	readonly id: string;
 	readonly from: number;
 	readonly to: number;
-	/** Element titles, back to front. The recap reuses the other scenes. */
+	/** Back to front. The recap reuses the other scenes. */
 	readonly layers: readonly string[];
 };
 
