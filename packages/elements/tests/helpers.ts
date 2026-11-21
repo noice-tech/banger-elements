@@ -10,6 +10,7 @@ export function loadHelpers(
 	element: string,
 	names: string[],
 	overrides: Record<string, unknown> = {},
+	globals: Record<string, unknown> = {},
 ) {
 	const source = readFileSync(
 		new URL(`../src/elements/${element}/${element}.tsx`, import.meta.url),
@@ -31,6 +32,7 @@ export function loadHelpers(
 		...overrides,
 	};
 	runInNewContext(outputText, {
+		...globals,
 		exports,
 		require: (name: string) => (name in modules ? modules[name] : require(name)),
 	});
