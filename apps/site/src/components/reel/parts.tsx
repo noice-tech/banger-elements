@@ -270,17 +270,20 @@ const Tape: Part = ({from}) => {
 				line={0.28 + 0.6 * tear}
 				period={1.2}
 			>
-				{second ? (
-					<Fractals
-						{...layer(from)}
-						baseColor="#ff2bd6"
-						mixColor="#3a5bff"
-						zoom={1.2}
-						responsive={4}
-					/>
-				) : (
-					<Trip {...layer(from)} bpm={122} />
-				)}
+				{/* Vhs re-captures a stale snapshot of its children's WebGL canvases, so a fresh key per frame forces a new capture: without it Trip and Fractals freeze. */}
+				<AbsoluteFill key={frame}>
+					{second ? (
+						<Fractals
+							{...layer(from)}
+							baseColor="#ff2bd6"
+							mixColor="#3a5bff"
+							zoom={1.2}
+							responsive={4}
+						/>
+					) : (
+						<Trip {...layer(from)} bpm={122} />
+					)}
+				</AbsoluteFill>
 			</Vhs>
 			{/* The rings sit over the tape: audio-reactive layers inside the Vhs stop following the music. */}
 			<AbsoluteFill

@@ -374,6 +374,38 @@ body.showcase {
 .stage-screen[data-ready='true'] .preview-player {
 	opacity: 1;
 }
+/* Fade the wrapper: Remotion controls the Player's inline opacity. */
+.scene-player {
+	position: relative;
+	z-index: 1;
+	opacity: 0;
+}
+.stage-screen[data-ready='true'] .scene-player {
+	opacity: 1;
+	transition: opacity 180ms ease-out;
+}
+.scene-player:has(.stage-error) {
+	opacity: 1;
+}
+.scene-swap-cover {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	background: var(--stage) center / cover;
+	opacity: 0;
+	pointer-events: none;
+}
+.scenes .stage-screen > .stage-error {
+	z-index: 3;
+}
+@media (prefers-reduced-motion: reduce) {
+	.stage-screen[data-ready='true'] .scene-player {
+		transition: none;
+	}
+	.scene-swap-cover {
+		visibility: hidden;
+	}
+}
 .stage-error {
 	position: absolute;
 	inset: auto 0 0;

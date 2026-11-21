@@ -1,6 +1,7 @@
 /* eslint-disable @remotion/warn-native-media-tag -- Landing-page UI around the Player, not part of a rendered composition. */
 import {
 	createContext,
+	useCallback,
 	useContext,
 	useEffect,
 	useId,
@@ -10,7 +11,7 @@ import {
 	type CSSProperties,
 } from 'react';
 import {Player, type PlayerRef} from '@remotion/player';
-import {Html5Audio} from 'remotion';
+import {Html5Audio, Internals} from 'remotion';
 import {highlightLine} from './highlight';
 import {usePlayerReady} from './preview/player';
 import {SceneComposition} from './scenes/SceneComposition';
@@ -47,6 +48,8 @@ import {
 const PREVIEW_PIXELS = 1280 * 720;
 /** Phones and touch devices render fewer pixels per layer: three shaders per frame is a lot for them. */
 const COMPACT_PREVIEW_PIXELS = 960 * 540;
+const SCENE_FADE_OUT_MS = 120;
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
 const previewSize = (format: Format, pixels: number) => {
 	const {width, height} = formats[format];
@@ -58,6 +61,7 @@ const levelsOf = waves as Record<string, number[]>;
 
 // Swap scenes and props without changing the Player's composition.
 const SceneContext = createContext<BuiltScene | null>(null);
+const StageRenderScope = Internals.DelayRenderContextType;
 
 // The stage plays an excerpt of the track itself, so tweaks never restart the audio and
 // visitors never download the whole file. The excerpt keeps the track's own timeline.
@@ -104,6 +108,11 @@ const whenIdle = (task: () => void) => {
 
 export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	const [sceneId, setSceneId] = useState(scenes[0]!.timing.id);
+	const [selection, setSelection] = useState<{
+		id: string;
+		elements: readonly string[];
+		poster: string | null;
+	} | null>(null);
 	const [states, setStates] = useState<Record<string, SceneState>>(() =>
 		Object.fromEntries(scenes.map((spec) => [spec.timing.id, initialState(spec)])),
 	);
@@ -116,14 +125,13 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 			: PREVIEW_PIXELS,
 	);
 	const [reducedMotion] = useState(
-		() =>
-			typeof window !== 'undefined' &&
-			window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+		() => typeof window !== 'undefined' && window.matchMedia(REDUCED_MOTION).matches,
 	);
 	// Render the same shell on the server to avoid layout shift when the Player mounts.
 	const [mounted, setMounted] = useState(false);
 	const [loadError, setLoadError] = useState<string | null>(null);
 	const rootRef = useRef<HTMLDivElement>(null);
+	const coverRef = useRef<HTMLDivElement>(null);
 	const playerRef = useRef<PlayerRef>(null);
 	const codeId = useId();
 
@@ -150,7 +158,23 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	}, [full, spec, state.format]);
 
 	const {playerKey, retry, recover} = usePlayerRecovery(rootRef, mounted);
-	const ready = usePlayerReady(playerRef, `${sceneId}-${state.format}`, mounted, playerKey);
+	// The visualizers signal pending audio analysis through Remotion's delay-render handles.
+	// Scope them to this Player so other previews on the page never block the reveal.
+	const renderScope = useMemo(
+		() => ({
+			remotion_renderReady: false,
+			remotion_delayRenderHandles: [] as number[],
+			remotion_delayRenderTimeouts: {},
+			remotion_puppeteerTimeout: 0,
+			remotion_attempt: playerKey + 1,
+		}),
+		[playerKey],
+	);
+	const isFrameReady = useCallback(
+		() => renderScope.remotion_delayRenderHandles.length === 0,
+		[renderScope],
+	);
+	const ready = usePlayerReady(playerRef, sceneId, mounted, playerKey, isFrameReady);
 	const {playing, muted} = usePlayerStatus(playerRef, mounted, playerKey);
 	useVisiblePlayback(rootRef, playerRef, mounted, !reducedMotion, playerKey);
 
@@ -173,8 +197,41 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 		};
 	}, [playerKey]);
 
-	// Switching scenes or finishes waits for their shaders, so the old frame keeps playing
-	// instead of going blank. Already-loaded changes apply immediately.
+	// Keep playing the old scene until the new shaders arrive. Fade to the incoming
+	// poster before mounting them: WebGL initialization itself can block the main thread.
+	useEffect(() => {
+		if (!selection || selection.id === sceneId) return;
+		let cancelled = false;
+		let fade: Animation | undefined;
+		const cover = coverRef.current;
+		const animate = cover?.animate && !window.matchMedia(REDUCED_MOTION).matches;
+		if (animate && selection.poster) cover.style.backgroundImage = `url(${selection.poster})`;
+		setLoadError(null);
+		loadSceneElements(selection.elements).then(
+			async () => {
+				if (cancelled) return;
+				if (animate && playerRef.current && !document.hidden) {
+					fade = cover.animate([{opacity: 0}, {opacity: 1}], {
+						duration: SCENE_FADE_OUT_MS,
+						easing: 'ease-in-out',
+						fill: 'forwards',
+					});
+					await fade.finished.catch(() => {});
+				}
+				if (!cancelled) setSceneId(selection.id);
+			},
+			(error: unknown) => {
+				if (!cancelled) setLoadError(error instanceof Error ? error.message : String(error));
+			},
+		);
+		return () => {
+			cancelled = true;
+			fade?.cancel();
+			cover?.style.removeProperty('background-image');
+		};
+	}, [selection, sceneId, playerKey]);
+
+	// Tuning changes only have to wait for missing shaders; they don't fade out.
 	const commitWhenLoaded = (target: SceneSpec, targetState: SceneState, commit: () => void) => {
 		const needed = elementsFor(target, targetState);
 		if (needed.every((slug) => loadedElements[slug])) return commit();
@@ -184,6 +241,19 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	};
 	const prefetch = (target: SceneSpec) => {
 		loadSceneElements(elementsFor(target, states[target.timing.id]!)).catch(() => {});
+	};
+	const selectScene = (target: SceneSpec) => {
+		const id = target.timing.id;
+		if (id === sceneId) {
+			setSelection(null);
+			return;
+		}
+		const next = states[id]!;
+		setSelection({
+			id,
+			elements: elementsFor(target, next),
+			poster: next.format === 'wide' ? `/scenes/${id}.webp` : null,
+		});
 	};
 
 	const firstScene = useRef(true);
@@ -234,6 +304,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 				<div className="stage-screen" data-ready={ready} data-format={state.format}>
 					{wide ? (
 						<img
+							key={sceneId}
 							className="stage-poster"
 							src={`/scenes/${sceneId}.webp`}
 							alt=""
@@ -243,33 +314,37 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 					) : null}
 					{loadError ? <StageError message={loadError} onRetry={retry} /> : null}
 					{mounted && (
-						<SceneContext value={live}>
-							<Player
-								key={playerKey}
-								ref={playerRef}
-								className="preview-player"
-								component={StageComposition}
-								compositionWidth={live.width}
-								compositionHeight={live.height}
-								fps={live.fps}
-								durationInFrames={live.durationInFrames}
-								autoPlay={false}
-								initiallyMuted
-								numberOfSharedAudioTags={0}
-								loop
-								clickToPlay
-								doubleClickToFullscreen={false}
-								style={{width: '100%', aspectRatio: '16 / 9'}}
-								errorFallback={({error}) => (
-									<StageError
-										message={error.message}
-										onRetry={retry}
-										onLost={isContextLoss(error) ? recover : undefined}
+						<div className="scene-player">
+							<StageRenderScope value={renderScope}>
+								<SceneContext value={live}>
+									<Player
+										key={playerKey}
+										ref={playerRef}
+										component={StageComposition}
+										compositionWidth={live.width}
+										compositionHeight={live.height}
+										fps={live.fps}
+										durationInFrames={live.durationInFrames}
+										autoPlay={false}
+										initiallyMuted
+										numberOfSharedAudioTags={0}
+										loop
+										clickToPlay
+										doubleClickToFullscreen={false}
+										style={{width: '100%', aspectRatio: '16 / 9'}}
+										errorFallback={({error}) => (
+											<StageError
+												message={error.message}
+												onRetry={retry}
+												onLost={isContextLoss(error) ? recover : undefined}
+											/>
+										)}
 									/>
-								)}
-							/>
-						</SceneContext>
+								</SceneContext>
+							</StageRenderScope>
+						</div>
 					)}
+					<div ref={coverRef} className="scene-swap-cover" aria-hidden="true" />
 				</div>
 				<div className="stage-bar">
 					<div className="stage-picks scene-picks" role="group" aria-label="Choose a scene">
@@ -280,11 +355,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 								aria-pressed={scene.timing.id === sceneId}
 								onPointerEnter={() => prefetch(scene)}
 								onFocus={() => prefetch(scene)}
-								onClick={() =>
-									commitWhenLoaded(scene, states[scene.timing.id]!, () =>
-										setSceneId(scene.timing.id),
-									)
-								}
+								onClick={() => selectScene(scene)}
 							>
 								<img src={`/scenes/thumbs/${scene.timing.id}.webp`} alt="" width="48" height="27" />
 								<span>
