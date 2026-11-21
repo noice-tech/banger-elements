@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile, readdir, access} from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
+import {recipes} from '../src/components/recipes/recipes';
 import {sceneClip, sceneTimings} from '../src/components/scenes/timing';
 
 const workspace = path.resolve(import.meta.dirname, '..');
@@ -111,11 +112,11 @@ test('static navigation, assets and fragment targets resolve without a backend',
 	}
 });
 
-test('static output excludes local audio and video uploads, except the generated preview clips', async () => {
+test('static output includes only the intentional demo audio and video assets', async () => {
 	const files = await readdir(dist, {recursive: true});
-	// scripts/clips.mjs cuts these from the hosted demo tracks; anything else is a stray upload.
 	const clips = [
 		...sceneTimings.map((timing) => sceneClip(timing).src.slice(1)),
+		...recipes.flatMap(({audioFile}) => (audioFile ? [audioFile] : [])),
 		'audio/tuner.mp3',
 	];
 	const media = files.filter((file) => /\.(mp3|wav|mp4|mov|m4a)$/i.test(file));

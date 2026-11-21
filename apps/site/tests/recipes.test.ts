@@ -16,6 +16,12 @@ test('every recipe exports its composition component', () => {
 	assert.equal(new Set(recipes.map((recipe) => recipe.id)).size, recipes.length);
 });
 
+test('each recipe poster is a frame within its composition', () => {
+	for (const {id, poster, durationInFrames} of recipes) {
+		assert.ok(Number.isInteger(poster) && poster >= 0 && poster < durationInFrames, id);
+	}
+});
+
 test('the listed layers are exactly the elements a recipe imports', () => {
 	for (const recipe of recipes) {
 		const imported = source(recipe.id).match(

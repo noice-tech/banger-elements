@@ -1,11 +1,11 @@
-import {Composition, registerRoot} from 'remotion';
+import {Composition, registerRoot, staticFile} from 'remotion';
 import {Root} from '../Root';
 import {FisheyePreview} from '../../../site/src/components/preview/fisheye';
 import {VhsPreview} from '../../../site/src/components/preview/vhs';
 import {WetGlassPreview} from '../../../site/src/components/preview/wet-glass';
 import {Reel} from '../../../site/src/components/reel/reel';
 import {REEL_FPS, REEL_FRAMES} from '../../../site/src/components/reel/scenes';
-import {RECIPE_FPS, RECIPE_FRAMES, recipes} from '../../../site/src/components/recipes/recipes';
+import {RECIPE_FPS, recipes} from '../../../site/src/components/recipes/recipes';
 import {EpisodeClip} from '../../../site/src/components/recipes/episode-clip';
 import {ReleaseTeaser} from '../../../site/src/components/recipes/release-teaser';
 import {VerticalCanvas} from '../../../site/src/components/recipes/vertical-canvas';
@@ -64,11 +64,11 @@ registerRoot(() => (
 				key={recipe.id}
 				id={recipe.component}
 				component={recipeComponents[recipe.component]!}
-				durationInFrames={RECIPE_FRAMES}
+				durationInFrames={recipe.durationInFrames}
 				fps={RECIPE_FPS}
 				width={recipe.width}
 				height={recipe.height}
-				defaultProps={{audioSrc: DEMO_SONG}}
+				defaultProps={{audioSrc: recipe.audioFile ? staticFile(recipe.audioFile) : DEMO_SONG}}
 			/>
 		))}
 		{wrapDemos.map((demo) => (

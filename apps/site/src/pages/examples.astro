@@ -2,7 +2,7 @@
 import Showcase from '../layouts/Showcase.astro';
 import {elements} from '../data/elements';
 import {highlightLine} from '../components/highlight';
-import {RECIPE_FPS, RECIPE_FRAMES, recipes} from '../components/recipes/recipes';
+import {RECIPE_FPS, recipes} from '../components/recipes/recipes';
 import episodeClip from '../components/recipes/episode-clip.tsx?raw';
 import releaseTeaser from '../components/recipes/release-teaser.tsx?raw';
 import verticalCanvas from '../components/recipes/vertical-canvas.tsx?raw';
@@ -28,7 +28,6 @@ const forReaders = (source: string) =>
 			.join('\n'),
 	);
 
-const seconds = (RECIPE_FRAMES / RECIPE_FPS).toFixed(1);
 const shapes = {square: 'Square', wide: 'Landscape', tall: 'Vertical'} as const;
 const shapeOf = (width: number, height: number): keyof typeof shapes =>
 	width === height ? 'square' : width > height ? 'wide' : 'tall';
@@ -40,6 +39,7 @@ const cards = recipes.map((recipe, index) => {
 		...recipe,
 		number: String(index + 1).padStart(2, '0'),
 		shape: shapeOf(recipe.width, recipe.height),
+		seconds: (recipe.durationInFrames / RECIPE_FPS).toFixed(1),
 		code,
 		lines: lines.map(highlightLine),
 		layerEntries: recipe.layers.map(element),
@@ -91,10 +91,13 @@ const cards = recipes.map((recipe, index) => {
 				<div class="recipe-body">
 					<p class="recipe-use"><span>{card.number}</span>{card.use}</p>
 					<h2 id={`${card.id}-title`}>{card.title}</h2>
-					<p class="recipe-description">{card.description}</p>
+					<p class="recipe-description">
+						{card.description}
+						{card.audioFile && <>{' '}<a href={`/${card.audioFile}`} download>Download demo narration</a>.</>}
+					</p>
 					<dl class="recipe-specs">
 						<div><dt>Format</dt><dd>{card.width} × {card.height}</dd></div>
-						<div><dt>Length</dt><dd>4 bars · {seconds} s</dd></div>
+						<div><dt>Length</dt><dd>{card.seconds} s</dd></div>
 						<div><dt>Frame rate</dt><dd>{RECIPE_FPS} fps</dd></div>
 					</dl>
 					<p class="recipe-layers-label">Layers, back to front</p>
@@ -133,7 +136,7 @@ const cards = recipes.map((recipe, index) => {
 				</li>
 				<li>
 					<span>Bring your track</span>
-					<p>Put the audio in <code>public/</code>, and set <code>START</code> to the moment the clip should begin. <a href="/getting-started.html#audio-setup">Audio setup</a></p>
+					<p>Put the audio in <code>public/</code> and set <code>START</code> to the moment the clip should begin. If you replace the narration, update the caption cues to match. <a href="/getting-started.html#audio-setup">Audio setup</a></p>
 				</li>
 				<li>
 					<span>Render</span>
