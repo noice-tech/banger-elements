@@ -541,7 +541,7 @@ function setupSpectre(canvas: HTMLCanvasElement, fragment: string): SpectreState
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
-		antialias: true,
+		antialias: false,
 	});
 	if (!gl)
 		throw new Error(

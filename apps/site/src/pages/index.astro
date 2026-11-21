@@ -21,7 +21,7 @@ const pick = (slug: string) => {
 };
 const tunerPicks = [pick('ferrofluid'), pick('halo'), pick('trip'), pick('liquid')];
 const titles = Object.fromEntries(elements.map((entry) => [entry.slug, entry.title]));
-const reelLayerCount = new Set(reelScenes.slice(0, -1).flatMap((scene) => scene.layers)).size;
+const reelLayerCount = new Set(reelScenes.filter((scene) => scene.id !== 'recap').flatMap((scene) => scene.layers)).size;
 const wraps = wrapDemos.map((demo) => {
 	const entry = elements.find((element) => element.slug === demo.slug)!;
 	return {...demo, title: entry.title, name: entry.name};
@@ -41,7 +41,7 @@ const release = {
 			<a class="announce" href="/wet-glass.html">
 				<span class="announce-deck" aria-hidden="true">
 					{release.added.map((entry, index) => (
-						<img src={`/posters/${entry.slug}.webp`} alt="" width="32" height="18" decoding="async" style={`--i: ${index}`} />
+						<img src={`/posters/icons/${entry.slug}.webp`} alt="" width="32" height="18" decoding="async" style={`--i: ${index}`} />
 					))}
 				</span>
 				<span class="announce-text">
@@ -66,7 +66,7 @@ const release = {
 			</div>
 		</div>
 		<div class="wrap wrap-wide">
-			<SceneStage titles={titles} client:load />
+			<SceneStage titles={titles} client:visible={{rootMargin: '300px'}} />
 		</div>
 	</section>
 
@@ -77,7 +77,7 @@ const release = {
 					{filmstrip.map((entry) => (
 						<li>
 							<a href={`/${entry.slug}.html`} tabindex={copy === 1 ? -1 : undefined}>
-								<img src={`/posters/${entry.slug}.webp`} alt="" width="224" height="126" loading="lazy" decoding="async" />
+								<img src={`/posters/thumbs/${entry.slug}.webp`} alt="" width="224" height="126" loading="lazy" decoding="async" />
 								<span>{entry.title}</span>
 							</a>
 						</li>

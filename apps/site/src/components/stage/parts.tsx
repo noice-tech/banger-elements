@@ -1,4 +1,5 @@
 import {
+	useCallback,
 	useEffect,
 	useId,
 	useMemo,
@@ -12,7 +13,12 @@ import type {PlayerRef} from '@remotion/player';
 export const formatTime = (seconds: number) =>
 	`${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
-export function usePlayerStatus(playerRef: RefObject<PlayerRef | null>, mounted: boolean) {
+/** `generation` changes when the Player is remounted, so listeners move to the new instance. */
+export function usePlayerStatus(
+	playerRef: RefObject<PlayerRef | null>,
+	mounted: boolean,
+	generation = 0,
+) {
 	const [playing, setPlaying] = useState(false);
 	const [muted, setMuted] = useState(true);
 	useEffect(() => {
@@ -32,7 +38,7 @@ export function usePlayerStatus(playerRef: RefObject<PlayerRef | null>, mounted:
 			player.removeEventListener('pause', onPause);
 			player.removeEventListener('mutechange', onMute);
 		};
-	}, [playerRef, mounted]);
+	}, [playerRef, mounted, generation]);
 	return {playing, muted};
 }
 
@@ -104,6 +110,7 @@ export function TrackWave({
 	durationInFrames,
 	initialFrame,
 	marks = 0,
+	generation = 0,
 }: {
 	playerRef: RefObject<PlayerRef | null>;
 	mounted: boolean;
@@ -112,6 +119,7 @@ export function TrackWave({
 	durationInFrames: number;
 	initialFrame: number;
 	marks?: number;
+	generation?: number;
 }) {
 	const waveRef = useRef<HTMLDivElement>(null);
 	const seekRef = useRef<HTMLInputElement>(null);
@@ -150,7 +158,7 @@ export function TrackWave({
 			player.removeEventListener('frameupdate', onFrame);
 			player.removeEventListener('seeked', onFrame);
 		};
-	}, [playerRef, mounted, durationInFrames, fps]);
+	}, [playerRef, mounted, durationInFrames, fps, generation]);
 
 	const heights = useMemo(() => {
 		if (!levels || levels.length === 0 || bars < 2) return null;
@@ -312,6 +320,7 @@ export function useVisiblePlayback(
 	playerRef: RefObject<PlayerRef | null>,
 	mounted: boolean,
 	autoPlay: boolean,
+	generation = 0,
 ) {
 	useEffect(() => {
 		const root = rootRef.current;
@@ -329,8 +338,10 @@ export function useVisiblePlayback(
 		player.addEventListener('play', onPlay);
 		player.addEventListener('pause', onPause);
 		const observer = new IntersectionObserver(
-			([entry]) => {
-				if (entry!.isIntersecting) {
+			(entries) => {
+				// A busy main thread batches observations, so the last one is the current state.
+				const entry = entries[entries.length - 1]!;
+				if (entry.isIntersecting) {
 					if (!held && !player.isPlaying()) player.play();
 				} else if (player.isPlaying()) {
 					ours = true;
@@ -345,5 +356,65 @@ export function useVisiblePlayback(
 			player.removeEventListener('play', onPlay);
 			player.removeEventListener('pause', onPause);
 		};
-	}, [rootRef, playerRef, mounted, autoPlay]);
+	}, [rootRef, playerRef, mounted, autoPlay, generation]);
+}
+
+const RECOVERY_WINDOW_MS = 30_000;
+const MAX_AUTO_RECOVERIES = 3;
+/** WebGL's CONTEXT_LOST_WEBGL, which the elements report when a draw fails after a lost context. */
+const CONTEXT_LOST_CODE = '37442';
+
+export const isContextLoss = (error: Error) => error.message.includes(CONTEXT_LOST_CODE);
+
+/**
+ * Browsers drop WebGL contexts under memory pressure or a GPU reset, and the
+ * elements then throw, which would leave the Player on its error screen until
+ * a reload. Remounting the Player with a new `key` builds fresh contexts.
+ * `recover` retries by itself a few times; `retry` is for the visitor.
+ */
+export function usePlayerRecovery(rootRef: RefObject<HTMLElement | null>, mounted: boolean) {
+	const [attempt, setAttempt] = useState(0);
+	const recent = useRef<number[]>([]);
+	const timer = useRef(0);
+	const retry = useCallback(() => setAttempt((count) => count + 1), []);
+	const recover = useCallback(() => {
+		const now = Date.now();
+		recent.current = recent.current.filter((time) => now - time < RECOVERY_WINDOW_MS);
+		if (recent.current.length >= MAX_AUTO_RECOVERIES) return;
+		recent.current.push(now);
+		window.clearTimeout(timer.current);
+		timer.current = window.setTimeout(retry, 300);
+	}, [retry]);
+	useEffect(() => {
+		const root = rootRef.current;
+		if (!mounted || !root) return;
+		// While playing, the failed draw unmounts the canvas before this event arrives, and the
+		// error screen calls `recover` instead. A paused stage draws nothing, so only this sees it.
+		// Context events do not bubble, so listen while they travel down to the canvas.
+		root.addEventListener('webglcontextlost', recover, true);
+		return () => root.removeEventListener('webglcontextlost', recover, true);
+	}, [rootRef, mounted, recover]);
+	useEffect(() => () => window.clearTimeout(timer.current), []);
+	return {playerKey: attempt, retry, recover};
+}
+
+export function StageError({
+	message,
+	onRetry,
+	onLost,
+}: {
+	message: string;
+	onRetry: () => void;
+	/** Called once when this error is a lost WebGL context, to start an automatic retry. */
+	onLost?: () => void;
+}) {
+	useEffect(() => onLost?.(), [onLost]);
+	return (
+		<div role="alert" className="stage-error">
+			<p>Preview unavailable: {message}. WebGL2 elements need graphics acceleration.</p>
+			<button type="button" className="button" onClick={onRetry}>
+				Reload preview
+			</button>
+		</div>
+	);
 }

@@ -669,7 +669,7 @@ function setupFlowers(canvas: HTMLCanvasElement): FlowersState {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
-		antialias: true,
+		antialias: false,
 	});
 	if (!gl)
 		throw new Error(

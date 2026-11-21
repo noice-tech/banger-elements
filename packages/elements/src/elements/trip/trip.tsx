@@ -365,7 +365,7 @@ function setupTrip(canvas: HTMLCanvasElement): TripState {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
-		antialias: true,
+		antialias: false,
 	});
 	if (!gl)
 		throw new Error(

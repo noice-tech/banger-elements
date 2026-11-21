@@ -9,16 +9,22 @@ const LONG_PREVIEWS: readonly string[] = ['audio-particles', 'combined'];
 export const previewDurationInSeconds = (kind: PreviewKind) =>
 	isWrapper(kind) || LONG_PREVIEWS.includes(kind) ? 16 : 9;
 
+const alwaysReady = () => true;
+
 // Wait for two settled frames to avoid flashing a half-loaded preview.
 export function usePlayerReady<K extends string>(
 	playerRef: RefObject<PlayerRef | null>,
 	kind: K,
 	mounted = true,
+	generation = 0,
+	isFrameReady = alwaysReady,
 ) {
 	const [readyKind, setReadyKind] = useState<K | null>(null);
 	useEffect(() => {
 		const player = playerRef.current;
 		if (!player) return;
+		// A remounted Player shows its first frames again, so wait for them to settle.
+		setReadyKind(null);
 		let frame = 0;
 		let settledFrames = 0;
 		let buffering = false;
@@ -31,7 +37,7 @@ export function usePlayerReady<K extends string>(
 		player.addEventListener('waiting', onWaiting);
 		player.addEventListener('resume', onResume);
 		const revealWhenReady = () => {
-			settledFrames = buffering ? 0 : settledFrames + 1;
+			settledFrames = !buffering && isFrameReady() ? settledFrames + 1 : 0;
 			if (settledFrames >= 2) setReadyKind(kind);
 			else frame = requestAnimationFrame(revealWhenReady);
 		};
@@ -41,6 +47,6 @@ export function usePlayerReady<K extends string>(
 			player.removeEventListener('waiting', onWaiting);
 			player.removeEventListener('resume', onResume);
 		};
-	}, [playerRef, kind, mounted]);
+	}, [playerRef, kind, mounted, generation, isFrameReady]);
 	return readyKind === kind;
 }

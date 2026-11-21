@@ -1,19 +1,20 @@
 import {useEffect, useState, type FC} from 'react';
 import {continueRender, delayRender, staticFile} from 'remotion';
 
-// The site's recipes ask for Geist. Renders pass --public-dir=apps/site/static,
-// so load it from there before the first frame.
+// The site's recipes and scenes ask for these. Renders pass --public-dir=apps/site/static,
+// so load them from there before the first frame.
 const fonts = [
-	['Geist', 'fonts/Geist.woff2'],
-	['Geist Mono', 'fonts/GeistMono.woff2'],
+	['Geist', 'fonts/Geist.woff2', '100 900'],
+	['Geist Mono', 'fonts/GeistMono.woff2', '100 900'],
+	['Syncopate', 'fonts/Syncopate-Bold.woff2', '700'],
 ] as const;
 
 const useSiteFonts = () => {
 	const [handle] = useState(() => delayRender('Site fonts'));
 	useEffect(() => {
 		Promise.all(
-			fonts.map(([family, file]) =>
-				new FontFace(family, `url(${staticFile(file)})`, {weight: '100 900'})
+			fonts.map(([family, file, weight]) =>
+				new FontFace(family, `url(${staticFile(file)})`, {weight})
 					.load()
 					.then((font) => document.fonts.add(font)),
 			),

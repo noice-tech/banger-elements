@@ -16,8 +16,8 @@ const cli = path.join(
 const out = path.join(workspace, 'static/reel');
 mkdirSync(out, {recursive: true});
 
-// A frame from the Liquid × Ferrofluid scene.
-const POSTER_FRAME = 450;
+// A frame from the Liquid × Ferrofluid scene, on a kick.
+const POSTER_FRAME = 459;
 const render = (args) => {
 	const result = spawnSync(
 		process.execPath,
