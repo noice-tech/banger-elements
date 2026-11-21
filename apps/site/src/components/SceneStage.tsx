@@ -48,7 +48,7 @@ import {
 const PREVIEW_PIXELS = 1280 * 720;
 /** Phones and touch devices render fewer pixels per layer: three shaders per frame is a lot for them. */
 const COMPACT_PREVIEW_PIXELS = 960 * 540;
-const SCENE_FADE_OUT_MS = 120;
+const SCENE_FADE_OUT_MS = 180;
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
 const previewSize = (format: Format, pixels: number) => {

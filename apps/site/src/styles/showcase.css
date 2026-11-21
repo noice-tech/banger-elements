@@ -382,7 +382,7 @@ body.showcase {
 }
 .stage-screen[data-ready='true'] .scene-player {
 	opacity: 1;
-	transition: opacity 180ms ease-out;
+	transition: opacity 300ms ease-out;
 }
 .scene-player:has(.stage-error) {
 	opacity: 1;
