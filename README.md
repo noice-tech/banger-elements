@@ -46,8 +46,6 @@ This serves the site at [localhost:3300](http://localhost:3300) and starts Remot
 
 `bun run check` runs the format check, lint, type checks and tests. `bun run smoke` renders each Studio fixture to `out/`.
 
-Remotion is pinned to 4.0.532. Keep every `@remotion/*` package on the same version.
-
 ## License
 
 [MIT](LICENSE) © 2026 Noice Tech. Remotion and other dependencies have their own licenses.
