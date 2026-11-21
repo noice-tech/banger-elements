@@ -41,7 +41,7 @@ export const scenes: readonly SceneSpec[] = [
 			{name: 'Chrome', a: '#2b59ff', b: '#9ad8ff', c: '#ffffff'},
 			{name: 'Acid', a: '#0f9d58', b: '#c6ff3d', c: '#ff5cf0'},
 		],
-		finish: 'vhs',
+		finish: 'none',
 		layers: [
 			layer({
 				slug: 'synthwave',
@@ -66,43 +66,40 @@ export const scenes: readonly SceneSpec[] = [
 					inputGainDb: ctx.energy(-6, 4, 1),
 				}),
 			}),
-			layer({
-				slug: 'audio-particles',
-				props: (ctx) => ({
-					color: ctx.palette.c,
-					radius: span(ctx, 0.42),
-					density: ctx.energy(16, 40, 1),
-					intensity: ctx.energy(2, 7),
-					size: 1.3,
-				}),
-			}),
 		],
-		overlay: ({px}) => [
-			fill(
-				{
-					justifyContent: 'flex-end',
-					alignItems: 'center',
-					paddingBottom: px(52),
-					textAlign: 'center',
-					textShadow: shadow('rgb(10 0 30 / 0.85)'),
-				},
-				box({fontSize: px(20), fontWeight: 600, letterSpacing: px(10)}, 'TEQUILA FUNK'),
-				box(
+		overlay: ({px, W}) => {
+			// The wide letters fill the frame, so narrow formats scale the title by width.
+			const title = Math.min(px(80), Math.round(W * 0.075));
+			return [
+				fill(
 					{
-						marginTop: px(10),
-						fontSize: px(112),
-						fontWeight: 300,
-						lineHeight: 0.95,
-						letterSpacing: -px(3),
+						justifyContent: 'flex-end',
+						alignItems: 'center',
+						paddingBottom: px(28),
+						textAlign: 'center',
+						textShadow: shadow('rgb(10 0 30 / 0.85)'),
 					},
-					'Time Travel',
+					box({fontSize: px(20), fontWeight: 600, letterSpacing: px(10)}, 'TEQUILA FUNK'),
+					box(
+						{
+							marginTop: px(12),
+							fontFamily: 'Syncopate, system-ui, sans-serif',
+							fontSize: title,
+							fontWeight: 700,
+							lineHeight: 1,
+							letterSpacing: Math.round(title * 0.11),
+							paddingLeft: Math.round(title * 0.11),
+							whiteSpace: 'nowrap',
+						},
+						'TIME TRAVEL',
+					),
+					box(
+						{marginTop: px(22), fontSize: px(18), fontWeight: 600, letterSpacing: px(8)},
+						'OUT NOW',
+					),
 				),
-				box(
-					{marginTop: px(18), fontSize: px(18), fontWeight: 600, letterSpacing: px(8)},
-					'OUT NOW',
-				),
-			),
-		],
+			];
+		},
 	},
 	{
 		timing: timing('breakdown'),
@@ -126,6 +123,16 @@ export const scenes: readonly SceneSpec[] = [
 					speed: energy(1, 2.5, 0.25),
 					responsive: energy(1, 6, 0.5),
 					inputGainDb: 0,
+				}),
+			}),
+			layer({
+				slug: 'audio-particles',
+				props: (ctx) => ({
+					color: ctx.palette.c,
+					radius: span(ctx, 0.42),
+					density: ctx.energy(16, 40, 1),
+					intensity: ctx.energy(2, 7),
+					size: 1.3,
 				}),
 			}),
 			layer({

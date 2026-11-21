@@ -37,7 +37,7 @@ const details = {
 			'timeOffsetInSeconds — effect phase, independent of child media timing',
 		],
 		limitation:
-			'The faithful shader uses HTML-in-canvas: Chrome 149+ with chrome://flags/#canvas-draw-element for preview, and Remotion 4.0.523+ with ANGLE or Swangle for rendering. Other browsers receive an SVG blur/displacement approximation, not the original droplet field. Filters children only, not siblings or portals; HTML-in-canvas wrappers cannot be nested. Clips to its bounds. Blur uses 16 samples and can be GPU-intensive.',
+			'The faithful shader uses HTML-in-canvas: Chrome 149+ with chrome://flags/#canvas-draw-element for preview, and Remotion 4.0.523+ with ANGLE or Swangle for rendering. Other browsers draw the same droplet field into an SVG filter that blurs and bends the children, so drops, trails and tint match closely; blur is Gaussian rather than the shader’s disk kernel, bright lights look slightly dimmer, and the outer few pixels darken. Filters children only, not siblings or portals; HTML-in-canvas wrappers cannot be nested. Clips to its bounds. Blur uses 16 samples and can be GPU-intensive.',
 	},
 	fisheye: {
 		title: 'Fisheye',

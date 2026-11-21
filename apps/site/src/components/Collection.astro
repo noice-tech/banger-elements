@@ -54,7 +54,8 @@ const categories = overview
 				)}
 				{!overview && <h2 id={category.id} class="sr-only">{category.title}</h2>}
 				<div class="bento">
-					{ordered.map((entry) => {
+					{/* The overview has no filter, so tiles it does not show are never rendered. */}
+					{(overview ? laidOut : ordered).map((entry) => {
 						const index = laidOut.indexOf(entry);
 						return (
 							<ElementTile

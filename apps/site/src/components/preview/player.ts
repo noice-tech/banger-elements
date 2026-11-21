@@ -14,11 +14,14 @@ export function usePlayerReady<K extends string>(
 	playerRef: RefObject<PlayerRef | null>,
 	kind: K,
 	mounted = true,
+	generation = 0,
 ) {
 	const [readyKind, setReadyKind] = useState<K | null>(null);
 	useEffect(() => {
 		const player = playerRef.current;
 		if (!player) return;
+		// A remounted Player shows its first frames again, so wait for them to settle.
+		setReadyKind(null);
 		let frame = 0;
 		let settledFrames = 0;
 		let buffering = false;
@@ -41,6 +44,6 @@ export function usePlayerReady<K extends string>(
 			player.removeEventListener('waiting', onWaiting);
 			player.removeEventListener('resume', onResume);
 		};
-	}, [playerRef, kind, mounted]);
+	}, [playerRef, kind, mounted, generation]);
 	return readyKind === kind;
 }

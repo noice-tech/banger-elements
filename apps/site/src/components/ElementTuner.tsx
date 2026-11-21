@@ -9,7 +9,6 @@ import {
 	type ComponentProps,
 } from 'react';
 import {Player, type PlayerRef} from '@remotion/player';
-import {getAudioData} from '@remotion/media-utils';
 import {Html5Audio} from 'remotion';
 import {examples, type PreviewKind} from './preview/examples';
 import {PreviewRenderer, PREVIEW_WIDTH, PREVIEW_HEIGHT} from './preview/PreviewRenderer';
@@ -18,13 +17,17 @@ import {usePlayerReady} from './preview/player';
 import type {Control} from './preview/controls';
 import type {PreviewProps, PreviewValue} from './preview/types';
 import {highlightLine} from './highlight';
+import tunerWave from './tuner-wave.json';
 import {
 	PlayButton,
 	Segments,
 	SoundButton,
+	StageError,
+	isContextLoss,
 	Swatches,
 	TrackWave,
 	toggleSound,
+	usePlayerRecovery,
 	usePlayerStatus,
 	useVisiblePlayback,
 } from './stage/parts';
@@ -33,8 +36,8 @@ type Pick = {slug: PreviewKind; title: string; name: string};
 
 const FPS = 60;
 
-// End the shared loop before the track goes silent.
-const AUDIO = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
+// The first stretch of the demo song, cut by scripts/clips.mjs. The loop ends before the track goes silent.
+const AUDIO = '/audio/tuner.mp3';
 const SECONDS = 50;
 const DURATION_IN_FRAMES = SECONDS * FPS;
 
@@ -88,34 +91,12 @@ function TunerComposition() {
 	);
 }
 
-let waveform: Promise<number[]> | null = null;
-
-/** Loudness of the looped stretch of the song in 512 slices, loudest 1. */
-const loadWaveform = () => {
-	waveform ??= getAudioData(AUDIO).then(({channelWaveforms, sampleRate}) => {
-		const channel = channelWaveforms[0]!;
-		const length = Math.round(SECONDS * sampleRate);
-		const slices = 512;
-		const size = Math.max(1, Math.floor(length / slices));
-		const levels = Array.from({length: slices}, (_, slice) => {
-			let sum = 0;
-			for (let i = slice * size; i < (slice + 1) * size; i++) sum += (channel[i] ?? 0) ** 2;
-			return Math.sqrt(sum / size);
-		});
-		const loudest = Math.max(...levels) || 1;
-		return levels.map((level) => level / loudest);
-	});
-	waveform.catch(() => (waveform = null));
-	return waveform;
-};
-
 const literal = (value: PreviewValue) =>
 	typeof value === 'string' ? `"${value}"` : `{${String(value)}}`;
 
 export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 	const [selected, setSelected] = useState<PreviewKind>(picks[0]!.slug);
 	const [tweaks, setTweaks] = useState<Partial<Record<PreviewKind, PreviewProps>>>({});
-	const [levels, setLevels] = useState<number[] | null>(null);
 	const [reducedMotion] = useState(
 		() =>
 			typeof window !== 'undefined' &&
@@ -126,9 +107,10 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 	useEffect(() => setMounted(true), []);
 	const rootRef = useRef<HTMLDivElement>(null);
 	const playerRef = useRef<PlayerRef>(null);
-	const ready = usePlayerReady(playerRef, selected, mounted);
-	const {playing, muted} = usePlayerStatus(playerRef, mounted);
-	useVisiblePlayback(rootRef, playerRef, mounted, !reducedMotion);
+	const {playerKey, retry, recover} = usePlayerRecovery(rootRef, mounted);
+	const ready = usePlayerReady(playerRef, selected, mounted, playerKey);
+	const {playing, muted} = usePlayerStatus(playerRef, mounted, playerKey);
+	useVisiblePlayback(rootRef, playerRef, mounted, !reducedMotion, playerKey);
 	const props = useMemo<VisualProps>(
 		() => ({...baseProps(selected), ...tweaks[selected], previewKind: selected}),
 		[selected, tweaks],
@@ -141,17 +123,6 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 			.filter(Boolean) as Control[];
 	}, [selected]);
 	const current = picks.find((pick) => pick.slug === selected)!;
-
-	useEffect(() => {
-		let live = true;
-		loadWaveform().then(
-			(next) => live && setLevels(next),
-			() => {},
-		);
-		return () => {
-			live = false;
-		};
-	}, []);
 
 	const update = (key: string, value: PreviewValue) =>
 		setTweaks((all) => ({...all, [selected]: {...all[selected], [key]: value}}));
@@ -194,6 +165,7 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 					{mounted && (
 						<VisualContext value={props}>
 							<Player
+								key={playerKey}
 								ref={playerRef}
 								className="preview-player"
 								component={TunerComposition}
@@ -210,10 +182,11 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 								doubleClickToFullscreen={false}
 								style={{width: '100%', aspectRatio: '16 / 9'}}
 								errorFallback={({error}) => (
-									<p role="alert" className="stage-error">
-										Preview unavailable: {error.message}. WebGL2 elements need graphics
-										acceleration.
-									</p>
+									<StageError
+										message={error.message}
+										onRetry={retry}
+										onLost={isContextLoss(error) ? recover : undefined}
+									/>
 								)}
 							/>
 						</VisualContext>
@@ -236,9 +209,10 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 					<div className="stage-transport">
 						<PlayButton playing={playing} onClick={() => playerRef.current?.toggle()} />
 						<TrackWave
+							generation={playerKey}
 							playerRef={playerRef}
 							mounted={mounted}
-							levels={levels}
+							levels={tunerWave}
 							fps={FPS}
 							durationInFrames={DURATION_IN_FRAMES}
 							initialFrame={POSTER_FRAME}

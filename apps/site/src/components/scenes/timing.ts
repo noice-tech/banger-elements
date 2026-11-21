@@ -65,3 +65,29 @@ export const sceneFrames = (timing: SceneTiming) =>
 
 /** The frame the stage opens on. static/scenes/<id>.webp are renders of it. */
 export const SCENE_POSTER_FRAME = 24;
+
+/** Seconds of music kept before a scene starts, for the analysis windows that look back. */
+export const CLIP_LEAD_SECONDS = 20;
+/** Seconds of music kept after the loop ends, for the windows that look ahead. */
+export const CLIP_TAIL_SECONDS = 2;
+
+const hundredths = (value: number) => Math.round(value * 100) / 100;
+
+/**
+ * The live preview plays an excerpt of the track, not the whole file: every visualizer
+ * streams its own copy of the audio, and a full track is ~10 MB each. The excerpt keeps
+ * the track's own timeline, with silence before `from`, because elements read absolute
+ * time (Circle's glow ring brightens with it) and the copied code uses the full track.
+ */
+export const sceneClip = (timing: SceneTiming) => {
+	const start = sceneStart(timing);
+	const from = hundredths(Math.max(0, start - CLIP_LEAD_SECONDS));
+	const loopSeconds = sceneFrames(timing) / SCENE_FPS;
+	return {
+		src: `/audio/${timing.id}.m4a`,
+		/** Where the music starts, in seconds of the track. Everything before it is silent. */
+		from,
+		/** How much music follows `from`. */
+		seconds: hundredths(start - from + loopSeconds + CLIP_TAIL_SECONDS),
+	};
+};

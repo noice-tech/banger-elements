@@ -485,7 +485,7 @@ function setupHalo(canvas: HTMLCanvasElement): HaloState {
 		alpha: true,
 		premultipliedAlpha: true,
 		preserveDrawingBuffer: true,
-		antialias: true,
+		antialias: false,
 	});
 	if (!gl)
 		throw new Error(
