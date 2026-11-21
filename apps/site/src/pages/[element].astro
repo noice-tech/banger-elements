@@ -31,6 +31,7 @@ const next = siblings.length > 1 ? siblings[(position + 1) % siblings.length]! :
 const duration = previewDurationInSeconds(entry.slug as PreviewKind);
 ---
 <Showcase title={entry.title} description={entry.description} pageClass="page-element" searchable>
+	<link slot="head" rel="alternate" type="application/vnd.remotion.element+json" href={`/elements/${entry.slug}.json`} />
 	<div class="wrap wrap-wide">
 		<header class="element-head">
 			<nav class="kicker" aria-label="Breadcrumb"><a href="/#collection">Collection</a><span aria-hidden="true">/</span><a href={`/${category.id}`}>{category.title}</a><span aria-hidden="true">/</span><span aria-current="page">{entry.title}</span></nav>
@@ -64,7 +65,7 @@ const duration = previewDurationInSeconds(entry.slug as PreviewKind);
 						<a href={`https://github.com/noice-tech/banger-elements/blob/main/packages/elements/src/elements/${entry.slug}/${entry.slug}.tsx`} target="_blank" rel="noreferrer"><GitHubIcon /> Source</a>
 					</div>
 					<p class="install-note">{isWrapper ? `Installs the wrapper only, not the demo. After confirming in Studio, move your existing JSX inside <${wrapperName}> in code. Inserting it as a sibling does not apply the effect.` : 'Install or drag to use your preview settings. Confirm the request in Studio.'}</p>
-					<details class="install-help"><summary>Need help connecting?</summary><p>Open a composition in a compatible Remotion Studio first. Install and drag both require confirmation. On touch devices, use Install in Studio.</p></details>
+					<details class="install-help"><summary>Need help connecting?</summary><p>Open a composition in a compatible Remotion Studio first. Install and drag both require confirmation. On touch devices, use Install in Studio. You can also <a href="/getting-started.html#install-from-the-command-line">install from the command line</a>.</p></details>
 				</section>
 			</div>
 			<aside class="element-config" aria-label={`${entry.title} preview settings`}>

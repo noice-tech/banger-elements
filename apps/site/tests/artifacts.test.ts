@@ -58,6 +58,22 @@ test('every catalog entry has a downloadable detail page, poster and gallery pre
 	assert.ok(!/<video[^>]*autoplay/.test(overview + galleries), 'Gallery must not force autoplay');
 });
 
+test('only Element pages advertise their own CLI install payload', async () => {
+	const pages = new Map(catalog.map(({slug}) => [`${slug}.html`, `/elements/${slug}.json`]));
+	for (const file of (await readdir(dist)).filter((name) => name.endsWith('.html'))) {
+		const html = await readFile(path.join(dist, file), 'utf8');
+		const head = html.match(/<head\b[^>]*>([\s\S]*?)<\/head>/)?.[1] ?? '';
+		const links =
+			head.match(/<link\b[^>]*\btype="application\/vnd\.remotion\.element\+json"[^>]*>/g) ?? [];
+		const payload = pages.get(file);
+		assert.equal(links.length, payload ? 1 : 0, `${file}: wrong number of payload links`);
+		if (payload) {
+			assert.match(links[0]!, /\brel="alternate"/, file);
+			assert.ok(links[0]!.includes(`href="${payload}"`), `${file}: wrong payload URL`);
+		}
+	}
+});
+
 test('categories: gallery and navigation group all elements without changing their URLs', async () => {
 	const overview = await readFile(path.join(dist, 'index.html'), 'utf8');
 	const sectionOf = (html: string, category: string) =>
