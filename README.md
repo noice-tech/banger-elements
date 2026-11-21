@@ -1,43 +1,50 @@
 # Banger Elements
 
-Audio-reactive elements for [Remotion](https://remotion.dev), from the makers of [banger.show](https://banger.show).
+Audio-reactive visualizers, shaders and effects for [Remotion](https://remotion.dev), from the makers of [banger.show](https://banger.show).
 
-Preview each element, adjust its settings, and use the source in your project — no runtime component library required.
+Each element is one TSX file. You preview it on the site, change its settings, and then send it to Remotion Studio or download it. Your project gets the source file, not a package to install and keep updated.
 
-![Animated previews of the Spectre visualizer, Trip shader, and VHS effect](docs/assets/preview.gif)
+![A grid of 12 element previews: Synthwave, Ferrofluid, Flowers, Trip, Liquid, Pulsar, Chrome, Halo, Rail, Kaleidoscope, Wet Glass and Neuron](docs/assets/preview.webp)
 
-## Explore the collection
+## The collection
 
-- [**Visualizers**](https://banger-elements.dev/visualizers) — waveforms, spectra, and audio-reactive forms.
-- [**Shaders**](https://banger-elements.dev/shaders) — procedural backgrounds, immersive worlds, and evolving textures.
-- [**Effects**](https://banger-elements.dev/effects) — wrappers that transform child content with treatments such as lens distortion and analog texture.
+The collection has 33 elements in three groups:
+
+- [Visualizers](https://banger-elements.dev/visualizers) (8) draw audio as waveforms, spectra, rings, fluid and particles.
+- [Shaders](https://banger-elements.dev/shaders) (22) are full-frame procedural backgrounds that follow the track, such as Trip, Synthwave, Rain and Matrix.
+- [Effects](https://banger-elements.dev/effects) (3) wrap other content. VHS adds analog tape texture, Fisheye adds lens distortion, and Wet Glass puts the frame behind a rainy window.
+
+The [examples page](https://banger-elements.dev/examples) has four finished compositions built only from the collection: an audiogram, a release teaser, a vertical loop and a stream background. Each one shows the code that rendered it.
 
 ## Getting started
 
-1. Browse the [showcase](https://banger-elements.dev) and preview an element.
-2. Choose **Install in Studio** and confirm in Remotion Studio, or download the TSX source.
-3. Connect audio for a visualizer or shader, or wrap existing content with an effect, then adjust its settings in your composition.
+1. Open your Remotion project in Studio.
+2. Pick an element on the [site](https://banger-elements.dev) and adjust its preview settings.
+3. Click Install in Studio and confirm the request in Studio. The installed file uses your preview settings as its defaults. You can also download the TSX.
+4. Pass your audio to a visualizer or shader, or move your existing layers inside an effect.
 
-See the [setup and usage guide](apps/site/src/content/docs/getting-started.mdx) for details.
+To get the whole collection in Studio's Browse Elements panel, use Add Library to Studio and restart Studio.
+
+Downloaded files import only React, `remotion`, `@remotion/media` and `@remotion/media-utils`. WebGL elements may need `--gl=angle` when you render. The [getting started guide](apps/site/src/content/docs/getting-started.mdx) covers audio setup, timing, effects and rendering.
 
 ## Run locally
 
-Requires Node.js 24.22.3 and Bun 1.3.8.
+You need Node.js 24.22.3 and Bun 1.3.8.
 
 ```bash
 bun install
 bun run dev
 ```
 
-This starts the showcase at [localhost:3300](http://localhost:3300) alongside Remotion Studio.
+This serves the site at [localhost:3300](http://localhost:3300) and starts Remotion Studio.
 
 ## Development
 
-- `packages/elements` — element source and collection build
-- `apps/site` — showcase and docs
-- `apps/studio` — Remotion compositions
+- `packages/elements` has the element source and the collection build.
+- `apps/site` is the Astro site with the showcase, examples and docs. Its [README](apps/site/README.md) explains the home page scenes and the "Wrap anything" demos.
+- `apps/studio` has the Remotion compositions used for smoke tests and renders.
 
-Run `bun run check` to check formatting, lint, types, and tests.
+`bun run check` runs the format check, lint, type checks and tests. `bun run smoke` renders each Studio fixture to `out/`.
 
 ## License
 
