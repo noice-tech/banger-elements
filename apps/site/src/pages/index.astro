@@ -21,7 +21,7 @@ const pick = (slug: string) => {
 };
 const tunerPicks = [pick('ferrofluid'), pick('halo'), pick('trip'), pick('liquid')];
 const titles = Object.fromEntries(elements.map((entry) => [entry.slug, entry.title]));
-const reelLayerCount = new Set(reelScenes.slice(0, -1).flatMap((scene) => scene.layers)).size;
+const reelLayerCount = new Set(reelScenes.filter((scene) => scene.id !== 'recap').flatMap((scene) => scene.layers)).size;
 const wraps = wrapDemos.map((demo) => {
 	const entry = elements.find((element) => element.slug === demo.slug)!;
 	return {...demo, title: entry.title, name: entry.name};

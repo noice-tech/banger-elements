@@ -31,10 +31,10 @@ import {BAR, BEAT, REEL_FPS, SONG_FRAME} from './scenes';
 export const TRACK = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
 export const W = 1280;
 export const H = 720;
-const fill: CSSProperties = {position: 'absolute', inset: 0};
+export const fill: CSSProperties = {position: 'absolute', inset: 0};
 
 /** Every element reads the same song, positioned at this scene's frame. */
-const layer = (from: number) => ({
+export const layer = (from: number) => ({
 	audioSrc: TRACK,
 	audioOffsetInSeconds: (SONG_FRAME + from) / REEL_FPS,
 	playAudio: false,
@@ -43,7 +43,7 @@ const layer = (from: number) => ({
 	style: fill,
 });
 
-type Part = FC<{from: number; length: number}>;
+export type Part = FC<{from: number; length: number}>;
 
 /** Four quiet pulses, then the lights go out for a beat before the drop. */
 const Intro: Part = ({from}) => {
@@ -281,13 +281,50 @@ const Tape: Part = ({from}) => {
 				) : (
 					<Trip {...layer(from)} bpm={122} />
 				)}
-				<Circle
-					{...layer(from)}
-					colorMode="rainbow"
-					circleVariant={second ? 'radial-bars' : 'glow-ring'}
-					radius={second ? 0.4 : 0.5}
-				/>
 			</Vhs>
+			{/* The rings sit over the tape: audio-reactive layers inside the Vhs stop following the music. */}
+			<AbsoluteFill
+				style={{
+					mixBlendMode: 'screen',
+					filter: 'blur(0.4px)',
+					transform: `scale(${1 + 0.05 * k})`,
+				}}
+			>
+				{second ? (
+					<Circle
+						{...layer(from)}
+						colorMode="rainbow"
+						circleVariant="radial-bars"
+						radius={0.42}
+						count={72}
+						barWidth={0.6}
+						intensity={5}
+						rainbowSpeed={3}
+					/>
+				) : (
+					<>
+						<Circle
+							{...layer(from)}
+							colorMode="rainbow"
+							circleVariant="radial-bars"
+							radius={0.46}
+							count={96}
+							barWidth={0.55}
+							intensity={6}
+							rainbowSpeed={3}
+						/>
+						<Circle
+							{...layer(from)}
+							colorMode="rainbow"
+							circleVariant="waveform-ring"
+							radius={0.3}
+							intensity={5}
+							lineWidth={4}
+							rainbowSpeed={3}
+						/>
+					</>
+				)}
+			</AbsoluteFill>
 		</Shake>
 	);
 };
@@ -320,10 +357,14 @@ const Metal: Part = ({from, length}) => {
 							{...layer(from)}
 							width={W * 1.2}
 							height={H * 1.2}
-							shineColor="#ffd2a8"
+							color="#4a0b08"
+							shineColor="#ff4a24"
+							shineIntensity={6}
+							shineSize={2.4}
+							envMapIntensity={1.3}
 							intensity={3.4}
 							pattern={3}
-							iridescence={0.5}
+							iridescence={0.15}
 							rotationSpeed={1.6}
 							style={{flex: 'none', transform: `scale(${1 + 0.07 * k})`}}
 						/>

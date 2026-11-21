@@ -9,9 +9,10 @@ import {
 	useCurrentFrame,
 } from 'remotion';
 import {Audio} from '@remotion/media';
-import {Aberration, kick} from './fx';
+import {Aberration, kick, pulse} from './fx';
+import {Outro} from './outro';
 import {Recap, TRACK, parts} from './parts';
-import {BAR, BEAT, DROP, REEL_FRAMES, SONG_FRAME, reelScenes} from './scenes';
+import {BAR, BEAT, DROP, OUTRO, REEL_FRAMES, SONG_FRAME, reelScenes} from './scenes';
 
 const MONTAGE = reelScenes[5]!.from;
 /** The recap cuts through the scenes on the eighth notes, then shows them all at once. */
@@ -36,6 +37,8 @@ const label: CSSProperties = {
 
 const Hud = () => {
 	const frame = useCurrentFrame();
+	// The logo has the frame to itself.
+	if (frame >= OUTRO) return null;
 	const scene = [...reelScenes].reverse().find((candidate) => candidate.from <= frame)!;
 	const bar = Math.floor((frame - DROP) / BAR) + 1;
 	const eighth = Math.floor((frame - MONTAGE) / (BEAT / 2));
@@ -74,8 +77,9 @@ const useFont = () => {
 export const Reel = () => {
 	useFont();
 	const frame = useCurrentFrame();
-	// Every kick after the drop punches the picture in a little.
+	// Every kick after the drop punches the picture in a little; the logo's hit punches harder.
 	const hit = kick(frame, 3);
+	const logoHit = Math.max(pulse(frame, OUTRO, 7), pulse(frame, OUTRO + BAR, 6) * 0.6);
 	const punch = 1 + 0.04 * hit;
 	const flash = Math.max(
 		0,
@@ -83,16 +87,25 @@ export const Reel = () => {
 			frame >= at ? strength * Math.max(0, 1 - (frame - at) / 7) : 0,
 		),
 	);
-	// The recap whites out; the last frames fall to black so the loop wraps into the dark count-in.
-	const out = interpolate(frame, [REEL_FRAMES - 4, REEL_FRAMES - 1], [0, 1], {
+	// The recap whites out into the logo; the logo fades to black so the loop wraps into the dark count-in.
+	const out = interpolate(frame, [REEL_FRAMES - 18, REEL_FRAMES - 2], [0, 1], {
 		extrapolateLeft: 'clamp',
 		extrapolateRight: 'clamp',
 	});
 	return (
 		<AbsoluteFill style={{background: '#000'}}>
-			<Audio src={TRACK} trimBefore={SONG_FRAME} />
+			<Audio
+				src={TRACK}
+				trimBefore={SONG_FRAME}
+				volume={(audioFrame) =>
+					interpolate(audioFrame, [REEL_FRAMES - 20, REEL_FRAMES - 2], [1, 0], {
+						extrapolateLeft: 'clamp',
+						extrapolateRight: 'clamp',
+					})
+				}
+			/>
 			<AbsoluteFill style={{transform: `scale(${punch})`}}>
-				<Aberration amount={1 + 6 * hit} brightness={1 + 0.1 * hit}>
+				<Aberration amount={1 + 6 * hit + 9 * logoHit} brightness={1 + 0.1 * hit + 0.25 * logoHit}>
 					{reelScenes.slice(0, 5).map(({id, from, to}) => {
 						const Scene = parts[id]!;
 						return (
@@ -101,8 +114,11 @@ export const Reel = () => {
 							</Sequence>
 						);
 					})}
-					<Sequence from={MONTAGE} durationInFrames={REEL_FRAMES - MONTAGE}>
-						<Recap from={MONTAGE} length={REEL_FRAMES - MONTAGE} />
+					<Sequence from={MONTAGE} durationInFrames={OUTRO - MONTAGE}>
+						<Recap from={MONTAGE} length={OUTRO - MONTAGE} />
+					</Sequence>
+					<Sequence from={OUTRO} durationInFrames={REEL_FRAMES - OUTRO}>
+						<Outro from={OUTRO} length={REEL_FRAMES - OUTRO} />
 					</Sequence>
 				</Aberration>
 			</AbsoluteFill>

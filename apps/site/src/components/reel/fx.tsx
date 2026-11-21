@@ -1,6 +1,6 @@
 import {createContext, useContext, type CSSProperties, type ReactNode} from 'react';
 import {AbsoluteFill, Easing, interpolate, random, useCurrentFrame, useVideoConfig} from 'remotion';
-import {BEAT, DROP, KICKS_END} from './scenes';
+import {BEAT, DROP, KICKS_END, OUTRO} from './scenes';
 
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
 const outCubic = Easing.out(Easing.cubic);
@@ -8,14 +8,30 @@ const outCubic = Easing.out(Easing.cubic);
 /** The frame in the whole reel, from inside a scene that starts at `from`. */
 export const useReelFrame = (from: number) => useCurrentFrame() + from;
 
-/** 1 on a kick, easing to 0 before the next. Silent before the drop and on the last beat. */
-export const kick = (frame: number, decay = 3) =>
-	frame >= DROP && frame < KICKS_END ? Math.exp(-((frame - DROP) % BEAT) / decay) : 0;
+/** Whether the song has a kick on the beat: not before the drop, and not on the riser before the outro. */
+const kicking = (frame: number) => (frame >= DROP && frame < KICKS_END) || frame >= OUTRO;
+
+/** The frame of the kick on beat `n` after the drop. */
+const kickFrame = (beat: number) => Math.round(DROP + beat * BEAT);
+
+/** 1 on a kick, easing to 0 before the next. Silent before the drop and on the riser. */
+export const kick = (frame: number, decay = 3) => {
+	if (!kicking(frame)) return 0;
+	const beat = Math.floor((frame - DROP + 0.5) / BEAT);
+	return Math.exp(-(frame - kickFrame(beat)) / decay);
+};
+
+/** 1 on `start`, easing to 0 with the same curve as a kick; 0 before it. */
+export const pulse = (frame: number, start: number, decay = 3) =>
+	frame >= start ? Math.exp(-(frame - start) / decay) : 0;
 
 /** The frames of every kick inside a stretch, for effects that spawn one thing per hit. */
 export const kicksBetween = (from: number, to: number) => {
 	const hits: number[] = [];
-	for (let at = DROP; at < Math.min(to, KICKS_END); at += BEAT) if (at >= from) hits.push(at);
+	for (let beat = 0; kickFrame(beat) < to; beat++) {
+		const hit = kickFrame(beat);
+		if (hit >= from && kicking(hit)) hits.push(hit);
+	}
 	return hits;
 };
 
