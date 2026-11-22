@@ -1,9 +1,6 @@
 // /examples shows the same TSX that `bun run recipes` renders.
-export const RECIPE_FPS = 30;
+export const RECIPE_FPS = 60;
 export const DEMO_SONG = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
-const FOUR_BARS = Math.round((60 / 122) * 4 * 4 * RECIPE_FPS);
-// The demo song from 1.7 s: one beat before the drop, then four bars.
-const PICKUP_AND_FOUR_BARS = Math.round((2.685 - 1.7) * RECIPE_FPS) + FOUR_BARS;
 
 export type Recipe = {
 	readonly id: string;
@@ -14,8 +11,6 @@ export type Recipe = {
 	readonly description: string;
 	readonly width: number;
 	readonly height: number;
-	/** Frames per second when it isn't RECIPE_FPS. */
-	readonly fps?: number;
 	readonly durationInFrames: number;
 	/** Local demo audio, relative to the site's static directory. Otherwise use the demo song. */
 	readonly audioFile?: string;
@@ -46,9 +41,7 @@ export const recipes: readonly Recipe[] = [
 			'Each line appears word by word as it is sung, above a ring of light rising from the bottom edge. The ring stays white until the title line, then opens up in full colour. For your own song, replace LINES with your lyrics and the seconds each line starts and ends.',
 		width: 1280,
 		height: 720,
-		// 60 fps keeps the ring's flares and trails smooth.
-		fps: 60,
-		durationInFrames: 21 * 60,
+		durationInFrames: 21 * RECIPE_FPS,
 		audioFile: 'recipes/invisible-light.mp3',
 		audioCredit: {
 			title: 'Invisible Light',
@@ -69,44 +62,62 @@ export const recipes: readonly Recipe[] = [
 		title: 'Music visualizer',
 		use: 'Full-track visualizer',
 		description:
-			'The video you upload alongside a single. The title sits inside a spectrum ring over a tunnel that pulses with the kick, and the progress bar counts through the whole track. Set TITLE, ARTIST and TRACK_LENGTH, then render the full song.',
+			'The video you upload alongside a single, styled like a now-playing screen. The cover is a live Flowers shader that blooms with the music, the same shader washes the background in its colours, and a rainbow spectrum and progress bar run under the title. Set SONG, CLIP_AT and TRACK_LENGTH, then render the full song.',
 		width: 1280,
 		height: 720,
-		durationInFrames: PICKUP_AND_FOUR_BARS,
+		durationInFrames: Math.round(13.5 * RECIPE_FPS),
+		audioFile: 'recipes/haze.mp3',
+		audioCredit: {
+			title: 'Haze',
+			artist: 'Zutsuri',
+			source: 'https://archive.org/details/jamendo-165035',
+			license: 'CC BY 3.0',
+			licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
+		},
 		scale: 0.75,
-		crf: 46,
-		layers: ['neuron', 'circle'],
-		poster: 150,
+		// The flowers' fine line work is expensive to encode.
+		crf: 50,
+		layers: ['flowers', 'spectre'],
+		poster: 300,
 	},
 	{
 		id: 'release-teaser',
 		component: 'ReleaseTeaser',
 		title: 'Release trailer',
-		use: 'Landscape single announcement',
+		use: 'Landscape single release',
 		description:
-			'Cut to the music: a slit of the artwork during the pickup, the title on the drop, the artist on a close-up a bar later, then the release date. Set START, DROP and BPM from your track and every cut moves with them.',
+			'Cut to the music: a slit of the night sky during the pickup, a burst of light and the title on the hit, the artist on a close-up a bar later, then a release card where each streaming button lands on a beat. Set DROP and BPM from your track and every cut moves with them.',
 		width: 1280,
 		height: 720,
-		durationInFrames: PICKUP_AND_FOUR_BARS,
+		durationInFrames: Math.round(14.1 * RECIPE_FPS),
+		audioFile: 'recipes/swansong.mp3',
+		audioCredit: {
+			title: 'Swansong',
+			artist: 'Josh Woodward',
+			source: 'https://commons.wikimedia.org/wiki/File:Josh_Woodward_-_Swansong.ogg',
+			license: 'CC BY 3.0 US',
+			licenseUrl: 'https://creativecommons.org/licenses/by/3.0/us/',
+		},
 		scale: 0.75,
 		// VHS grain is expensive to encode.
 		crf: 48,
-		layers: ['synthwave', 'vhs', 'spectre'],
-		poster: 60,
+		layers: ['moon', 'hyperloop', 'vhs', 'spectre'],
+		poster: 700,
 	},
 	{
 		id: 'release-reel',
 		component: 'ReleaseReel',
-		title: 'Release reel',
-		use: 'Vertical single announcement',
+		title: 'Work-in-progress reel',
+		use: 'Vertical song tease',
 		description:
-			'The same release for Reels, Shorts and TikTok. It opens on the drop with the title already on screen, cuts closer on each bar and ends on the date. All text stays clear of the captions and buttons the apps draw on top.',
+			'Show a song before it is finished, the way artists tease new music on Reels, Shorts and TikTok. A playhead runs through a half-written arrangement while captions talk over it, and the music stops where the track does. Edit LANES and CAPTIONS to match your session.',
 		width: 1080,
 		height: 1920,
-		durationInFrames: Math.round((60 / 122) * 18 * RECIPE_FPS),
+		// Five bars at 122 BPM, then a hold on the stopped playhead.
+		durationInFrames: Math.round((60 / 122) * 4 * 5 * RECIPE_FPS) + Math.round(1.4 * RECIPE_FPS),
 		scale: 0.5,
-		layers: ['synthwave'],
-		poster: 30,
+		layers: ['waveform', 'spectre'],
+		poster: 200,
 	},
 	{
 		id: 'vertical-canvas',
@@ -114,16 +125,16 @@ export const recipes: readonly Recipe[] = [
 		title: 'Spotify Canvas',
 		use: 'Silent cover-art loop',
 		description:
-			'Liquid chrome in the single’s colours, with no text. A second copy of the shader runs one loop ahead and fades out over the first 1.5 seconds, so the last frame leads straight back into the first. Render it muted as an MP4.',
+			'An endless ride along a rainbow rail toward a low sun, made to loop behind a single on Spotify. A second copy of the shader runs one lap ahead and fades out over the first 1.5 seconds, so the last frame leads straight back into the first. Render it muted as an MP4.',
 		width: 720,
 		height: 1280,
-		durationInFrames: FOUR_BARS,
+		durationInFrames: 8 * RECIPE_FPS,
 		silent: true,
 		scale: 0.6,
-		// Chrome's fine grain is expensive to encode.
-		crf: 50,
-		layers: ['chrome'],
-		poster: 60,
+		// The rail's outlines are expensive to encode.
+		crf: 53,
+		layers: ['rail'],
+		poster: 240,
 	},
 	{
 		id: 'episode-clip',
@@ -131,14 +142,14 @@ export const recipes: readonly Recipe[] = [
 		title: 'Episode clip',
 		use: 'Podcast audiogram',
 		description:
-			'A spoken excerpt from a fictional audio-engineering podcast. A ring and waveform respond to the same voice, while large, timed captions carry the hook even with sound off.',
+			'A spoken excerpt from a fictional audio-engineering podcast, set like a printed pull quote. Each word darkens as it is spoken, so the hook reads with the sound off, while a ring around the microphone and the waveform follow the voice.',
 		width: 1080,
 		height: 1080,
-		durationInFrames: 345,
+		durationInFrames: Math.round(11.5 * RECIPE_FPS),
 		audioFile: 'recipes/episode.mp3',
 		scale: 0.6,
 		layers: ['circle', 'waveform'],
-		poster: 45,
+		poster: 240,
 	},
 	{
 		id: 'rainy-stream',
@@ -146,7 +157,7 @@ export const recipes: readonly Recipe[] = [
 		title: 'Lo-fi stream background',
 		use: 'Livestream backdrop',
 		description:
-			'A night view through a rainy window, with the station name, a now-playing card and a clock on the sill. Wet Glass covers only the view, so the overlays stay sharp. Loop it behind a stream, or render it for the length of your playlist.',
+			'A night view through a rainy window in a lamp-lit room, with the station name and a now-playing card on the glass and a clock, a steaming mug and a plant on the sill. Wet Glass covers only the panes, so the overlays and the window frame stay sharp. Loop it behind a stream, or render it for the length of your playlist.',
 		width: 1280,
 		height: 720,
 		durationInFrames: 16 * RECIPE_FPS,

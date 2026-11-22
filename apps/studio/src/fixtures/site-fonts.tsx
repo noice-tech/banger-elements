@@ -7,6 +7,7 @@ const fonts = [
 	['Geist', 'fonts/Geist.woff2', '100 900'],
 	['Geist Mono', 'fonts/GeistMono.woff2', '100 900'],
 	['Syncopate', 'fonts/Syncopate-Bold.woff2', '700'],
+	['Newsreader', 'fonts/Newsreader.woff2', '200 800'],
 ] as const;
 
 const useSiteFonts = () => {

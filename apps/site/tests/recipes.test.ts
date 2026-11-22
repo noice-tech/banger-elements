@@ -33,11 +33,12 @@ test('the listed layers are exactly the elements a recipe imports', () => {
 	}
 });
 
-test('one layer plays the audio, except in silent recipes', () => {
+test('one layer or one Audio tag plays the audio, except in silent recipes', () => {
 	for (const {id, layers, silent} of recipes) {
 		const code = source(id);
 		const enabled = code.match(/\bplayAudio\b(?=\s|=\{true\})(?!\s*:)/g) ?? [];
-		assert.equal(enabled.length, silent ? 0 : 1, id);
+		const soundtracks = code.match(/<Audio\b/g) ?? [];
+		assert.equal(enabled.length + soundtracks.length, silent ? 0 : 1, id);
 		if (silent || layers.length > 1) {
 			assert.match(code, /playAudio(?:: false|=\{false\})/, id);
 		}
