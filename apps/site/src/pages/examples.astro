@@ -41,11 +41,13 @@ const shapeOf = (width: number, height: number): keyof typeof shapes =>
 const cards = recipes.map((recipe, index) => {
 	const code = forReaders(sources[recipe.id]!).trimEnd();
 	const lines = code.split('\n');
+	const fps = recipe.fps ?? RECIPE_FPS;
 	return {
 		...recipe,
 		number: String(index + 1).padStart(2, '0'),
 		shape: shapeOf(recipe.width, recipe.height),
-		seconds: (recipe.durationInFrames / RECIPE_FPS).toFixed(1),
+		fps,
+		seconds: (recipe.durationInFrames / fps).toFixed(1),
 		code,
 		lines: lines.map(highlightLine),
 		layerEntries: recipe.layers.map(element),
@@ -105,7 +107,7 @@ const cards = recipes.map((recipe, index) => {
 					<dl class="recipe-specs">
 						<div><dt>Format</dt><dd>{card.width} × {card.height}</dd></div>
 						<div><dt>Length</dt><dd>{card.seconds} s · {card.durationInFrames} frames</dd></div>
-						<div><dt>Frame rate</dt><dd>{RECIPE_FPS} fps</dd></div>
+						<div><dt>Frame rate</dt><dd>{card.fps} fps</dd></div>
 					</dl>
 					<p class="recipe-layers-label">Layers, back to front</p>
 					<ol class="recipe-layers">

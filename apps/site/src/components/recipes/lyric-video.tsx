@@ -2,14 +2,20 @@ import {useWindowedAudioData, visualizeAudio} from '@remotion/media-utils';
 import {AbsoluteFill, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {AudioParticles, Halo} from '../../../../../packages/elements/dist/components';
 
-const START = 0; // seconds into public/haze.mp3
-const CREDIT = 'Zutsuri — Haze';
+const START = 0; // seconds into public/invisible-light.mp3
+const CREDIT = 'Josh Woodward — Invisible Light';
 // Seconds after START: when each line is sung. Two lines share a screen.
 const LINES = [
-	{from: 2.1, to: 5.8, text: 'Sleepless nights and endless fights'},
-	{from: 6.2, to: 10.6, text: 'You’re the one that she’s begun to'},
-	{from: 11.0, to: 12.0, text: 'Love to hate', title: true},
-	{from: 15.3, to: 17.6, text: 'Yeah, she loves to hate you'},
+	{from: 0.56, to: 1.85, text: 'They say it won’t last,'},
+	{from: 1.95, to: 3.0, text: 'and you’ll move along'},
+	{from: 3.14, to: 4.8, text: 'And that we’re moving too fast,'},
+	{from: 4.9, to: 6.1, text: 'but I know they’re wrong'},
+	{from: 6.29, to: 7.4, text: '’Cause we are like'},
+	{from: 7.6, to: 10, text: 'invisible light in the dark', title: true},
+	{from: 12.09, to: 13.2, text: 'There is an endless road'},
+	{from: 13.35, to: 14.8, text: 'on the edge of the map'},
+	{from: 14.93, to: 16.4, text: 'So let’s pack our hats'},
+	{from: 16.6, to: 18.6, text: 'in a burlap sack and go'},
 ];
 // The words fill the top two thirds. The light rises from the bottom edge like a sun.
 const WORDS_HEIGHT = 0.64; // share of the frame height the lyrics are centred in
@@ -59,7 +65,7 @@ const Line = ({text, sung, glow}: {text: string; sung: number; glow: string}) =>
 	);
 };
 
-export const LyricVideo = ({audioSrc = staticFile('haze.mp3')}: {audioSrc?: string}) => {
+export const LyricVideo = ({audioSrc = staticFile('invisible-light.mp3')}: {audioSrc?: string}) => {
 	const frame = useCurrentFrame();
 	const {fps, width, height} = useVideoConfig();
 	const time = frame / fps;
@@ -102,6 +108,7 @@ export const LyricVideo = ({audioSrc = staticFile('haze.mp3')}: {audioSrc?: stri
 				style={{position: 'absolute', left: -width / 2, top: 0}}
 				color={seen ? '#ffe9cf' : '#a99cff'}
 				density={40}
+				inputGainDb={16}
 				radius={0.15}
 				size={0.5}
 			/>
@@ -118,7 +125,7 @@ export const LyricVideo = ({audioSrc = staticFile('haze.mp3')}: {audioSrc?: stri
 				inputGainDb={-6}
 				// Kept small enough that the tallest flares stay inside the canvas.
 				radius={0.135 + rise * 0.02}
-				intensity={0.45 + rise * 0.45}
+				intensity={0.7 + rise * 0.2}
 				glowBlur={24}
 				glowSpread={8}
 			/>

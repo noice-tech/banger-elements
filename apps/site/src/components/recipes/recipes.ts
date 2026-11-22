@@ -14,6 +14,8 @@ export type Recipe = {
 	readonly description: string;
 	readonly width: number;
 	readonly height: number;
+	/** Frames per second when it isn't RECIPE_FPS. */
+	readonly fps?: number;
 	readonly durationInFrames: number;
 	/** Local demo audio, relative to the site's static directory. Otherwise use the demo song. */
 	readonly audioFile?: string;
@@ -44,19 +46,22 @@ export const recipes: readonly Recipe[] = [
 			'Each line appears word by word as it is sung, above a ring of light rising from the bottom edge. The ring stays white until the title line, then opens up in full colour. For your own song, replace LINES with your lyrics and the seconds each line starts and ends.',
 		width: 1280,
 		height: 720,
-		durationInFrames: Math.round(19.5 * RECIPE_FPS),
-		audioFile: 'recipes/haze.mp3',
+		// 60 fps keeps the ring's flares and trails smooth.
+		fps: 60,
+		durationInFrames: 21 * 60,
+		audioFile: 'recipes/invisible-light.mp3',
 		audioCredit: {
-			title: 'Haze',
-			artist: 'Zutsuri',
-			source: 'https://ccmixter.org/files/Zutsuri/56384',
-			license: 'CC BY 3.0',
-			licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
+			title: 'Invisible Light',
+			artist: 'Josh Woodward',
+			source:
+				'https://commons.wikimedia.org/wiki/File:Josh_Woodward_-_The_Wake_-_07_-_Invisible_Light.ogg',
+			license: 'CC BY 3.0 US',
+			licenseUrl: 'https://creativecommons.org/licenses/by/3.0/us/',
 		},
 		scale: 0.75,
 		crf: 48,
 		layers: ['audio-particles', 'halo'],
-		poster: 366,
+		poster: 666,
 	},
 	{
 		id: 'music-visualizer',
