@@ -5,8 +5,11 @@ import {VhsPreview} from '../../../site/src/components/preview/vhs';
 import {WetGlassPreview} from '../../../site/src/components/preview/wet-glass';
 import {Reel} from '../../../site/src/components/reel/reel';
 import {REEL_FPS, REEL_FRAMES} from '../../../site/src/components/reel/scenes';
-import {RECIPE_FPS, recipes} from '../../../site/src/components/recipes/recipes';
+import {DEMO_SONG, RECIPE_FPS, recipes} from '../../../site/src/components/recipes/recipes';
 import {EpisodeClip} from '../../../site/src/components/recipes/episode-clip';
+import {LyricVideo} from '../../../site/src/components/recipes/lyric-video';
+import {MusicVisualizer} from '../../../site/src/components/recipes/music-visualizer';
+import {ReleaseReel} from '../../../site/src/components/recipes/release-reel';
 import {ReleaseTeaser} from '../../../site/src/components/recipes/release-teaser';
 import {VerticalCanvas} from '../../../site/src/components/recipes/vertical-canvas';
 import {RainyStream} from '../../../site/src/components/recipes/rainy-stream';
@@ -22,11 +25,13 @@ import {
 } from '../../../site/src/components/wrap/demos';
 import {withSiteFonts} from './site-fonts';
 
-const DEMO_SONG = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
 const SiteScene = withSiteFonts(SceneVideo);
 const SiteWrap = withSiteFonts(WrapDemo);
 const recipeComponents: Record<string, React.FC<{audioSrc?: string}>> = {
 	EpisodeClip: withSiteFonts(EpisodeClip),
+	LyricVideo: withSiteFonts(LyricVideo),
+	MusicVisualizer: withSiteFonts(MusicVisualizer),
+	ReleaseReel: withSiteFonts(ReleaseReel),
 	ReleaseTeaser: withSiteFonts(ReleaseTeaser),
 	VerticalCanvas: withSiteFonts(VerticalCanvas),
 	RainyStream: withSiteFonts(RainyStream),

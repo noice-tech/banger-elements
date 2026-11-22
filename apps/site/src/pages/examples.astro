@@ -2,15 +2,21 @@
 import Showcase from '../layouts/Showcase.astro';
 import {elements} from '../data/elements';
 import {highlightLine} from '../components/highlight';
-import {RECIPE_FPS, recipes} from '../components/recipes/recipes';
+import {DEMO_SONG, RECIPE_FPS, recipes} from '../components/recipes/recipes';
 import episodeClip from '../components/recipes/episode-clip.tsx?raw';
+import lyricVideo from '../components/recipes/lyric-video.tsx?raw';
+import musicVisualizer from '../components/recipes/music-visualizer.tsx?raw';
+import releaseReel from '../components/recipes/release-reel.tsx?raw';
 import releaseTeaser from '../components/recipes/release-teaser.tsx?raw';
 import verticalCanvas from '../components/recipes/vertical-canvas.tsx?raw';
 import rainyStream from '../components/recipes/rainy-stream.tsx?raw';
 
 const sources: Record<string, string> = {
 	'episode-clip': episodeClip,
+	'lyric-video': lyricVideo,
+	'music-visualizer': musicVisualizer,
 	'release-teaser': releaseTeaser,
+	'release-reel': releaseReel,
 	'vertical-canvas': verticalCanvas,
 	'rainy-stream': rainyStream,
 };
@@ -48,7 +54,7 @@ const cards = recipes.map((recipe, index) => {
 ---
 <Showcase
 	title="Examples"
-	description="Finished Remotion compositions built from Banger Elements: an audiogram, a release teaser, a vertical loop and a stream background, each with the code that rendered it."
+	description="Seven finished Remotion compositions, from lyric videos and music visualizers to release trailers, Spotify Canvas, podcast clips and lo-fi streams. Each includes the code that rendered it."
 	pageClass="page-examples"
 >
 	<div class="wrap">
@@ -79,25 +85,26 @@ const cards = recipes.map((recipe, index) => {
 					<video muted loop playsinline preload="none" poster={`/recipes/${card.id}.webp`} data-play-visible>
 						<source src={`/recipes/${card.id}.webm`} type="video/webm" />
 					</video>
-					<button class="recipe-sound" type="button" aria-pressed="false" data-recipe-sound>
+					{!card.silent && <button class="recipe-sound" type="button" aria-pressed="false" data-recipe-sound>
 						<svg viewBox="0 0 16 16" aria-hidden="true">
 							<path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor"></path>
 							<path class="sound-waves" d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
 							<path class="sound-muted" d="m10.5 6 4 4m0-4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
 						</svg>
 						<span class="sr-only">Sound</span>
-					</button>
+					</button>}
 				</div>
 				<div class="recipe-body">
 					<p class="recipe-use"><span>{card.number}</span>{card.use}</p>
 					<h2 id={`${card.id}-title`}>{card.title}</h2>
 					<p class="recipe-description">
 						{card.description}
-						{card.audioFile && <>{' '}<a href={`/${card.audioFile}`} download>Download demo narration</a>.</>}
+						{card.audioFile ? <>{' '}<a href={`/${card.audioFile}`} download>Download demo audio</a>.</> : <>{' '}<a href={DEMO_SONG}>Get the demo track</a>.</>}
+						{card.audioCredit && <>{' '}Excerpt: <a href={card.audioCredit.source}>“{card.audioCredit.title}” by {card.audioCredit.artist}</a> (<a href={card.audioCredit.licenseUrl}>{card.audioCredit.license}</a>).</>}
 					</p>
 					<dl class="recipe-specs">
 						<div><dt>Format</dt><dd>{card.width} × {card.height}</dd></div>
-						<div><dt>Length</dt><dd>{card.seconds} s</dd></div>
+						<div><dt>Length</dt><dd>{card.seconds} s · {card.durationInFrames} frames</dd></div>
 						<div><dt>Frame rate</dt><dd>{RECIPE_FPS} fps</dd></div>
 					</dl>
 					<p class="recipe-layers-label">Layers, back to front</p>
@@ -119,7 +126,7 @@ const cards = recipes.map((recipe, index) => {
 						<span class="recipe-code-meta"><span class="recipe-code-count">{card.lines.length} lines</span><span class="recipe-code-toggle" aria-hidden="true"></span></span>
 					</summary>
 					<div class="recipe-code-actions">
-						<code><span aria-hidden="true">$ </span>npx remotion render {card.component} --gl=angle</code>
+						<code><span aria-hidden="true">$ </span>npx remotion render {card.component} --gl=angle{card.silent ? ' --codec=h264 --muted' : ''}</code>
 						<button type="button" class="code-copy" data-copy-recipe>Copy code</button>
 					</div>
 <pre class="code-lines"><code>{card.lines.map((html) => <span class="line" set:html={html} />)}</code></pre>
@@ -136,7 +143,7 @@ const cards = recipes.map((recipe, index) => {
 				</li>
 				<li>
 					<span>Bring your track</span>
-					<p>Put the audio in <code>public/</code> and set <code>START</code> to the moment the clip should begin. If you replace the narration, update the caption cues to match. <a href="/getting-started.html#audio-setup">Audio setup</a></p>
+					<p>Put the audio in <code>public/</code> using the filename in the example, and set <code>START</code> to the moment the clip should begin. If you replace the vocals or narration, update the lyric or caption cues to match. <a href="/getting-started.html#audio-setup">Audio setup</a></p>
 				</li>
 				<li>
 					<span>Render</span>

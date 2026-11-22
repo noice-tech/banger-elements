@@ -33,11 +33,14 @@ test('the listed layers are exactly the elements a recipe imports', () => {
 	}
 });
 
-test('exactly one layer plays the audio', () => {
-	for (const recipe of recipes) {
-		// Shared props turn playback off; one element opts back in with a bare `playAudio`.
-		assert.match(source(recipe.id), /playAudio: false/, recipe.id);
-		assert.equal((source(recipe.id).match(/\bplayAudio\b(?!\s*[:=])/g) ?? []).length, 1, recipe.id);
+test('one layer plays the audio, except in silent recipes', () => {
+	for (const {id, layers, silent} of recipes) {
+		const code = source(id);
+		const enabled = code.match(/\bplayAudio\b(?=\s|=\{true\})(?!\s*:)/g) ?? [];
+		assert.equal(enabled.length, silent ? 0 : 1, id);
+		if (silent || layers.length > 1) {
+			assert.match(code, /playAudio(?:: false|=\{false\})/, id);
+		}
 	}
 });
 

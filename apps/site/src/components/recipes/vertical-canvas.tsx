@@ -1,57 +1,38 @@
-// Four bars at 122 BPM, so it loops on the beat.
 import {AbsoluteFill, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Ferrofluid, Liquid} from '../../../../../packages/elements/dist/components';
+import {Chrome} from '../../../../../packages/elements/dist/components';
 
-const START = 18.42; // seconds into the track, on a downbeat
-const W = 1080;
-const H = 1920;
+const BPM = 122; // the single's tempo, so the light pulses with it
+const FADE = 1.5; // seconds of crossfade that hide the loop point
 
-export const VerticalCanvas = ({audioSrc = staticFile('track.mp3')}: {audioSrc?: string}) => {
+export const VerticalCanvas = ({audioSrc = staticFile('single.mp3')}: {audioSrc?: string}) => {
 	const frame = useCurrentFrame();
-	const {durationInFrames} = useVideoConfig();
-	const audio = {audioSrc, audioOffsetInSeconds: START, playAudio: false};
+	const {fps, width, height, durationInFrames} = useVideoConfig();
+	const lap = durationInFrames / fps;
+	// Spotify plays the Canvas on its own clock, so it ignores the audio and runs on time alone.
+	const metal = {
+		audioSrc,
+		playAudio: false,
+		width,
+		height,
+		bpm: BPM,
+		responsive: 0,
+		color1: '#14213f',
+		color2: '#ff8a57',
+		color3: '#f3dfca',
+		warpSpeed: 0.4,
+		style: {position: 'absolute', inset: 0},
+	} as const;
 
 	return (
-		<AbsoluteFill
-			style={{background: '#000', color: '#fff', fontFamily: 'Geist, Inter, system-ui, sans-serif'}}
-		>
-			<Liquid {...audio} playAudio width={W} height={H} glowColor="#ff5a1f" bpm={122} />
-			<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', paddingBottom: 260}}>
-				<Ferrofluid
-					{...audio}
-					width={W * 1.1}
-					height={W * 1.1}
-					shineColor="#ffd2a8"
-					style={{flex: 'none'}}
-				/>
-			</AbsoluteFill>
-
-			<div style={{position: 'absolute', left: 80, right: 80, bottom: 170}}>
-				<div style={{fontSize: 34, letterSpacing: 9, opacity: 0.8}}>MARA QUINN</div>
-				<div
-					style={{
-						marginTop: 12,
-						fontSize: 120,
-						fontWeight: 800,
-						letterSpacing: -5,
-						lineHeight: 0.95,
-					}}
-				>
-					Low Light
-				</div>
-				<div
-					style={{height: 6, marginTop: 48, borderRadius: 3, background: 'rgb(255 255 255 / 0.25)'}}
-				>
-					<div
-						style={{
-							width: `${(frame / durationInFrames) * 100}%`,
-							height: '100%',
-							borderRadius: 3,
-							background: '#fff',
-						}}
-					/>
-				</div>
-			</div>
+		<AbsoluteFill style={{background: '#06070d'}}>
+			<Chrome {...metal} />
+			{/* The same shader one lap ahead fades out over the opening second, so the last frame
+			    leads straight back into the first. */}
+			<Chrome
+				{...metal}
+				timeOffsetInSeconds={lap}
+				style={{...metal.style, opacity: Math.max(0, 1 - frame / (FADE * fps))}}
+			/>
 		</AbsoluteFill>
 	);
 };

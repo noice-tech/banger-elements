@@ -112,11 +112,26 @@ test('static navigation, assets and fragment targets resolve without a backend',
 	}
 });
 
+test('each example has its rendered assets and only audible examples have a sound toggle', async () => {
+	const html = await readFile(path.join(dist, 'examples.html'), 'utf8');
+	for (const {id, silent} of recipes) {
+		const card = new RegExp(`<article[^>]*id="${id}"[^>]*>([\\s\\S]*?)</article>`).exec(html)?.[1];
+		assert.ok(card, id);
+		assert.equal(card.includes('data-recipe-sound'), !silent, id);
+		assert.ok(card.includes(`/recipes/${id}.webm`), id);
+		assert.ok(card.includes(`/recipes/${id}.webp`), id);
+		const clip = await readFile(path.join(dist, 'recipes', `${id}.webm`));
+		const poster = await readFile(path.join(dist, 'recipes', `${id}.webp`));
+		assert.deepEqual([...clip.subarray(0, 4)], [0x1a, 0x45, 0xdf, 0xa3], id);
+		assert.equal(poster.toString('ascii', 8, 12), 'WEBP', id);
+	}
+});
+
 test('static output includes only the intentional demo audio and video assets', async () => {
 	const files = await readdir(dist, {recursive: true});
 	const clips = [
 		...sceneTimings.map((timing) => sceneClip(timing).src.slice(1)),
-		...recipes.flatMap(({audioFile}) => (audioFile ? [audioFile] : [])),
+		...new Set(recipes.flatMap(({audioFile}) => (audioFile ? [audioFile] : []))),
 		'audio/tuner.mp3',
 	];
 	const media = files.filter((file) => /\.(mp3|wav|mp4|mov|m4a)$/i.test(file));
