@@ -16,7 +16,7 @@ const cli = path.join(
 	'remotion-cli.js',
 );
 const out = path.join(workspace, 'static/recipes');
-mkdirSync(out, {recursive: true});
+mkdirSync(path.join(out, 'icons'), {recursive: true});
 
 const only = process.argv[2]?.split(',');
 
@@ -61,6 +61,11 @@ for (const recipe of recipes) {
 	await sharp(still)
 		.webp({quality: 80})
 		.toFile(path.join(out, `${recipe.id}.webp`));
+	// The home page stacks small copies of the posters in its link to /examples.
+	await sharp(still)
+		.resize({width: 96})
+		.webp({quality: 65})
+		.toFile(path.join(out, 'icons', `${recipe.id}.webp`));
 	rmSync(still);
 	console.log(`Rendered ${recipe.id}.`);
 }

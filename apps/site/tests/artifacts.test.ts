@@ -128,6 +128,24 @@ test('each example has its rendered assets and a play control, and only audible 
 	}
 });
 
+test('the home page plays one example and links to the rest with small icons', async () => {
+	const home = await readFile(path.join(dist, 'index.html'), 'utf8');
+	const section = /<section[^>]*aria-labelledby="examples-title"[^>]*>([\s\S]*?)<\/section>/.exec(
+		home,
+	)?.[1];
+	assert.ok(section);
+	assert.ok(section.includes('href="/examples.html"'));
+	const played = recipes.filter(({id}) => section.includes(`/recipes/${id}.webm`));
+	assert.equal(played.length, 1);
+	for (const {id} of recipes.filter((recipe) => !played.includes(recipe))) {
+		assert.ok(section.includes(`/recipes/icons/${id}.webp`), id);
+		const icon = await readFile(path.join(dist, 'recipes/icons', `${id}.webp`));
+		const poster = await readFile(path.join(dist, 'recipes', `${id}.webp`));
+		assert.equal(icon.toString('ascii', 8, 12), 'WEBP', id);
+		assert.ok(icon.length < poster.length, `${id}: icons/ comes from scripts/recipes.mjs`);
+	}
+});
+
 test('static output includes only the intentional demo audio and video assets', async () => {
 	const files = await readdir(dist, {recursive: true});
 	const clips = [
