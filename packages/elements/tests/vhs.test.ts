@@ -26,13 +26,14 @@ const {
 	vhsTiming: (time: number, period: number) => Timing;
 	bounded: (value: number, min: number, max: number, fallback: number) => number;
 	vhsSchema: Record<string, {default: unknown; min?: number; max?: number}>;
-	createVhsWebGl: (canvas: OffscreenCanvas) => unknown;
+	createVhsWebGl: (canvas: HTMLCanvasElement) => unknown;
 	drawVhsWebGl: (
 		state: unknown,
-		image: unknown,
-		props: Record<string, number>,
-		time: number,
-		density: number,
+		source: unknown,
+		params: Record<string, number>,
+		width: number,
+		height: number,
+		flipSourceY: boolean,
 	) => void;
 	cleanupVhsWebGl: (state: unknown) => void;
 	fragmentShader: string;
@@ -71,9 +72,9 @@ test('VHS numeric controls clamp non-finite and out-of-range values', () => {
 	assert.equal(vhsSchema.strength.default, 1);
 });
 
-test('VHS faithful path uploads captured children and disposes WebGL resources', () => {
+test('VHS effect uploads the captured children and disposes WebGL resources', () => {
 	const {canvas, calls} = mockCanvas();
-	const state = createVhsWebGl(canvas as unknown as OffscreenCanvas);
+	const state = createVhsWebGl(canvas);
 	drawVhsWebGl(
 		state,
 		{},
@@ -86,13 +87,15 @@ test('VHS faithful path uploads captured children and disposes WebGL resources',
 			line: 0.28,
 			period: 1.2,
 			timeOffsetInSeconds: 0,
+			time: 1.5,
 		},
-		1.5,
-		1,
+		1280,
+		720,
+		true,
 	);
 	cleanupVhsWebGl(state);
 	for (const name of [
-		'texElementSubImage2D',
+		'texImage2D',
 		'drawArrays',
 		'deleteTexture',
 		'deleteBuffer',

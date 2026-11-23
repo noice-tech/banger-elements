@@ -40,12 +40,9 @@
 		"previews": "node scripts/turbo.mjs run previews --filter=@banger-elements/site",
 		"clean": "node scripts/clean.mjs"
 	},
-	"overrides": {
-		"zod": "4.6.7"
-	},
 	"devDependencies": {
-		"@remotion/cli": "4.0.532",
-		"@remotion/eslint-config-flat": "4.0.532",
+		"@remotion/cli": "4.0.546",
+		"@remotion/eslint-config-flat": "4.0.546",
 		"@types/node": "24.19.2",
 		"eslint": "9.39.5",
 		"globals": "17.14.0",

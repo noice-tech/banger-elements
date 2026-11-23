@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -48,12 +38,12 @@ type RailOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type RailProps = InteractiveBaseProps & InteractiveTransformProps & RailOptions;
+type RailProps = InteractiveTransformProps & RailOptions;
 
 const railSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -106,7 +96,13 @@ const railSchema = {
 	},
 	startColor: {type: 'color', default: '#877d87', description: 'Theme'},
 	endColor: {type: 'color', default: '#c800ff', description: 'Sky Color'},
-	textureSrc: {type: 'asset', default: '', description: 'Flying object', keyframable: false},
+	textureSrc: {
+		type: 'asset',
+		assetType: 'image',
+		default: '',
+		description: 'Flying object',
+		keyframable: false,
+	},
 	textureScale: {
 		type: 'number',
 		default: 15.0,
@@ -207,7 +203,6 @@ const railSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -958,95 +953,71 @@ const RailContent: React.FC<Required<RailOptions>> = (props) => {
 	);
 };
 
-const RailInner = forwardRef<
-	HTMLDivElement,
-	RailProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = railSchema.width.default,
-			height = railSchema.height.default,
-			audioSrc = railSchema.audioSrc.default,
-			audioOffsetInSeconds = railSchema.audioOffsetInSeconds.default,
-			playAudio = railSchema.playAudio.default,
-			inputGainDb = railSchema.inputGainDb.default,
-			startColor = railSchema.startColor.default,
-			endColor = railSchema.endColor.default,
-			textureSrc = railSchema.textureSrc.default,
-			textureScale = railSchema.textureScale.default,
-			textureSize = railSchema.textureSize.default,
-			textureRounded = railSchema.textureRounded.default,
-			sunPosition = railSchema.sunPosition.default,
-			sunSize = railSchema.sunSize.default,
-			volume = railSchema.volume.default,
-			sides = railSchema.sides.default,
-			waves = railSchema.waves.default,
-			intensity = railSchema.intensity.default,
-			stroke = railSchema.stroke.default,
-			timeOffsetInSeconds = railSchema.timeOffsetInSeconds.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Rail'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<RailContent
-						key={`${audioSrc}:${textureSrc}`}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						startColor={startColor}
-						endColor={endColor}
-						textureSrc={textureSrc}
-						textureScale={textureScale}
-						textureSize={textureSize}
-						textureRounded={textureRounded}
-						sunPosition={sunPosition}
-						sunSize={sunSize}
-						volume={volume}
-						sides={sides}
-						waves={waves}
-						intensity={intensity}
-						stroke={stroke}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const RailInner: React.FC<RailProps> = ({
+	width = railSchema.width.default,
+	height = railSchema.height.default,
+	audioSrc = railSchema.audioSrc.default,
+	audioOffsetInSeconds = railSchema.audioOffsetInSeconds.default,
+	playAudio = railSchema.playAudio.default,
+	inputGainDb = railSchema.inputGainDb.default,
+	startColor = railSchema.startColor.default,
+	endColor = railSchema.endColor.default,
+	textureSrc = railSchema.textureSrc.default,
+	textureScale = railSchema.textureScale.default,
+	textureSize = railSchema.textureSize.default,
+	textureRounded = railSchema.textureRounded.default,
+	sunPosition = railSchema.sunPosition.default,
+	sunSize = railSchema.sunSize.default,
+	volume = railSchema.volume.default,
+	sides = railSchema.sides.default,
+	waves = railSchema.waves.default,
+	intensity = railSchema.intensity.default,
+	stroke = railSchema.stroke.default,
+	timeOffsetInSeconds = railSchema.timeOffsetInSeconds.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<RailContent
+				key={`${audioSrc}:${textureSrc}`}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				startColor={startColor}
+				endColor={endColor}
+				textureSrc={textureSrc}
+				textureScale={textureScale}
+				textureSize={textureSize}
+				textureRounded={textureRounded}
+				sunPosition={sunPosition}
+				sunSize={sunSize}
+				volume={volume}
+				sides={sides}
+				waves={waves}
+				intensity={intensity}
+				stroke={stroke}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
 
-export const Rail = Interactive.withSchema({
+export const Rail = Interactive.create({
 	Component: RailInner,
 	componentName: '<Rail>',
-	componentIdentity: null,
 	schema: railSchema,
-	supportsEffects: false,
-}) as React.FC<RailProps>;
+});

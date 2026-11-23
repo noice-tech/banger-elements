@@ -4,25 +4,15 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type EyeOptions = {
@@ -44,12 +34,12 @@ type EyeOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type EyeProps = InteractiveBaseProps & InteractiveTransformProps & EyeOptions;
+type EyeProps = InteractiveTransformProps & EyeOptions;
 
 const eyeSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -168,7 +158,6 @@ const eyeSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -1068,88 +1057,64 @@ const EyeContent: React.FC<Required<EyeOptions> & {width: number; height: number
 		</>
 	);
 };
-const EyeInner = forwardRef<
-	HTMLDivElement,
-	EyeProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = eyeSchema.audioSrc.default,
-			audioOffsetInSeconds = eyeSchema.audioOffsetInSeconds.default,
-			playAudio = eyeSchema.playAudio.default,
-			inputGainDb = eyeSchema.inputGainDb.default,
-			startColor = eyeSchema.startColor.default,
-			endColor = eyeSchema.endColor.default,
-			responsive = eyeSchema.responsive.default,
-			speed = eyeSchema.speed.default,
-			dark = eyeSchema.dark.default,
-			colorful = eyeSchema.colorful.default,
-			volume = eyeSchema.volume.default,
-			amount = eyeSchema.amount.default,
-			smoothness = eyeSchema.smoothness.default,
-			bpm = eyeSchema.bpm.default,
-			timeOffsetInSeconds = eyeSchema.timeOffsetInSeconds.default,
-			width = 1280,
-			height = 720,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Eye'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<EyeContent
-						key={`${audioSrc}`}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						startColor={startColor}
-						endColor={endColor}
-						responsive={responsive}
-						speed={speed}
-						dark={dark}
-						colorful={colorful}
-						volume={volume}
-						amount={amount}
-						smoothness={smoothness}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Eye = Interactive.withSchema({
+const EyeInner: React.FC<EyeProps> = ({
+	audioSrc = eyeSchema.audioSrc.default,
+	audioOffsetInSeconds = eyeSchema.audioOffsetInSeconds.default,
+	playAudio = eyeSchema.playAudio.default,
+	inputGainDb = eyeSchema.inputGainDb.default,
+	startColor = eyeSchema.startColor.default,
+	endColor = eyeSchema.endColor.default,
+	responsive = eyeSchema.responsive.default,
+	speed = eyeSchema.speed.default,
+	dark = eyeSchema.dark.default,
+	colorful = eyeSchema.colorful.default,
+	volume = eyeSchema.volume.default,
+	amount = eyeSchema.amount.default,
+	smoothness = eyeSchema.smoothness.default,
+	bpm = eyeSchema.bpm.default,
+	timeOffsetInSeconds = eyeSchema.timeOffsetInSeconds.default,
+	width = 1280,
+	height = 720,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<EyeContent
+				key={`${audioSrc}`}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				startColor={startColor}
+				endColor={endColor}
+				responsive={responsive}
+				speed={speed}
+				dark={dark}
+				colorful={colorful}
+				volume={volume}
+				amount={amount}
+				smoothness={smoothness}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
+export const Eye = Interactive.create({
 	Component: EyeInner,
 	componentName: '<Eye>',
-	componentIdentity: null,
 	schema: eyeSchema,
-	supportsEffects: false,
-}) as React.FC<EyeProps>;
+});

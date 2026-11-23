@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile, readdir, access} from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
+import {ELEMENT_PAYLOAD_MIME_TYPE, StudioProtocolInternals} from '@remotion/studio-protocol';
 import {recipes} from '../src/components/recipes/recipes';
 import {sceneClip, sceneTimings} from '../src/components/scenes/timing';
 
@@ -25,6 +26,31 @@ test('site stages producer-owned artifacts byte-for-byte', async () => {
 				await readFile(path.join(producer, source)),
 			);
 		}
+	}
+});
+
+test('each element page embeds only its own Studio payload, so `remotion elements use <url>` works', async () => {
+	const scriptPattern = new RegExp(
+		`<script type="${ELEMENT_PAYLOAD_MIME_TYPE.replace(/[.+]/g, '\\$&')}">([\\s\\S]*?)</script>`,
+		'g',
+	);
+	for (const {slug} of catalog) {
+		const html = await readFile(path.join(dist, `${slug}.html`), 'utf8');
+		const scripts = [...html.matchAll(scriptPattern)];
+		assert.equal(scripts.length, 1, `${slug}: one embedded payload`);
+		const embedded = StudioProtocolInternals.parseStudioElementPayload(JSON.parse(scripts[0]![1]!));
+		assert.ok(embedded, `${slug}: embedded payload is valid`);
+		const staged = JSON.parse(
+			await readFile(path.join(producer, `payloads/${slug}.json`), 'utf8'),
+		) as Record<string, unknown>;
+		const {sourceSettings, ...protocol} = staged;
+		assert.ok(sourceSettings, `${slug}: staged payload keeps site-only source settings`);
+		assert.deepEqual(JSON.parse(scripts[0]![1]!), protocol, `${slug}: matches the staged payload`);
+	}
+	// Galleries link to element pages instead of embedding every payload.
+	for (const page of ['index', 'visualizers', 'shaders', 'effects']) {
+		const html = await readFile(path.join(dist, `${page}.html`), 'utf8');
+		assert.ok(!html.includes(ELEMENT_PAYLOAD_MIME_TYPE), `${page}: no embedded payloads`);
 	}
 });
 

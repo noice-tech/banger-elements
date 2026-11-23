@@ -4,25 +4,15 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type MoonOptions = {
@@ -43,12 +33,12 @@ type MoonOptions = {
 	readonly volume?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type MoonProps = InteractiveBaseProps & InteractiveTransformProps & MoonOptions;
+type MoonProps = InteractiveTransformProps & MoonOptions;
 
 const moonSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -161,7 +151,6 @@ const moonSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -1002,86 +991,62 @@ const MoonContent: React.FC<Required<MoonOptions> & {width: number; height: numb
 		</>
 	);
 };
-const MoonInner = forwardRef<
-	HTMLDivElement,
-	MoonProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = moonSchema.audioSrc.default,
-			audioOffsetInSeconds = moonSchema.audioOffsetInSeconds.default,
-			playAudio = moonSchema.playAudio.default,
-			inputGainDb = moonSchema.inputGainDb.default,
-			startColor = moonSchema.startColor.default,
-			moonColor = moonSchema.moonColor.default,
-			responsive = moonSchema.responsive.default,
-			hideMoon = moonSchema.hideMoon.default,
-			hideAudio = moonSchema.hideAudio.default,
-			stars = moonSchema.stars.default,
-			pattern = moonSchema.pattern.default,
-			speed = moonSchema.speed.default,
-			volume = moonSchema.volume.default,
-			timeOffsetInSeconds = moonSchema.timeOffsetInSeconds.default,
-			width = 1280,
-			height = 720,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Moon'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<MoonContent
-						key={`${audioSrc}`}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						startColor={startColor}
-						moonColor={moonColor}
-						responsive={responsive}
-						hideMoon={hideMoon}
-						hideAudio={hideAudio}
-						stars={stars}
-						pattern={pattern}
-						speed={speed}
-						volume={volume}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Moon = Interactive.withSchema({
+const MoonInner: React.FC<MoonProps> = ({
+	audioSrc = moonSchema.audioSrc.default,
+	audioOffsetInSeconds = moonSchema.audioOffsetInSeconds.default,
+	playAudio = moonSchema.playAudio.default,
+	inputGainDb = moonSchema.inputGainDb.default,
+	startColor = moonSchema.startColor.default,
+	moonColor = moonSchema.moonColor.default,
+	responsive = moonSchema.responsive.default,
+	hideMoon = moonSchema.hideMoon.default,
+	hideAudio = moonSchema.hideAudio.default,
+	stars = moonSchema.stars.default,
+	pattern = moonSchema.pattern.default,
+	speed = moonSchema.speed.default,
+	volume = moonSchema.volume.default,
+	timeOffsetInSeconds = moonSchema.timeOffsetInSeconds.default,
+	width = 1280,
+	height = 720,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<MoonContent
+				key={`${audioSrc}`}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				startColor={startColor}
+				moonColor={moonColor}
+				responsive={responsive}
+				hideMoon={hideMoon}
+				hideAudio={hideAudio}
+				stars={stars}
+				pattern={pattern}
+				speed={speed}
+				volume={volume}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
+export const Moon = Interactive.create({
 	Component: MoonInner,
 	componentName: '<Moon>',
-	componentIdentity: null,
 	schema: moonSchema,
-	supportsEffects: false,
-}) as React.FC<MoonProps>;
+});

@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -51,12 +41,12 @@ type FerrofluidOptions = {
 	readonly autoRotate?: boolean;
 	readonly rotationSpeed?: number;
 };
-type FerrofluidProps = InteractiveBaseProps & InteractiveTransformProps & FerrofluidOptions;
+type FerrofluidProps = InteractiveTransformProps & FerrofluidOptions;
 const MOMENTUM_HISTORY_FRAMES = 240;
 const ferrofluidSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -232,7 +222,6 @@ const ferrofluidSchema = {
 		description: 'Rotation speed',
 		hiddenFromList: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -966,102 +955,78 @@ function FerrofluidContent(props: Required<FerrofluidOptions>) {
 		</>
 	);
 }
-const FerrofluidInner = forwardRef<
-	HTMLDivElement,
-	FerrofluidProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = ferrofluidSchema.width.default,
-			height = ferrofluidSchema.height.default,
-			audioSrc = ferrofluidSchema.audioSrc.default,
-			audioOffsetInSeconds = ferrofluidSchema.audioOffsetInSeconds.default,
-			playAudio = ferrofluidSchema.playAudio.default,
-			inputGainDb = ferrofluidSchema.inputGainDb.default,
-			intensity = ferrofluidSchema.intensity.default,
-			color = ferrofluidSchema.color.default,
-			shineColor = ferrofluidSchema.shineColor.default,
-			shineX = ferrofluidSchema.shineX.default,
-			shineY = ferrofluidSchema.shineY.default,
-			shineZ = ferrofluidSchema.shineZ.default,
-			shineIntensity = ferrofluidSchema.shineIntensity.default,
-			shineSize = ferrofluidSchema.shineSize.default,
-			pattern = ferrofluidSchema.pattern.default,
-			fluidity = ferrofluidSchema.fluidity.default,
-			roughness = ferrofluidSchema.roughness.default,
-			iridescence = ferrofluidSchema.iridescence.default,
-			envMapIntensity = ferrofluidSchema.envMapIntensity.default,
-			audioLights = ferrofluidSchema.audioLights.default,
-			quality = ferrofluidSchema.quality.default,
-			mappingMode = ferrofluidSchema.mappingMode.default,
-			autoRotate = ferrofluidSchema.autoRotate.default,
-			rotationSpeed = ferrofluidSchema.rotationSpeed.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Ferrofluid'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width,
-						height,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<FerrofluidContent
-						key={audioSrc}
-						{...{
-							width,
-							height,
-							audioSrc,
-							audioOffsetInSeconds,
-							playAudio,
-							inputGainDb,
-							intensity,
-							color,
-							shineColor,
-							shineX,
-							shineY,
-							shineZ,
-							shineIntensity,
-							shineSize,
-							pattern,
-							fluidity,
-							roughness,
-							iridescence,
-							envMapIntensity,
-							audioLights,
-							quality,
-							mappingMode,
-							autoRotate,
-							rotationSpeed,
-						}}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Ferrofluid = Interactive.withSchema({
+const FerrofluidInner: React.FC<FerrofluidProps> = ({
+	width = ferrofluidSchema.width.default,
+	height = ferrofluidSchema.height.default,
+	audioSrc = ferrofluidSchema.audioSrc.default,
+	audioOffsetInSeconds = ferrofluidSchema.audioOffsetInSeconds.default,
+	playAudio = ferrofluidSchema.playAudio.default,
+	inputGainDb = ferrofluidSchema.inputGainDb.default,
+	intensity = ferrofluidSchema.intensity.default,
+	color = ferrofluidSchema.color.default,
+	shineColor = ferrofluidSchema.shineColor.default,
+	shineX = ferrofluidSchema.shineX.default,
+	shineY = ferrofluidSchema.shineY.default,
+	shineZ = ferrofluidSchema.shineZ.default,
+	shineIntensity = ferrofluidSchema.shineIntensity.default,
+	shineSize = ferrofluidSchema.shineSize.default,
+	pattern = ferrofluidSchema.pattern.default,
+	fluidity = ferrofluidSchema.fluidity.default,
+	roughness = ferrofluidSchema.roughness.default,
+	iridescence = ferrofluidSchema.iridescence.default,
+	envMapIntensity = ferrofluidSchema.envMapIntensity.default,
+	audioLights = ferrofluidSchema.audioLights.default,
+	quality = ferrofluidSchema.quality.default,
+	mappingMode = ferrofluidSchema.mappingMode.default,
+	autoRotate = ferrofluidSchema.autoRotate.default,
+	rotationSpeed = ferrofluidSchema.rotationSpeed.default,
+	style,
+}) => {
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width,
+				height,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<FerrofluidContent
+				key={audioSrc}
+				{...{
+					width,
+					height,
+					audioSrc,
+					audioOffsetInSeconds,
+					playAudio,
+					inputGainDb,
+					intensity,
+					color,
+					shineColor,
+					shineX,
+					shineY,
+					shineZ,
+					shineIntensity,
+					shineSize,
+					pattern,
+					fluidity,
+					roughness,
+					iridescence,
+					envMapIntensity,
+					audioLights,
+					quality,
+					mappingMode,
+					autoRotate,
+					rotationSpeed,
+				}}
+			/>
+		</div>
+	);
+};
+export const Ferrofluid = Interactive.create({
 	Component: FerrofluidInner,
 	componentName: '<Ferrofluid>',
-	componentIdentity: null,
 	schema: ferrofluidSchema,
-	supportsEffects: false,
-}) as React.FC<FerrofluidProps>;
+});

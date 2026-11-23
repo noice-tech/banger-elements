@@ -1,25 +1,12 @@
-import React, {
-	forwardRef,
-	useCallback,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useState} from 'react';
 import {
+	createEffect,
 	HtmlInCanvas,
 	useCurrentFrame,
 	useVideoConfig,
 	Interactive,
-	Sequence,
-	type HtmlInCanvasOnInit,
-	type HtmlInCanvasOnPaint,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type WetGlassOptions = {
@@ -36,13 +23,13 @@ type WetGlassOptions = {
 	readonly timeOffsetInSeconds?: number;
 	readonly color?: string;
 };
-type WetGlassProps = InteractiveBaseProps & InteractiveTransformProps & WetGlassOptions;
+type WetGlassProps = InteractiveTransformProps & WetGlassOptions;
 type ResolvedWetGlassProps = Required<Omit<WetGlassOptions, 'children'>> & {
 	readonly children?: React.ReactNode;
 };
+type WetGlassEffectParams = Omit<ResolvedWetGlassProps, 'children'> & {readonly time: number};
 
 const wetGlassSchema = {
-	...Interactive.baseSchema,
 	width: {
 		type: 'number',
 		default: 1280,
@@ -136,7 +123,6 @@ const wetGlassSchema = {
 		keyframable: false,
 	},
 	color: {type: 'color', default: '#ffffff', description: 'Water tint (white is neutral)'},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -378,7 +364,6 @@ type WetGlassWebGlState = {
 	readonly vao: WebGLVertexArrayObject;
 	readonly buffer: WebGLBuffer;
 	readonly texture: WebGLTexture;
-	readonly textureSize: {width: number; height: number};
 	readonly uniforms: Record<string, WebGLUniformLocation | null>;
 };
 
@@ -395,7 +380,7 @@ function compileShader(gl: WebGL2RenderingContext, type: GLenum, source: string)
 	return shader;
 }
 
-function createWetGlassWebGl(canvas: OffscreenCanvas): WetGlassWebGlState {
+function createWetGlassWebGl(canvas: HTMLCanvasElement): WetGlassWebGlState {
 	const gl = canvas.getContext('webgl2', {premultipliedAlpha: true});
 	if (!gl) throw new Error('WetGlass requires WebGL2.');
 	const program = gl.createProgram();
@@ -446,7 +431,6 @@ function createWetGlassWebGl(canvas: OffscreenCanvas): WetGlassWebGlState {
 			vao,
 			buffer,
 			texture,
-			textureSize: {width: 0, height: 0},
 			uniforms: Object.fromEntries(
 				names.map((name) => [name, gl.getUniformLocation(program, name)]),
 			),
@@ -470,55 +454,32 @@ function cleanupWetGlassWebGl({gl, program, vao, buffer, texture}: WetGlassWebGl
 }
 
 /**
- * Upload the captured children into the bound texture at `width` x `height`
- * pixels. The HTML-in-canvas API is experimental and its WebGL entry point has
- * changed between Chrome releases: 158+ copies into storage you allocate (and
- * its ElementImage no longer reports a size), 156-157 take (target, format,
- * image), and 149 takes the full texImage2D-style overload.
+ * Upload the effect source as premultiplied alpha, matching the context. The
+ * shaders sample with a top-left origin, which is how DOM-oriented canvases
+ * arrive (`flipSourceY` is true). Only sources that are already flipped for
+ * WebGL need to be flipped back.
  */
-function uploadElementImage(
-	gl: WebGL2RenderingContext,
-	size: {width: number; height: number},
-	elementImage: ElementImage,
-	width: number,
-	height: number,
-) {
-	if (typeof gl.texElementSubImage2D === 'function') {
-		if (size.width !== width || size.height !== height) {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-			size.width = width;
-			size.height = height;
-		}
-		gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, elementImage, {width, height});
-	} else if (gl.texElementImage2D.length === 3) {
-		(
-			gl.texElementImage2D as unknown as (
-				target: GLenum,
-				internalformat: GLenum,
-				image: ElementImage,
-			) => void
-		)(gl.TEXTURE_2D, gl.RGBA8, elementImage);
-	} else {
-		gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, elementImage);
-	}
+function uploadSource(gl: WebGL2RenderingContext, source: TexImageSource, flipSourceY: boolean) {
+	gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !flipSourceY);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 }
 
 function drawWetGlassWebGl(
 	state: WetGlassWebGlState,
-	elementImage: ElementImage,
-	props: Omit<ResolvedWetGlassProps, 'children'> & {time: number},
-	pixelDensity: number,
+	source: TexImageSource,
+	props: WetGlassEffectParams,
+	width: number,
+	height: number,
+	flipSourceY: boolean,
 ) {
 	const {gl, uniforms} = state;
-	const width = Math.ceil(props.width * pixelDensity);
-	const height = Math.ceil(props.height * pixelDensity);
 	gl.viewport(0, 0, width, height);
 	gl.useProgram(state.program);
 	gl.bindVertexArray(state.vao);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, state.texture);
-	gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-	uploadElementImage(gl, state.textureSize, elementImage, width, height);
+	uploadSource(gl, source, flipSourceY);
 	gl.uniform1i(uniforms.inputTexture, 0);
 	gl.uniform1f(uniforms.amount, bounded(props.amount, 0, 1, 0.65));
 	gl.uniform1f(uniforms.speed, bounded(props.speed, 0, 4, 1));
@@ -534,31 +495,30 @@ function drawWetGlassWebGl(
 	if (gl.getError() !== gl.NO_ERROR) throw new Error('WetGlass failed to draw its WebGL frame.');
 }
 
-function WetGlassCanvas(props: ResolvedWetGlassProps & {time: number}) {
-	const state = useRef<WetGlassWebGlState | null>(null);
-	const onInit = useCallback<HtmlInCanvasOnInit>(({canvas}) => {
-		state.current = createWetGlassWebGl(canvas);
-		return () => {
-			if (state.current) cleanupWetGlassWebGl(state.current);
-			state.current = null;
-		};
-	}, []);
-	const onPaint = useCallback<HtmlInCanvasOnPaint>(
-		({elementImage, pixelDensity}) => {
-			if (!state.current) throw new Error('WetGlass WebGL was not initialized.');
-			drawWetGlassWebGl(state.current, elementImage, props, pixelDensity);
-		},
-		[props],
-	);
+const wetGlassEffect = createEffect<WetGlassEffectParams, WetGlassWebGlState>({
+	type: 'dev.banger-elements.wet-glass',
+	label: 'wetGlass()',
+	documentationLink: 'https://banger-elements.dev/wet-glass',
+	backend: 'webgl2',
+	calculateKey: (params) => `wet-glass-${JSON.stringify(params)}`,
+	setup: createWetGlassWebGl,
+	apply: ({source, width, height, params, state, flipSourceY}) =>
+		drawWetGlassWebGl(state, source as TexImageSource, params, width, height, flipSourceY),
+	cleanup: cleanupWetGlassWebGl,
+	// The Element's own Interactive.create() schema already exposes these controls.
+	schema: {},
+	validateParams: () => undefined,
+});
+
+function WetGlassCanvas({children, ...params}: ResolvedWetGlassProps & {time: number}) {
 	return (
 		<HtmlInCanvas
-			width={props.width}
-			height={props.height}
+			width={params.width}
+			height={params.height}
 			showInTimeline={false}
-			onInit={onInit}
-			onPaint={onPaint}
+			effects={[wetGlassEffect(params)]}
 		>
-			{props.children}
+			{children}
 		</HtmlInCanvas>
 	);
 }
@@ -820,80 +780,57 @@ function WetGlassContent(props: ResolvedWetGlassProps) {
 	);
 }
 
-const WetGlassInner = forwardRef<
-	HTMLDivElement,
-	WetGlassProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			children,
-			width = wetGlassSchema.width.default,
-			height = wetGlassSchema.height.default,
-			amount = wetGlassSchema.amount.default,
-			speed = wetGlassSchema.speed.default,
-			dropSize = wetGlassSchema.dropSize.default,
-			refraction = wetGlassSchema.refraction.default,
-			blur = wetGlassSchema.blur.default,
-			effectOpacity = wetGlassSchema.effectOpacity.default,
-			seed = wetGlassSchema.seed.default,
-			timeOffsetInSeconds = wetGlassSchema.timeOffsetInSeconds.default,
-			color = wetGlassSchema.color.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'WetGlass'}
-				outlineRef={outlineRef}
+const WetGlassInner: React.FC<WetGlassProps> = ({
+	children,
+	width = wetGlassSchema.width.default,
+	height = wetGlassSchema.height.default,
+	amount = wetGlassSchema.amount.default,
+	speed = wetGlassSchema.speed.default,
+	dropSize = wetGlassSchema.dropSize.default,
+	refraction = wetGlassSchema.refraction.default,
+	blur = wetGlassSchema.blur.default,
+	effectOpacity = wetGlassSchema.effectOpacity.default,
+	seed = wetGlassSchema.seed.default,
+	timeOffsetInSeconds = wetGlassSchema.timeOffsetInSeconds.default,
+	color = wetGlassSchema.color.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				// Avoid isolation here: with overflow: hidden it makes Chrome 158 drop the
+				// HtmlInCanvas paint record during renders.
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<WetGlassContent
+				width={drawingWidth}
+				height={drawingHeight}
+				amount={amount}
+				speed={speed}
+				dropSize={dropSize}
+				refraction={refraction}
+				blur={blur}
+				effectOpacity={effectOpacity}
+				seed={seed}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+				color={color}
 			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						isolation: 'isolate',
-						...style,
-					}}
-				>
-					<WetGlassContent
-						width={drawingWidth}
-						height={drawingHeight}
-						amount={amount}
-						speed={speed}
-						dropSize={dropSize}
-						refraction={refraction}
-						blur={blur}
-						effectOpacity={effectOpacity}
-						seed={seed}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-						color={color}
-					>
-						{children}
-					</WetGlassContent>
-				</div>
-			</Sequence>
-		);
-	},
-);
+				{children}
+			</WetGlassContent>
+		</div>
+	);
+};
 
-export const WetGlass = Interactive.withSchema({
+export const WetGlass = Interactive.create({
 	Component: WetGlassInner,
 	componentName: '<WetGlass>',
-	componentIdentity: null,
 	schema: wetGlassSchema,
-	supportsEffects: false,
-}) as React.FC<WetGlassProps>;
+});

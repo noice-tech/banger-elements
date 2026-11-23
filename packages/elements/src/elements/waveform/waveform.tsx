@@ -1,15 +1,12 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {forwardRef, useRef, useImperativeHandle, useLayoutEffect, useMemo} from 'react';
+import React, {useLayoutEffect, useMemo} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -27,7 +24,7 @@ type WaveformOptions = {
 	readonly resolution?: number;
 };
 
-type WaveformProps = InteractiveBaseProps & InteractiveTransformProps & WaveformOptions;
+type WaveformProps = InteractiveTransformProps & WaveformOptions;
 
 const DEFAULT_AUDIO_SRC = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3';
 const DEFAULT_WIDTH = 1280;
@@ -40,9 +37,9 @@ const DEFAULT_COLOR = '#aa8bff';
 const DEFAULT_WINDOW_SECONDS = 2;
 
 const waveformSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: DEFAULT_AUDIO_SRC,
 		description: 'Audio source',
 		keyframable: false,
@@ -127,7 +124,6 @@ const waveformSchema = {
 		description: 'Visible time window',
 		hiddenFromList: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 // Fixed decode chunks are independent of the visible waveform window.
@@ -382,76 +378,50 @@ const WaveformContent: React.FC<Required<WaveformOptions>> = ({
 	);
 };
 
-const WaveformInner = forwardRef<
-	HTMLDivElement,
-	WaveformProps & {
-		readonly controls: SequenceControls | undefined;
-	}
->(
-	(
-		{
-			width = DEFAULT_WIDTH,
-			height = DEFAULT_HEIGHT,
-			audioSrc = DEFAULT_AUDIO_SRC,
-			audioOffsetInSeconds = DEFAULT_AUDIO_OFFSET,
-			playAudio = DEFAULT_PLAY_AUDIO,
-			inputGainDb = DEFAULT_INPUT_GAIN_DB,
-			intensity = DEFAULT_INTENSITY,
-			color = DEFAULT_COLOR,
-			windowInSeconds = DEFAULT_WINDOW_SECONDS,
-			colorMode = waveformSchema.colorMode.default,
-			resolution = waveformSchema.resolution.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Waveform'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						boxSizing: 'border-box',
-						width,
-						height,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<WaveformContent
-						key={audioSrc}
-						width={width}
-						height={height}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						intensity={intensity}
-						color={color}
-						windowInSeconds={windowInSeconds}
-						colorMode={colorMode}
-						resolution={resolution}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const WaveformInner: React.FC<WaveformProps> = ({
+	width = DEFAULT_WIDTH,
+	height = DEFAULT_HEIGHT,
+	audioSrc = DEFAULT_AUDIO_SRC,
+	audioOffsetInSeconds = DEFAULT_AUDIO_OFFSET,
+	playAudio = DEFAULT_PLAY_AUDIO,
+	inputGainDb = DEFAULT_INPUT_GAIN_DB,
+	intensity = DEFAULT_INTENSITY,
+	color = DEFAULT_COLOR,
+	windowInSeconds = DEFAULT_WINDOW_SECONDS,
+	colorMode = waveformSchema.colorMode.default,
+	resolution = waveformSchema.resolution.default,
+	style,
+}) => {
+	return (
+		<div
+			style={{
+				boxSizing: 'border-box',
+				width,
+				height,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<WaveformContent
+				key={audioSrc}
+				width={width}
+				height={height}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				intensity={intensity}
+				color={color}
+				windowInSeconds={windowInSeconds}
+				colorMode={colorMode}
+				resolution={resolution}
+			/>
+		</div>
+	);
+};
 
-export const Waveform = Interactive.withSchema({
+export const Waveform = Interactive.create({
 	Component: WaveformInner,
 	componentName: '<Waveform>',
-	componentIdentity: null,
 	schema: waveformSchema,
-	supportsEffects: false,
-}) as React.FC<WaveformProps>;
+});

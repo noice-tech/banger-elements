@@ -4,25 +4,15 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type BasicOptions = {
@@ -43,12 +33,12 @@ type BasicOptions = {
 	readonly speed?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type BasicProps = InteractiveBaseProps & InteractiveTransformProps & BasicOptions;
+type BasicProps = InteractiveTransformProps & BasicOptions;
 
 const basicSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -157,7 +147,6 @@ const basicSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -739,86 +728,62 @@ const BasicContent: React.FC<Required<BasicOptions> & {width: number; height: nu
 		</>
 	);
 };
-const BasicInner = forwardRef<
-	HTMLDivElement,
-	BasicProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = basicSchema.audioSrc.default,
-			audioOffsetInSeconds = basicSchema.audioOffsetInSeconds.default,
-			playAudio = basicSchema.playAudio.default,
-			inputGainDb = basicSchema.inputGainDb.default,
-			backgroundColor = basicSchema.backgroundColor.default,
-			intensifyColor = basicSchema.intensifyColor.default,
-			starsColor = basicSchema.starsColor.default,
-			responsive = basicSchema.responsive.default,
-			enableStars = basicSchema.enableStars.default,
-			starsAudioReactivity = basicSchema.starsAudioReactivity.default,
-			stars = basicSchema.stars.default,
-			pattern = basicSchema.pattern.default,
-			speed = basicSchema.speed.default,
-			timeOffsetInSeconds = basicSchema.timeOffsetInSeconds.default,
-			width = 1280,
-			height = 720,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Basic'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<BasicContent
-						key={`${audioSrc}`}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						backgroundColor={backgroundColor}
-						intensifyColor={intensifyColor}
-						starsColor={starsColor}
-						responsive={responsive}
-						enableStars={enableStars}
-						starsAudioReactivity={starsAudioReactivity}
-						stars={stars}
-						pattern={pattern}
-						speed={speed}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Basic = Interactive.withSchema({
+const BasicInner: React.FC<BasicProps> = ({
+	audioSrc = basicSchema.audioSrc.default,
+	audioOffsetInSeconds = basicSchema.audioOffsetInSeconds.default,
+	playAudio = basicSchema.playAudio.default,
+	inputGainDb = basicSchema.inputGainDb.default,
+	backgroundColor = basicSchema.backgroundColor.default,
+	intensifyColor = basicSchema.intensifyColor.default,
+	starsColor = basicSchema.starsColor.default,
+	responsive = basicSchema.responsive.default,
+	enableStars = basicSchema.enableStars.default,
+	starsAudioReactivity = basicSchema.starsAudioReactivity.default,
+	stars = basicSchema.stars.default,
+	pattern = basicSchema.pattern.default,
+	speed = basicSchema.speed.default,
+	timeOffsetInSeconds = basicSchema.timeOffsetInSeconds.default,
+	width = 1280,
+	height = 720,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<BasicContent
+				key={`${audioSrc}`}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				backgroundColor={backgroundColor}
+				intensifyColor={intensifyColor}
+				starsColor={starsColor}
+				responsive={responsive}
+				enableStars={enableStars}
+				starsAudioReactivity={starsAudioReactivity}
+				stars={stars}
+				pattern={pattern}
+				speed={speed}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
+export const Basic = Interactive.create({
 	Component: BasicInner,
 	componentName: '<Basic>',
-	componentIdentity: null,
 	schema: basicSchema,
-	supportsEffects: false,
-}) as React.FC<BasicProps>;
+});

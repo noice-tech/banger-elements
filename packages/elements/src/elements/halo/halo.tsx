@@ -1,23 +1,13 @@
 import {Audio} from '@remotion/media';
 import {useAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useMemo,
-	useLayoutEffect,
-	useState,
-} from 'react';
+import React, {useRef, useMemo, useLayoutEffect, useState} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -44,18 +34,19 @@ type HaloOptions = {
 	readonly artworkSrc?: string;
 };
 
-type HaloProps = InteractiveBaseProps & InteractiveTransformProps & HaloOptions;
+type HaloProps = InteractiveTransformProps & HaloOptions;
 
 const haloSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
 	},
 	artworkSrc: {
 		type: 'asset',
+		assetType: 'image',
 		default: '',
 		description: 'Optional center artwork',
 		keyframable: false,
@@ -188,7 +179,6 @@ const haloSchema = {
 		description: 'Extra glow spread',
 		hiddenFromList: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 function useArtwork(src: string) {
@@ -957,97 +947,73 @@ const HaloContent: React.FC<Required<HaloOptions>> = (props) => {
 	);
 };
 
-const HaloInner = forwardRef<
-	HTMLDivElement,
-	HaloProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = haloSchema.width.default,
-			height = haloSchema.height.default,
-			audioSrc = haloSchema.audioSrc.default,
-			audioOffsetInSeconds = haloSchema.audioOffsetInSeconds.default,
-			playAudio = haloSchema.playAudio.default,
-			inputGainDb = haloSchema.inputGainDb.default,
-			intensity = haloSchema.intensity.default,
-			colorMode = haloSchema.colorMode.default,
-			startColor = haloSchema.startColor.default,
-			endColor = haloSchema.endColor.default,
-			leadingColor,
-			centerColor = haloSchema.centerColor.default,
-			centerMode = haloSchema.centerMode.default,
-			radius = haloSchema.radius.default,
-			trailDepth = haloSchema.trailDepth.default,
-			waveDelay = haloSchema.waveDelay.default,
-			motionBlur = haloSchema.motionBlur.default,
-			glowBlur = haloSchema.glowBlur.default,
-			glowSpread = haloSchema.glowSpread.default,
-			artworkSrc = haloSchema.artworkSrc.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Halo'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width,
-						height,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<HaloContent
-						key={`${audioSrc}-${artworkSrc}`}
-						width={width}
-						height={height}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						intensity={intensity}
-						colorMode={colorMode}
-						startColor={startColor}
-						endColor={endColor}
-						leadingColor={resolveLeadingColor({
-							colorMode,
-							startColor,
-							leadingColor,
-						})}
-						centerColor={centerColor}
-						centerMode={centerMode}
-						radius={radius}
-						trailDepth={trailDepth}
-						waveDelay={waveDelay}
-						motionBlur={motionBlur}
-						glowBlur={glowBlur}
-						glowSpread={glowSpread}
-						artworkSrc={artworkSrc}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const HaloInner: React.FC<HaloProps> = ({
+	width = haloSchema.width.default,
+	height = haloSchema.height.default,
+	audioSrc = haloSchema.audioSrc.default,
+	audioOffsetInSeconds = haloSchema.audioOffsetInSeconds.default,
+	playAudio = haloSchema.playAudio.default,
+	inputGainDb = haloSchema.inputGainDb.default,
+	intensity = haloSchema.intensity.default,
+	colorMode = haloSchema.colorMode.default,
+	startColor = haloSchema.startColor.default,
+	endColor = haloSchema.endColor.default,
+	leadingColor,
+	centerColor = haloSchema.centerColor.default,
+	centerMode = haloSchema.centerMode.default,
+	radius = haloSchema.radius.default,
+	trailDepth = haloSchema.trailDepth.default,
+	waveDelay = haloSchema.waveDelay.default,
+	motionBlur = haloSchema.motionBlur.default,
+	glowBlur = haloSchema.glowBlur.default,
+	glowSpread = haloSchema.glowSpread.default,
+	artworkSrc = haloSchema.artworkSrc.default,
+	style,
+}) => {
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width,
+				height,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<HaloContent
+				key={`${audioSrc}-${artworkSrc}`}
+				width={width}
+				height={height}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				intensity={intensity}
+				colorMode={colorMode}
+				startColor={startColor}
+				endColor={endColor}
+				leadingColor={resolveLeadingColor({
+					colorMode,
+					startColor,
+					leadingColor,
+				})}
+				centerColor={centerColor}
+				centerMode={centerMode}
+				radius={radius}
+				trailDepth={trailDepth}
+				waveDelay={waveDelay}
+				motionBlur={motionBlur}
+				glowBlur={glowBlur}
+				glowSpread={glowSpread}
+				artworkSrc={artworkSrc}
+			/>
+		</div>
+	);
+};
 
-export const Halo = Interactive.withSchema({
+export const Halo = Interactive.create({
 	Component: HaloInner,
 	componentName: '<Halo>',
-	componentIdentity: null,
 	schema: haloSchema,
-	supportsEffects: false,
-}) as React.FC<HaloProps>;
+});

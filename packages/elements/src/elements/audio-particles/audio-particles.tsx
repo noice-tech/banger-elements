@@ -1,23 +1,13 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -39,15 +29,15 @@ type AudioParticlesOptions = {
 	readonly maskHalo?: boolean;
 };
 
-type AudioParticlesProps = InteractiveBaseProps & InteractiveTransformProps & AudioParticlesOptions;
+type AudioParticlesProps = InteractiveTransformProps & AudioParticlesOptions;
 const BASS_HISTORY_FRAMES = 300;
 const MASK_TRAIL_DEPTH = 9;
 const PARTICLE_COUNT = 3500;
 
 const audioParticlesSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -155,7 +145,6 @@ const audioParticlesSchema = {
 		default: false,
 		description: 'Halo exclusion: match its radius, inputGainDb and intensity',
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -1147,83 +1136,57 @@ const AudioParticlesContent: React.FC<Required<AudioParticlesOptions>> = (props)
 	);
 };
 
-const AudioParticlesInner = forwardRef<
-	HTMLDivElement,
-	AudioParticlesProps & {
-		readonly controls: SequenceControls | undefined;
-	}
->(
-	(
-		{
-			width = audioParticlesSchema.width.default,
-			height = audioParticlesSchema.height.default,
-			audioSrc = audioParticlesSchema.audioSrc.default,
-			audioOffsetInSeconds = audioParticlesSchema.audioOffsetInSeconds.default,
-			playAudio = audioParticlesSchema.playAudio.default,
-			startTimeInSeconds = audioParticlesSchema.startTimeInSeconds.default,
-			inputGainDb = audioParticlesSchema.inputGainDb.default,
-			intensity = audioParticlesSchema.intensity.default,
-			color = audioParticlesSchema.color.default,
-			radius = audioParticlesSchema.radius.default,
-			density = audioParticlesSchema.density.default,
-			size = audioParticlesSchema.size.default,
-			reactiveSpeed = audioParticlesSchema.reactiveSpeed.default,
-			maskHalo = audioParticlesSchema.maskHalo.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Audio Particles'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width,
-						height,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<AudioParticlesContent
-						key={audioSrc}
-						width={width}
-						height={height}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						startTimeInSeconds={startTimeInSeconds}
-						inputGainDb={inputGainDb}
-						intensity={intensity}
-						color={color}
-						radius={radius}
-						density={density}
-						size={size}
-						reactiveSpeed={reactiveSpeed}
-						maskHalo={maskHalo}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const AudioParticlesInner: React.FC<AudioParticlesProps> = ({
+	width = audioParticlesSchema.width.default,
+	height = audioParticlesSchema.height.default,
+	audioSrc = audioParticlesSchema.audioSrc.default,
+	audioOffsetInSeconds = audioParticlesSchema.audioOffsetInSeconds.default,
+	playAudio = audioParticlesSchema.playAudio.default,
+	startTimeInSeconds = audioParticlesSchema.startTimeInSeconds.default,
+	inputGainDb = audioParticlesSchema.inputGainDb.default,
+	intensity = audioParticlesSchema.intensity.default,
+	color = audioParticlesSchema.color.default,
+	radius = audioParticlesSchema.radius.default,
+	density = audioParticlesSchema.density.default,
+	size = audioParticlesSchema.size.default,
+	reactiveSpeed = audioParticlesSchema.reactiveSpeed.default,
+	maskHalo = audioParticlesSchema.maskHalo.default,
+	style,
+}) => {
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width,
+				height,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<AudioParticlesContent
+				key={audioSrc}
+				width={width}
+				height={height}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				startTimeInSeconds={startTimeInSeconds}
+				inputGainDb={inputGainDb}
+				intensity={intensity}
+				color={color}
+				radius={radius}
+				density={density}
+				size={size}
+				reactiveSpeed={reactiveSpeed}
+				maskHalo={maskHalo}
+			/>
+		</div>
+	);
+};
 
-export const AudioParticles = Interactive.withSchema({
+export const AudioParticles = Interactive.create({
 	Component: AudioParticlesInner,
 	componentName: '<AudioParticles>',
-	componentIdentity: null,
 	schema: audioParticlesSchema,
-	supportsEffects: false,
-}) as React.FC<AudioParticlesProps>;
+});

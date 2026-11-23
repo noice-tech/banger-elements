@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -50,12 +40,12 @@ type CircleOptions = {
 	readonly circleVariant?: 'radial-bars' | 'glow-ring' | 'waveform-ring' | 'dotted-ring';
 };
 
-type CircleProps = InteractiveBaseProps & InteractiveTransformProps & CircleOptions;
+type CircleProps = InteractiveTransformProps & CircleOptions;
 
 const circleSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -197,7 +187,6 @@ const circleSchema = {
 		description: 'Intensity',
 		hiddenFromList: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -1083,103 +1072,75 @@ const CircleContent: React.FC<Required<CircleOptions>> = (props) => {
 	);
 };
 
-const CircleInner = forwardRef<
-	HTMLDivElement,
-	CircleProps & {
-		readonly controls: SequenceControls | undefined;
-	}
->(
-	(
-		{
-			width = circleSchema.width.default,
-			height = circleSchema.height.default,
-			audioSrc = circleSchema.audioSrc.default,
-			audioOffsetInSeconds = circleSchema.audioOffsetInSeconds.default,
-			playAudio = circleSchema.playAudio.default,
-			inputGainDb = circleSchema.inputGainDb.default,
-			intensity = circleSchema.intensity.default,
-			startColor = circleSchema.startColor.default,
-			endColor = circleSchema.endColor.default,
-			colorMode = circleSchema.colorMode.default,
-			radius = circleSchema.radius.default,
-			count = circleSchema.count.default,
-			lineWidth = circleSchema.lineWidth.default,
-			circleVariant = circleSchema.circleVariant.default,
-			middleColor = circleSchema.middleColor.default,
-			rainbowSpeed = circleSchema.rainbowSpeed.default,
-			saturation = circleSchema.saturation.default,
-			brightness = circleSchema.brightness.default,
-			barWidth = circleSchema.barWidth.default,
-			lineThickness = lineWidth === circleSchema.lineWidth.default
-				? circleSchema.lineThickness.default
-				: lineWidth,
-			dotSize = lineWidth === circleSchema.lineWidth.default
-				? circleSchema.dotSize.default
-				: lineWidth,
-			showLines = circleSchema.showLines.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Circle'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width,
-						height,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<CircleContent
-						key={audioSrc}
-						width={width}
-						height={height}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						intensity={intensity}
-						startColor={startColor}
-						endColor={endColor}
-						colorMode={colorMode}
-						radius={radius}
-						count={count}
-						lineWidth={lineWidth}
-						circleVariant={circleVariant}
-						middleColor={middleColor}
-						rainbowSpeed={rainbowSpeed}
-						saturation={saturation}
-						brightness={brightness}
-						barWidth={barWidth}
-						lineThickness={lineThickness}
-						dotSize={dotSize}
-						showLines={showLines}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const CircleInner: React.FC<CircleProps> = ({
+	width = circleSchema.width.default,
+	height = circleSchema.height.default,
+	audioSrc = circleSchema.audioSrc.default,
+	audioOffsetInSeconds = circleSchema.audioOffsetInSeconds.default,
+	playAudio = circleSchema.playAudio.default,
+	inputGainDb = circleSchema.inputGainDb.default,
+	intensity = circleSchema.intensity.default,
+	startColor = circleSchema.startColor.default,
+	endColor = circleSchema.endColor.default,
+	colorMode = circleSchema.colorMode.default,
+	radius = circleSchema.radius.default,
+	count = circleSchema.count.default,
+	lineWidth = circleSchema.lineWidth.default,
+	circleVariant = circleSchema.circleVariant.default,
+	middleColor = circleSchema.middleColor.default,
+	rainbowSpeed = circleSchema.rainbowSpeed.default,
+	saturation = circleSchema.saturation.default,
+	brightness = circleSchema.brightness.default,
+	barWidth = circleSchema.barWidth.default,
+	lineThickness = lineWidth === circleSchema.lineWidth.default
+		? circleSchema.lineThickness.default
+		: lineWidth,
+	dotSize = lineWidth === circleSchema.lineWidth.default ? circleSchema.dotSize.default : lineWidth,
+	showLines = circleSchema.showLines.default,
+	style,
+}) => {
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width,
+				height,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<CircleContent
+				key={audioSrc}
+				width={width}
+				height={height}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				intensity={intensity}
+				startColor={startColor}
+				endColor={endColor}
+				colorMode={colorMode}
+				radius={radius}
+				count={count}
+				lineWidth={lineWidth}
+				circleVariant={circleVariant}
+				middleColor={middleColor}
+				rainbowSpeed={rainbowSpeed}
+				saturation={saturation}
+				brightness={brightness}
+				barWidth={barWidth}
+				lineThickness={lineThickness}
+				dotSize={dotSize}
+				showLines={showLines}
+			/>
+		</div>
+	);
+};
 
-export const Circle = Interactive.withSchema({
+export const Circle = Interactive.create({
 	Component: CircleInner,
 	componentName: '<Circle>',
-	componentIdentity: null,
 	schema: circleSchema,
-	supportsEffects: false,
-}) as React.FC<CircleProps>;
+});

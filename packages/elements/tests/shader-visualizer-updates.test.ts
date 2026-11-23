@@ -7,40 +7,7 @@ for (const [slug, name, schema] of [
 	['fisheye', 'Fisheye', 'fisheyeSchema'],
 	['wet-glass', 'WetGlass', 'wetGlassSchema'],
 ]) {
-	test(`${name}: supports Chromium 156's three-argument capture upload`, () => {
-		const helpers = loadHelpers(slug, [`create${name}WebGl`, `draw${name}WebGl`, schema]) as Record<
-			string,
-			unknown
-		>;
-		const setup = helpers[`create${name}WebGl`] as (
-			canvas: HTMLCanvasElement,
-		) => Record<string, unknown>;
-		const draw = helpers[`draw${name}WebGl`] as (...args: unknown[]) => void;
-		const {canvas} = mockCanvas();
-		const state = setup(canvas);
-		const uploads: unknown[][] = [];
-		const upload = (target: number, format: number, image: unknown) => {
-			uploads.push([target, format, image]);
-		};
-		const gl = new Proxy(canvas.getContext('webgl2')!, {
-			get(target, key) {
-				if (key === 'texElementSubImage2D') return undefined;
-				return key === 'texElementImage2D' ? upload : Reflect.get(target, key);
-			},
-		});
-		const fields = helpers[schema] as Record<string, {default: unknown}>;
-		const props = Object.fromEntries(
-			Object.entries(fields)
-				.filter(([, field]) => field && typeof field === 'object' && 'default' in field)
-				.map(([key, field]) => [key, field.default]),
-		);
-		const image = {};
-		draw({...state, gl}, image, {...props, time: 2}, ...(name === 'Vhs' ? [2, 1] : [1]));
-		assert.equal(uploads.length, 1);
-		assert.deepEqual(uploads[0], [gl.TEXTURE_2D, gl.RGBA8, image]);
-	});
-
-	test(`${name}: copies captures into sized storage on Chromium 158+`, () => {
+	test(`${name}: uploads the effect source premultiplied, oriented by flipSourceY`, () => {
 		const helpers = loadHelpers(slug, [`create${name}WebGl`, `draw${name}WebGl`, schema]) as Record<
 			string,
 			unknown
@@ -58,32 +25,42 @@ for (const [slug, name, schema] of [
 				.filter(([, field]) => field && typeof field === 'object' && 'default' in field)
 				.map(([key, field]) => [key, field.default]),
 		);
-		const image = {};
-		const frame = (width: number, density: number) =>
-			draw(
-				state,
-				image,
-				{...props, width, height: 360, time: 2},
-				...(name === 'Vhs' ? [2, density] : [density]),
-			);
-		frame(640, 2);
-		frame(640, 2);
-		frame(320, 2);
-		const named = (method: string) => calls.filter((call) => call.name === method);
-		// Storage is (re)allocated only when the pixel size changes, at that size.
-		const allocations = named('texImage2D').map((call) => call.args.slice(3, 5));
-		assert.deepEqual(allocations, [
-			[1280, 720],
-			[640, 720],
+		const source = {};
+		const pixelStores = (start: number) =>
+			calls
+				.slice(start)
+				.filter((call) => call.name === 'pixelStorei')
+				.map((call) => call.args);
+		// Remotion passes DOM-oriented canvases with flipSourceY: true. The shaders
+		// already sample with a top-left origin, so these are uploaded unflipped.
+		draw(state, source, {...props, time: 2}, 1280, 720, true);
+		assert.deepEqual(pixelStores(0), [
+			[gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true],
+			[gl.UNPACK_FLIP_Y_WEBGL, false],
 		]);
-		const copies = named('texElementSubImage2D');
-		assert.equal(copies.length, 3);
-		// The copy config comes from the element's own realm, so compare its fields.
-		const size = (args: unknown[]) => ({...(args[5] as {width: number; height: number})});
-		assert.deepEqual(copies[0]!.args.slice(0, 5), [gl.TEXTURE_2D, 0, 0, 0, image]);
-		assert.deepEqual(size(copies[0]!.args), {width: 1280, height: 720});
-		assert.deepEqual(size(copies[2]!.args), {width: 640, height: 720});
-		assert.equal(named('texElementImage2D').length, 0);
+		const firstFrame = calls.length;
+		draw(state, source, {...props, time: 2}, 640, 360, false);
+		assert.deepEqual(pixelStores(firstFrame), [
+			[gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true],
+			[gl.UNPACK_FLIP_Y_WEBGL, true],
+		]);
+		const named = (method: string) => calls.filter((call) => call.name === method);
+		assert.deepEqual(
+			named('texImage2D').map((call) => call.args),
+			[
+				[gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source],
+				[gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source],
+			],
+		);
+		// The viewport follows the effect pass size, which includes pixel density.
+		assert.deepEqual(
+			named('viewport').map((call) => call.args),
+			[
+				[0, 0, 1280, 720],
+				[0, 0, 640, 360],
+			],
+		);
+		assert.equal(named('texElementImage2D').length + named('texElementSubImage2D').length, 0);
 	});
 }
 

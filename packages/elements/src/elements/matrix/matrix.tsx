@@ -1,24 +1,14 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type MatrixOptions = {
@@ -42,11 +32,11 @@ type MatrixOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type MatrixProps = InteractiveBaseProps & InteractiveTransformProps & MatrixOptions;
+type MatrixProps = InteractiveTransformProps & MatrixOptions;
 const matrixSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -79,7 +69,13 @@ const matrixSchema = {
 	color1: {type: 'color', default: '#ff6b00', description: 'Primary Color'},
 	color2: {type: 'color', default: '#00a8ff', description: 'Secondary Color'},
 	glowColor: {type: 'color', default: '#ffffff', description: 'Glow Color'},
-	textureSrc: {type: 'asset', default: '', description: 'Noise Texture', keyframable: false},
+	textureSrc: {
+		type: 'asset',
+		assetType: 'image',
+		default: '',
+		description: 'Noise Texture',
+		keyframable: false,
+	},
 	speed: {
 		type: 'number',
 		default: 0.5,
@@ -182,7 +178,6 @@ const matrixSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -1042,92 +1037,68 @@ const MatrixContent: React.FC<Required<MatrixOptions> & {width: number; height: 
 	);
 };
 
-const MatrixInner = forwardRef<
-	HTMLDivElement,
-	MatrixProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = matrixSchema.audioSrc.default,
-			audioOffsetInSeconds = matrixSchema.audioOffsetInSeconds.default,
-			playAudio = matrixSchema.playAudio.default,
-			inputGainDb = matrixSchema.inputGainDb.default,
-			color1 = matrixSchema.color1.default,
-			color2 = matrixSchema.color2.default,
-			glowColor = matrixSchema.glowColor.default,
-			textureSrc = matrixSchema.textureSrc.default,
-			speed = matrixSchema.speed.default,
-			scale = matrixSchema.scale.default,
-			iterations = matrixSchema.iterations.default,
-			spread = matrixSchema.spread.default,
-			colorCycle = matrixSchema.colorCycle.default,
-			glow = matrixSchema.glow.default,
-			responsive = matrixSchema.responsive.default,
-			bpm = matrixSchema.bpm.default,
-			timeOffsetInSeconds = matrixSchema.timeOffsetInSeconds.default,
-			width = matrixSchema.width.default,
-			height = matrixSchema.height.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Matrix'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<MatrixContent
-						key={audioSrc}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						color1={color1}
-						color2={color2}
-						glowColor={glowColor}
-						textureSrc={textureSrc}
-						speed={speed}
-						scale={scale}
-						iterations={iterations}
-						spread={spread}
-						colorCycle={colorCycle}
-						glow={glow}
-						responsive={responsive}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-						width={drawingWidth}
-						height={drawingHeight}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Matrix = Interactive.withSchema({
+const MatrixInner: React.FC<MatrixProps> = ({
+	audioSrc = matrixSchema.audioSrc.default,
+	audioOffsetInSeconds = matrixSchema.audioOffsetInSeconds.default,
+	playAudio = matrixSchema.playAudio.default,
+	inputGainDb = matrixSchema.inputGainDb.default,
+	color1 = matrixSchema.color1.default,
+	color2 = matrixSchema.color2.default,
+	glowColor = matrixSchema.glowColor.default,
+	textureSrc = matrixSchema.textureSrc.default,
+	speed = matrixSchema.speed.default,
+	scale = matrixSchema.scale.default,
+	iterations = matrixSchema.iterations.default,
+	spread = matrixSchema.spread.default,
+	colorCycle = matrixSchema.colorCycle.default,
+	glow = matrixSchema.glow.default,
+	responsive = matrixSchema.responsive.default,
+	bpm = matrixSchema.bpm.default,
+	timeOffsetInSeconds = matrixSchema.timeOffsetInSeconds.default,
+	width = matrixSchema.width.default,
+	height = matrixSchema.height.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<MatrixContent
+				key={audioSrc}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				color1={color1}
+				color2={color2}
+				glowColor={glowColor}
+				textureSrc={textureSrc}
+				speed={speed}
+				scale={scale}
+				iterations={iterations}
+				spread={spread}
+				colorCycle={colorCycle}
+				glow={glow}
+				responsive={responsive}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+				width={drawingWidth}
+				height={drawingHeight}
+			/>
+		</div>
+	);
+};
+export const Matrix = Interactive.create({
 	Component: MatrixInner,
 	componentName: '<Matrix>',
-	componentIdentity: null,
 	schema: matrixSchema,
-	supportsEffects: false,
-}) as React.FC<MatrixProps>;
+});

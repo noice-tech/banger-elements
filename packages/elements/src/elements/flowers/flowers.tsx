@@ -4,25 +4,15 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type FlowersOptions = {
@@ -42,12 +32,12 @@ type FlowersOptions = {
 	readonly pattern?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type FlowersProps = InteractiveBaseProps & InteractiveTransformProps & FlowersOptions;
+type FlowersProps = InteractiveTransformProps & FlowersOptions;
 
 const flowersSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -171,7 +161,6 @@ const flowersSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -841,84 +830,60 @@ const FlowersContent: React.FC<Required<FlowersOptions> & {width: number; height
 		</>
 	);
 };
-const FlowersInner = forwardRef<
-	HTMLDivElement,
-	FlowersProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = flowersSchema.audioSrc.default,
-			audioOffsetInSeconds = flowersSchema.audioOffsetInSeconds.default,
-			playAudio = flowersSchema.playAudio.default,
-			inputGainDb = flowersSchema.inputGainDb.default,
-			strokeColor = flowersSchema.strokeColor.default,
-			backgroundColor = flowersSchema.backgroundColor.default,
-			scale = flowersSchema.scale.default,
-			responsive = flowersSchema.responsive.default,
-			rotationSpeed = flowersSchema.rotationSpeed.default,
-			flowersSpeed = flowersSchema.flowersSpeed.default,
-			volume = flowersSchema.volume.default,
-			pattern = flowersSchema.pattern.default,
-			timeOffsetInSeconds = flowersSchema.timeOffsetInSeconds.default,
-			width = 1280,
-			height = 720,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Flowers'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<FlowersContent
-						key={`${audioSrc}`}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						strokeColor={strokeColor}
-						backgroundColor={backgroundColor}
-						scale={scale}
-						responsive={responsive}
-						rotationSpeed={rotationSpeed}
-						flowersSpeed={flowersSpeed}
-						volume={volume}
-						pattern={pattern}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Flowers = Interactive.withSchema({
+const FlowersInner: React.FC<FlowersProps> = ({
+	audioSrc = flowersSchema.audioSrc.default,
+	audioOffsetInSeconds = flowersSchema.audioOffsetInSeconds.default,
+	playAudio = flowersSchema.playAudio.default,
+	inputGainDb = flowersSchema.inputGainDb.default,
+	strokeColor = flowersSchema.strokeColor.default,
+	backgroundColor = flowersSchema.backgroundColor.default,
+	scale = flowersSchema.scale.default,
+	responsive = flowersSchema.responsive.default,
+	rotationSpeed = flowersSchema.rotationSpeed.default,
+	flowersSpeed = flowersSchema.flowersSpeed.default,
+	volume = flowersSchema.volume.default,
+	pattern = flowersSchema.pattern.default,
+	timeOffsetInSeconds = flowersSchema.timeOffsetInSeconds.default,
+	width = 1280,
+	height = 720,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<FlowersContent
+				key={`${audioSrc}`}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				strokeColor={strokeColor}
+				backgroundColor={backgroundColor}
+				scale={scale}
+				responsive={responsive}
+				rotationSpeed={rotationSpeed}
+				flowersSpeed={flowersSpeed}
+				volume={volume}
+				pattern={pattern}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
+export const Flowers = Interactive.create({
 	Component: FlowersInner,
 	componentName: '<Flowers>',
-	componentIdentity: null,
 	schema: flowersSchema,
-	supportsEffects: false,
-}) as React.FC<FlowersProps>;
+});

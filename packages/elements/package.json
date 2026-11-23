@@ -16,13 +16,13 @@
 		"test": "tsx --test tests/*.test.ts"
 	},
 	"dependencies": {
-		"@remotion/media": "4.0.532",
-		"@remotion/media-utils": "4.0.532",
+		"@remotion/media": "4.0.546",
+		"@remotion/media-utils": "4.0.546",
 		"react": "19.3.1",
-		"remotion": "4.0.532"
+		"remotion": "4.0.546"
 	},
 	"devDependencies": {
-		"@remotion/studio-protocol": "4.0.532",
+		"@remotion/studio-protocol": "4.0.546",
 		"@types/node": "24.19.2",
 		"@types/react": "19.3.0",
 		"tsx": "4.23.15",

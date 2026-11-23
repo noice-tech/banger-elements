@@ -1,24 +1,14 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type PulseOptions = {
@@ -41,11 +31,11 @@ type PulseOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type PulseProps = InteractiveBaseProps & InteractiveTransformProps & PulseOptions;
+type PulseProps = InteractiveTransformProps & PulseOptions;
 const pulseSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -188,7 +178,6 @@ const pulseSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -1050,90 +1039,66 @@ const PulseContent: React.FC<Required<PulseOptions> & {width: number; height: nu
 	);
 };
 
-const PulseInner = forwardRef<
-	HTMLDivElement,
-	PulseProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = pulseSchema.audioSrc.default,
-			audioOffsetInSeconds = pulseSchema.audioOffsetInSeconds.default,
-			playAudio = pulseSchema.playAudio.default,
-			inputGainDb = pulseSchema.inputGainDb.default,
-			startColor = pulseSchema.startColor.default,
-			endColor = pulseSchema.endColor.default,
-			tunnelDepth = pulseSchema.tunnelDepth.default,
-			twist = pulseSchema.twist.default,
-			layers = pulseSchema.layers.default,
-			responsive = pulseSchema.responsive.default,
-			glow = pulseSchema.glow.default,
-			particles = pulseSchema.particles.default,
-			warp = pulseSchema.warp.default,
-			speed = pulseSchema.speed.default,
-			bpm = pulseSchema.bpm.default,
-			timeOffsetInSeconds = pulseSchema.timeOffsetInSeconds.default,
-			width = pulseSchema.width.default,
-			height = pulseSchema.height.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Pulse'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<PulseContent
-						key={audioSrc}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						startColor={startColor}
-						endColor={endColor}
-						tunnelDepth={tunnelDepth}
-						twist={twist}
-						layers={layers}
-						responsive={responsive}
-						glow={glow}
-						particles={particles}
-						warp={warp}
-						speed={speed}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-						width={drawingWidth}
-						height={drawingHeight}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Pulse = Interactive.withSchema({
+const PulseInner: React.FC<PulseProps> = ({
+	audioSrc = pulseSchema.audioSrc.default,
+	audioOffsetInSeconds = pulseSchema.audioOffsetInSeconds.default,
+	playAudio = pulseSchema.playAudio.default,
+	inputGainDb = pulseSchema.inputGainDb.default,
+	startColor = pulseSchema.startColor.default,
+	endColor = pulseSchema.endColor.default,
+	tunnelDepth = pulseSchema.tunnelDepth.default,
+	twist = pulseSchema.twist.default,
+	layers = pulseSchema.layers.default,
+	responsive = pulseSchema.responsive.default,
+	glow = pulseSchema.glow.default,
+	particles = pulseSchema.particles.default,
+	warp = pulseSchema.warp.default,
+	speed = pulseSchema.speed.default,
+	bpm = pulseSchema.bpm.default,
+	timeOffsetInSeconds = pulseSchema.timeOffsetInSeconds.default,
+	width = pulseSchema.width.default,
+	height = pulseSchema.height.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<PulseContent
+				key={audioSrc}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				startColor={startColor}
+				endColor={endColor}
+				tunnelDepth={tunnelDepth}
+				twist={twist}
+				layers={layers}
+				responsive={responsive}
+				glow={glow}
+				particles={particles}
+				warp={warp}
+				speed={speed}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+				width={drawingWidth}
+				height={drawingHeight}
+			/>
+		</div>
+	);
+};
+export const Pulse = Interactive.create({
 	Component: PulseInner,
 	componentName: '<Pulse>',
-	componentIdentity: null,
 	schema: pulseSchema,
-	supportsEffects: false,
-}) as React.FC<PulseProps>;
+});

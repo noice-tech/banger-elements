@@ -4,25 +4,15 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type CityOptions = {
@@ -43,12 +33,12 @@ type CityOptions = {
 	readonly textureSrc?: string;
 	readonly timeOffsetInSeconds?: number;
 };
-type CityProps = InteractiveBaseProps & InteractiveTransformProps & CityOptions;
+type CityProps = InteractiveTransformProps & CityOptions;
 
 const citySchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -124,6 +114,7 @@ const citySchema = {
 	},
 	textureSrc: {
 		type: 'asset',
+		assetType: 'image',
 		default: '',
 		description: 'Lights pattern',
 		keyframable: false,
@@ -158,7 +149,6 @@ const citySchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -989,86 +979,62 @@ const CityContent: React.FC<Required<CityOptions> & {width: number; height: numb
 		</>
 	);
 };
-const CityInner = forwardRef<
-	HTMLDivElement,
-	CityProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = citySchema.audioSrc.default,
-			audioOffsetInSeconds = citySchema.audioOffsetInSeconds.default,
-			playAudio = citySchema.playAudio.default,
-			inputGainDb = citySchema.inputGainDb.default,
-			startColor = citySchema.startColor.default,
-			endColor = citySchema.endColor.default,
-			lightsColor = citySchema.lightsColor.default,
-			groundColor = citySchema.groundColor.default,
-			shineColor = citySchema.shineColor.default,
-			responsive = citySchema.responsive.default,
-			stars = citySchema.stars.default,
-			speed = citySchema.speed.default,
-			textureSrc = citySchema.textureSrc.default,
-			timeOffsetInSeconds = citySchema.timeOffsetInSeconds.default,
-			width = 1280,
-			height = 720,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'City'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<CityContent
-						key={`${audioSrc}:${textureSrc}`}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						startColor={startColor}
-						endColor={endColor}
-						lightsColor={lightsColor}
-						groundColor={groundColor}
-						shineColor={shineColor}
-						responsive={responsive}
-						stars={stars}
-						speed={speed}
-						textureSrc={textureSrc}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const City = Interactive.withSchema({
+const CityInner: React.FC<CityProps> = ({
+	audioSrc = citySchema.audioSrc.default,
+	audioOffsetInSeconds = citySchema.audioOffsetInSeconds.default,
+	playAudio = citySchema.playAudio.default,
+	inputGainDb = citySchema.inputGainDb.default,
+	startColor = citySchema.startColor.default,
+	endColor = citySchema.endColor.default,
+	lightsColor = citySchema.lightsColor.default,
+	groundColor = citySchema.groundColor.default,
+	shineColor = citySchema.shineColor.default,
+	responsive = citySchema.responsive.default,
+	stars = citySchema.stars.default,
+	speed = citySchema.speed.default,
+	textureSrc = citySchema.textureSrc.default,
+	timeOffsetInSeconds = citySchema.timeOffsetInSeconds.default,
+	width = 1280,
+	height = 720,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<CityContent
+				key={`${audioSrc}:${textureSrc}`}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				startColor={startColor}
+				endColor={endColor}
+				lightsColor={lightsColor}
+				groundColor={groundColor}
+				shineColor={shineColor}
+				responsive={responsive}
+				stars={stars}
+				speed={speed}
+				textureSrc={textureSrc}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
+export const City = Interactive.create({
 	Component: CityInner,
 	componentName: '<City>',
-	componentIdentity: null,
 	schema: citySchema,
-	supportsEffects: false,
-}) as React.FC<CityProps>;
+});

@@ -1,15 +1,12 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {forwardRef, useRef, useImperativeHandle, useLayoutEffect} from 'react';
+import React, {useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -28,12 +25,12 @@ type OscilloscopeOptions = {
 	readonly displayMode?: 'pitch' | 'single-cycle' | 'free';
 };
 
-type OscilloscopeProps = InteractiveBaseProps & InteractiveTransformProps & OscilloscopeOptions;
+type OscilloscopeProps = InteractiveTransformProps & OscilloscopeOptions;
 
 const oscilloscopeSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -127,8 +124,6 @@ const oscilloscopeSchema = {
 		description: 'Trigger mode',
 		variants: {pitch: {}, 'single-cycle': {}, free: {}},
 	},
-
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -396,78 +391,52 @@ const OscilloscopeContent: React.FC<Required<OscilloscopeOptions>> = (props) => 
 	);
 };
 
-const OscilloscopeInner = forwardRef<
-	HTMLDivElement,
-	OscilloscopeProps & {
-		readonly controls: SequenceControls | undefined;
-	}
->(
-	(
-		{
-			width = oscilloscopeSchema.width.default,
-			height = oscilloscopeSchema.height.default,
-			audioSrc = oscilloscopeSchema.audioSrc.default,
-			audioOffsetInSeconds = oscilloscopeSchema.audioOffsetInSeconds.default,
-			playAudio = oscilloscopeSchema.playAudio.default,
-			inputGainDb = oscilloscopeSchema.inputGainDb.default,
-			amplitude = oscilloscopeSchema.amplitude.default,
-			lineColor = oscilloscopeSchema.lineColor.default,
-			lineWidth = oscilloscopeSchema.lineWidth.default,
-			sampleCount = oscilloscopeSchema.sampleCount.default,
-			timeSpanMs = oscilloscopeSchema.timeSpanMs.default,
-			displayMode = oscilloscopeSchema.displayMode.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Oscilloscope'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						boxSizing: 'border-box',
-						width,
-						height,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<OscilloscopeContent
-						key={audioSrc}
-						width={width}
-						height={height}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						amplitude={amplitude}
-						lineColor={lineColor}
-						lineWidth={lineWidth}
-						sampleCount={sampleCount}
-						timeSpanMs={timeSpanMs}
-						displayMode={displayMode}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const OscilloscopeInner: React.FC<OscilloscopeProps> = ({
+	width = oscilloscopeSchema.width.default,
+	height = oscilloscopeSchema.height.default,
+	audioSrc = oscilloscopeSchema.audioSrc.default,
+	audioOffsetInSeconds = oscilloscopeSchema.audioOffsetInSeconds.default,
+	playAudio = oscilloscopeSchema.playAudio.default,
+	inputGainDb = oscilloscopeSchema.inputGainDb.default,
+	amplitude = oscilloscopeSchema.amplitude.default,
+	lineColor = oscilloscopeSchema.lineColor.default,
+	lineWidth = oscilloscopeSchema.lineWidth.default,
+	sampleCount = oscilloscopeSchema.sampleCount.default,
+	timeSpanMs = oscilloscopeSchema.timeSpanMs.default,
+	displayMode = oscilloscopeSchema.displayMode.default,
+	style,
+}) => {
+	return (
+		<div
+			style={{
+				boxSizing: 'border-box',
+				width,
+				height,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<OscilloscopeContent
+				key={audioSrc}
+				width={width}
+				height={height}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				amplitude={amplitude}
+				lineColor={lineColor}
+				lineWidth={lineWidth}
+				sampleCount={sampleCount}
+				timeSpanMs={timeSpanMs}
+				displayMode={displayMode}
+			/>
+		</div>
+	);
+};
 
-export const Oscilloscope = Interactive.withSchema({
+export const Oscilloscope = Interactive.create({
 	Component: OscilloscopeInner,
 	componentName: '<Oscilloscope>',
-	componentIdentity: null,
 	schema: oscilloscopeSchema,
-	supportsEffects: false,
-}) as React.FC<OscilloscopeProps>;
+});

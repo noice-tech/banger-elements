@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -40,12 +30,12 @@ type RainOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type RainProps = InteractiveBaseProps & InteractiveTransformProps & RainOptions;
+type RainProps = InteractiveTransformProps & RainOptions;
 
 const rainSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -98,6 +88,7 @@ const rainSchema = {
 	},
 	textureSrc: {
 		type: 'asset',
+		assetType: 'image',
 		default: 'https://cdn.banger.show/assets/rain.jpg',
 		description: 'Background texture',
 		keyframable: false,
@@ -148,7 +139,6 @@ const rainSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -783,79 +773,55 @@ const RainContent: React.FC<Required<RainOptions>> = (props) => {
 	);
 };
 
-const RainInner = forwardRef<
-	HTMLDivElement,
-	RainProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = rainSchema.width.default,
-			height = rainSchema.height.default,
-			audioSrc = rainSchema.audioSrc.default,
-			audioOffsetInSeconds = rainSchema.audioOffsetInSeconds.default,
-			playAudio = rainSchema.playAudio.default,
-			inputGainDb = rainSchema.inputGainDb.default,
-			textureSrc = rainSchema.textureSrc.default,
-			textureScale = rainSchema.textureScale.default,
-			distancing = rainSchema.distancing.default,
-			blur = rainSchema.blur.default,
-			intensity = rainSchema.intensity.default,
-			timeOffsetInSeconds = rainSchema.timeOffsetInSeconds.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Rain'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<RainContent
-						key={`${audioSrc}:${textureSrc}`}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						textureSrc={textureSrc}
-						textureScale={textureScale}
-						distancing={distancing}
-						blur={blur}
-						intensity={intensity}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const RainInner: React.FC<RainProps> = ({
+	width = rainSchema.width.default,
+	height = rainSchema.height.default,
+	audioSrc = rainSchema.audioSrc.default,
+	audioOffsetInSeconds = rainSchema.audioOffsetInSeconds.default,
+	playAudio = rainSchema.playAudio.default,
+	inputGainDb = rainSchema.inputGainDb.default,
+	textureSrc = rainSchema.textureSrc.default,
+	textureScale = rainSchema.textureScale.default,
+	distancing = rainSchema.distancing.default,
+	blur = rainSchema.blur.default,
+	intensity = rainSchema.intensity.default,
+	timeOffsetInSeconds = rainSchema.timeOffsetInSeconds.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<RainContent
+				key={`${audioSrc}:${textureSrc}`}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				textureSrc={textureSrc}
+				textureScale={textureScale}
+				distancing={distancing}
+				blur={blur}
+				intensity={intensity}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
 
-export const Rain = Interactive.withSchema({
+export const Rain = Interactive.create({
 	Component: RainInner,
 	componentName: '<Rain>',
-	componentIdentity: null,
 	schema: rainSchema,
-	supportsEffects: false,
-}) as React.FC<RainProps>;
+});

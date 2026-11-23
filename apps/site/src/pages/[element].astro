@@ -6,6 +6,7 @@ import GitHubIcon from '../components/GitHubIcon.astro';
 import {elements, elementCategories} from '../data/elements';
 import {previewDurationInSeconds} from '../components/preview/player';
 import {highlightCode} from '../components/highlight';
+import {elementPayloadHtml, elementPayloadMimeType} from '../data/element-payloads';
 export function getStaticPaths() {
 	return elements.map(entry => ({params: {element: entry.slug}, props: {entry}}));
 }
@@ -59,6 +60,7 @@ const duration = previewDurationInSeconds(entry.slug as PreviewKind);
 					</div>
 				</Preview>
 				<section class="preview-install" aria-label={`${entry.title} installation`}>
+					<script type={elementPayloadMimeType} set:html={elementPayloadHtml(entry.slug)} />
 					<div id={`${entry.slug}-studio-actions`}></div>
 					<div class="source-links">
 						<a href={`/elements/${entry.slug}.tsx`} download={`${entry.slug}.element.tsx`}>Download TSX <span aria-hidden="true">↓</span></a>

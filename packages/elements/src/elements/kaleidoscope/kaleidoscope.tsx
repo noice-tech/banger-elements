@@ -4,25 +4,15 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type KaleidoscopeOptions = {
@@ -43,12 +33,12 @@ type KaleidoscopeOptions = {
 	readonly amount?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type KaleidoscopeProps = InteractiveBaseProps & InteractiveTransformProps & KaleidoscopeOptions;
+type KaleidoscopeProps = InteractiveTransformProps & KaleidoscopeOptions;
 
 const kaleidoscopeSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -157,7 +147,6 @@ const kaleidoscopeSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -605,86 +594,62 @@ const KaleidoscopeContent: React.FC<
 		</>
 	);
 };
-const KaleidoscopeInner = forwardRef<
-	HTMLDivElement,
-	KaleidoscopeProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = kaleidoscopeSchema.audioSrc.default,
-			audioOffsetInSeconds = kaleidoscopeSchema.audioOffsetInSeconds.default,
-			playAudio = kaleidoscopeSchema.playAudio.default,
-			inputGainDb = kaleidoscopeSchema.inputGainDb.default,
-			startColor = kaleidoscopeSchema.startColor.default,
-			scale = kaleidoscopeSchema.scale.default,
-			responsive = kaleidoscopeSchema.responsive.default,
-			randomColors = kaleidoscopeSchema.randomColors.default,
-			disableMovement = kaleidoscopeSchema.disableMovement.default,
-			still = kaleidoscopeSchema.still.default,
-			speed = kaleidoscopeSchema.speed.default,
-			pattern = kaleidoscopeSchema.pattern.default,
-			amount = kaleidoscopeSchema.amount.default,
-			timeOffsetInSeconds = kaleidoscopeSchema.timeOffsetInSeconds.default,
-			width = 1280,
-			height = 720,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Kaleidoscope'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<KaleidoscopeContent
-						key={`${audioSrc}`}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						startColor={startColor}
-						scale={scale}
-						responsive={responsive}
-						randomColors={randomColors}
-						disableMovement={disableMovement}
-						still={still}
-						speed={speed}
-						pattern={pattern}
-						amount={amount}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Kaleidoscope = Interactive.withSchema({
+const KaleidoscopeInner: React.FC<KaleidoscopeProps> = ({
+	audioSrc = kaleidoscopeSchema.audioSrc.default,
+	audioOffsetInSeconds = kaleidoscopeSchema.audioOffsetInSeconds.default,
+	playAudio = kaleidoscopeSchema.playAudio.default,
+	inputGainDb = kaleidoscopeSchema.inputGainDb.default,
+	startColor = kaleidoscopeSchema.startColor.default,
+	scale = kaleidoscopeSchema.scale.default,
+	responsive = kaleidoscopeSchema.responsive.default,
+	randomColors = kaleidoscopeSchema.randomColors.default,
+	disableMovement = kaleidoscopeSchema.disableMovement.default,
+	still = kaleidoscopeSchema.still.default,
+	speed = kaleidoscopeSchema.speed.default,
+	pattern = kaleidoscopeSchema.pattern.default,
+	amount = kaleidoscopeSchema.amount.default,
+	timeOffsetInSeconds = kaleidoscopeSchema.timeOffsetInSeconds.default,
+	width = 1280,
+	height = 720,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<KaleidoscopeContent
+				key={`${audioSrc}`}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				startColor={startColor}
+				scale={scale}
+				responsive={responsive}
+				randomColors={randomColors}
+				disableMovement={disableMovement}
+				still={still}
+				speed={speed}
+				pattern={pattern}
+				amount={amount}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
+export const Kaleidoscope = Interactive.create({
 	Component: KaleidoscopeInner,
 	componentName: '<Kaleidoscope>',
-	componentIdentity: null,
 	schema: kaleidoscopeSchema,
-	supportsEffects: false,
-}) as React.FC<KaleidoscopeProps>;
+});
