@@ -21,6 +21,16 @@ For local audio or image files, use a hosted URL before installation. Browser fi
 
 Keep your intended Studio open and focused before sending the request. Check that it uses a compatible Remotion version, runs on a port between **3000 and 3009**, and that your browser allows local-network access when prompted. Tested with **Remotion 4.0.532**, React 19.3.1 and aligned `@remotion/*` versions. You can also [download the source](#download-instead) if the connection is unavailable.
 
+## Install from the command line
+
+With Remotion **4.0.542 or newer**, run [`npx remotion elements use`](https://www.remotion.dev/docs/cli/elements/use) from your Remotion project. You don't need to open Studio.
+
+```bash
+npx remotion elements use https://banger-elements.dev/waveform --composition MyComposition
+```
+
+Replace the URL with any Element page and `MyComposition` with your composition ID. The CLI shows what it will change before asking for confirmation. It installs the Element with its original defaults, not settings from the website preview.
+
 ## Add the collection to Studio
 
 Use **Add Library to Studio** in the desktop header or at the bottom of a page. Confirm in Studio and restart it to load the collection in Browse Elements. Keep this import in `remotion.config.ts` so the protocol can append a working call:
