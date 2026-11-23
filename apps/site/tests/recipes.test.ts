@@ -16,6 +16,12 @@ test('every recipe exports its composition component', () => {
 	assert.equal(new Set(recipes.map((recipe) => recipe.id)).size, recipes.length);
 });
 
+test('each recipe poster is a frame within its composition', () => {
+	for (const {id, poster, durationInFrames} of recipes) {
+		assert.ok(Number.isInteger(poster) && poster >= 0 && poster < durationInFrames, id);
+	}
+});
+
 test('the listed layers are exactly the elements a recipe imports', () => {
 	for (const recipe of recipes) {
 		const imported = source(recipe.id).match(
@@ -27,11 +33,15 @@ test('the listed layers are exactly the elements a recipe imports', () => {
 	}
 });
 
-test('exactly one layer plays the audio', () => {
-	for (const recipe of recipes) {
-		// Shared props turn playback off; one element opts back in with a bare `playAudio`.
-		assert.match(source(recipe.id), /playAudio: false/, recipe.id);
-		assert.equal((source(recipe.id).match(/\bplayAudio\b(?!\s*[:=])/g) ?? []).length, 1, recipe.id);
+test('one layer or one Audio tag plays the audio, except in silent recipes', () => {
+	for (const {id, layers, silent} of recipes) {
+		const code = source(id);
+		const enabled = code.match(/\bplayAudio\b(?=\s|=\{true\})(?!\s*:)/g) ?? [];
+		const soundtracks = code.match(/<Audio\b/g) ?? [];
+		assert.equal(enabled.length + soundtracks.length, silent ? 0 : 1, id);
+		if (silent || layers.length > 1) {
+			assert.match(code, /playAudio(?:: false|=\{false\})/, id);
+		}
 	}
 });
 

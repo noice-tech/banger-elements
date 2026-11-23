@@ -9,10 +9,10 @@ import {
 	useCurrentFrame,
 } from 'remotion';
 import {Audio} from '@remotion/media';
-import {Aberration, kick, pulse} from './fx';
+import {Aberration, kick} from './fx';
 import {Outro} from './outro';
 import {Recap, TRACK, parts} from './parts';
-import {BAR, BEAT, DROP, OUTRO, REEL_FRAMES, SONG_FRAME, reelScenes} from './scenes';
+import {BAR, BEAT, DROP, OUTRO, REEL_FRAMES, SONG_FRAME, TICK, reelScenes} from './scenes';
 
 const MONTAGE = reelScenes[5]!.from;
 /** The recap cuts through the scenes on the eighth notes, then shows them all at once. */
@@ -77,18 +77,18 @@ const useFont = () => {
 export const Reel = () => {
 	useFont();
 	const frame = useCurrentFrame();
-	// Every kick after the drop punches the picture in a little; the logo's hit punches harder.
-	const hit = kick(frame, 3);
-	const logoHit = Math.max(pulse(frame, OUTRO, 7), pulse(frame, OUTRO + BAR, 6) * 0.6);
+	// Every kick after the drop punches the picture in a little and fringes the lens. The logo stays clean.
+	const hit = kick(frame);
+	const fringe = frame >= OUTRO ? 0 : 1 + 6 * hit;
 	const punch = 1 + 0.04 * hit;
 	const flash = Math.max(
 		0,
 		...cuts.map(({at, strength}) =>
-			frame >= at ? strength * Math.max(0, 1 - (frame - at) / 7) : 0,
+			frame >= at ? strength * Math.max(0, 1 - (frame - at) / (7 * TICK)) : 0,
 		),
 	);
 	// The recap whites out into the logo; the logo fades to black so the loop wraps into the dark count-in.
-	const out = interpolate(frame, [REEL_FRAMES - 18, REEL_FRAMES - 2], [0, 1], {
+	const out = interpolate(frame, [REEL_FRAMES - 18 * TICK, REEL_FRAMES - 2 * TICK], [0, 1], {
 		extrapolateLeft: 'clamp',
 		extrapolateRight: 'clamp',
 	});
@@ -98,14 +98,14 @@ export const Reel = () => {
 				src={TRACK}
 				trimBefore={SONG_FRAME}
 				volume={(audioFrame) =>
-					interpolate(audioFrame, [REEL_FRAMES - 20, REEL_FRAMES - 2], [1, 0], {
+					interpolate(audioFrame, [REEL_FRAMES - 20 * TICK, REEL_FRAMES - 2 * TICK], [1, 0], {
 						extrapolateLeft: 'clamp',
 						extrapolateRight: 'clamp',
 					})
 				}
 			/>
 			<AbsoluteFill style={{transform: `scale(${punch})`}}>
-				<Aberration amount={1 + 6 * hit + 9 * logoHit} brightness={1 + 0.1 * hit + 0.25 * logoHit}>
+				<Aberration amount={fringe} brightness={1 + 0.1 * hit}>
 					{reelScenes.slice(0, 5).map(({id, from, to}) => {
 						const Scene = parts[id]!;
 						return (

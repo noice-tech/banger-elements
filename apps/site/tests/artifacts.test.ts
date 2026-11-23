@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile, readdir, access} from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
+import {recipes} from '../src/components/recipes/recipes';
 import {sceneClip, sceneTimings} from '../src/components/scenes/timing';
 
 const workspace = path.resolve(import.meta.dirname, '..');
@@ -127,11 +128,45 @@ test('static navigation, assets and fragment targets resolve without a backend',
 	}
 });
 
-test('static output excludes local audio and video uploads, except the generated preview clips', async () => {
+test('each example has its rendered assets and a play control, and only audible examples have a sound toggle', async () => {
+	const html = await readFile(path.join(dist, 'examples.html'), 'utf8');
+	for (const {id, silent} of recipes) {
+		const card = new RegExp(`<article[^>]*id="${id}"[^>]*>([\\s\\S]*?)</article>`).exec(html)?.[1];
+		assert.ok(card, id);
+		assert.ok(card.includes('data-player-toggle'), id);
+		assert.equal(card.includes('data-recipe-sound'), !silent, id);
+		assert.ok(card.includes(`/recipes/${id}.webm`), id);
+		assert.ok(card.includes(`/recipes/${id}.webp`), id);
+		const clip = await readFile(path.join(dist, 'recipes', `${id}.webm`));
+		const poster = await readFile(path.join(dist, 'recipes', `${id}.webp`));
+		assert.deepEqual([...clip.subarray(0, 4)], [0x1a, 0x45, 0xdf, 0xa3], id);
+		assert.equal(poster.toString('ascii', 8, 12), 'WEBP', id);
+	}
+});
+
+test('the home page plays one example and links to the rest with small icons', async () => {
+	const home = await readFile(path.join(dist, 'index.html'), 'utf8');
+	const section = /<section[^>]*aria-labelledby="examples-title"[^>]*>([\s\S]*?)<\/section>/.exec(
+		home,
+	)?.[1];
+	assert.ok(section);
+	assert.ok(section.includes('href="/examples.html"'));
+	const played = recipes.filter(({id}) => section.includes(`/recipes/${id}.webm`));
+	assert.equal(played.length, 1);
+	for (const {id} of recipes.filter((recipe) => !played.includes(recipe))) {
+		assert.ok(section.includes(`/recipes/icons/${id}.webp`), id);
+		const icon = await readFile(path.join(dist, 'recipes/icons', `${id}.webp`));
+		const poster = await readFile(path.join(dist, 'recipes', `${id}.webp`));
+		assert.equal(icon.toString('ascii', 8, 12), 'WEBP', id);
+		assert.ok(icon.length < poster.length, `${id}: icons/ comes from scripts/recipes.mjs`);
+	}
+});
+
+test('static output includes only the intentional demo audio and video assets', async () => {
 	const files = await readdir(dist, {recursive: true});
-	// scripts/clips.mjs cuts these from the hosted demo tracks; anything else is a stray upload.
 	const clips = [
 		...sceneTimings.map((timing) => sceneClip(timing).src.slice(1)),
+		...new Set(recipes.flatMap(({audioFile}) => (audioFile ? [audioFile] : []))),
 		'audio/tuner.mp3',
 	];
 	const media = files.filter((file) => /\.(mp3|wav|mp4|mov|m4a)$/i.test(file));

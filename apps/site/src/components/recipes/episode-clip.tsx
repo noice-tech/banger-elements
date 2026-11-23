@@ -1,108 +1,168 @@
-// Put the episode in public/episode.mp3 and set START to the moment you want.
 import {AbsoluteFill, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
-import {AudioParticles, Circle, Waveform} from '../../../../../packages/elements/dist/components';
+import {Circle, Waveform} from '../../../../../packages/elements/dist/components';
 
-const START = 26.29; // seconds into the episode
-const SIZE = 1080;
+const START = 0; // seconds into public/episode.mp3
+const CLIP_AT = 12 * 60 + 41; // where this excerpt sits in the full episode, for the timestamp
+const SHOW = 'Night Shift';
+const EPISODE = 'Episode 42';
+const EPISODE_TITLE = 'The loudness episode';
+const PAPER = '#efe7da';
+const INK = '#1d1b18';
+const TOMATO = '#e2462c';
+const GUTTER = 72;
+const serif = {fontFamily: 'Newsreader, Georgia, serif'} as const;
+
+// When each sentence starts, in seconds after START. Words light up evenly across their sentence.
+const CAPTIONS = [
+	{at: 0, text: 'Why do loud records sometimes sound quiet?'},
+	{at: 3.4, text: 'If every sound is pushed to the limit,'},
+	{at: 5.9, text: 'nothing stands out.'},
+	{at: 7.5, text: 'Turn down the rest,'},
+	{at: 9, text: 'and the kick suddenly feels louder.'},
+];
+const END = 11.2;
+
+const clock = (seconds: number) =>
+	`${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+
+const Cover = () => (
+	<div
+		style={{
+			width: 156,
+			height: 156,
+			flex: 'none',
+			borderRadius: 6,
+			background: TOMATO,
+			color: PAPER,
+			padding: '16px 18px',
+			display: 'flex',
+			flexDirection: 'column',
+			justifyContent: 'space-between',
+		}}
+	>
+		<svg width={34} height={34} viewBox="0 0 34 34">
+			<path d="M24 4a14 14 0 1 0 6 21A12 12 0 0 1 24 4z" fill={INK} />
+		</svg>
+		<div style={{...serif, fontSize: 40, fontWeight: 650, lineHeight: 0.92, letterSpacing: -1}}>
+			Night
+			<br />
+			Shift
+		</div>
+	</div>
+);
 
 export const EpisodeClip = ({audioSrc = staticFile('episode.mp3')}: {audioSrc?: string}) => {
 	const frame = useCurrentFrame();
-	const {durationInFrames} = useVideoConfig();
+	const {fps, width} = useVideoConfig();
+	const time = frame / fps;
+	const index = CAPTIONS.reduce((last, cue, i) => (time >= cue.at ? i : last), 0);
+	const cue = CAPTIONS[index]!;
+	const until = (CAPTIONS[index + 1]?.at ?? END) - 0.3;
+	const words = cue.text.split(' ');
+	const spoken = ((time - cue.at) / (until - cue.at)) * words.length;
 	const audio = {audioSrc, audioOffsetInSeconds: START, playAudio: false};
-	const progress = frame / durationInFrames;
-	const rise = interpolate(frame, [0, 18], [0, 1], {extrapolateRight: 'clamp'});
 
 	return (
-		<AbsoluteFill
-			style={{
-				background: 'radial-gradient(circle at 50% 34%, #2b1653 0%, #0b0913 68%)',
-				color: '#f5f0ff',
-				fontFamily: 'Geist, Inter, system-ui, sans-serif',
-			}}
-		>
-			<AudioParticles
-				{...audio}
-				width={SIZE}
-				height={SIZE}
-				color="#c8a6ff"
-				density={30}
-				size={1.3}
-			/>
-
-			<AbsoluteFill style={{top: -150}}>
-				<Circle
-					{...audio}
-					playAudio
-					width={SIZE}
-					height={SIZE}
-					circleVariant="glow-ring"
-					startColor="#b388ff"
-					endColor="#ff7ad9"
-					radius={0.3}
-				/>
-				<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
-					<div
-						style={{
-							display: 'grid',
-							placeItems: 'center',
-							width: 300,
-							height: 300,
-							borderRadius: '50%',
-							background: 'linear-gradient(140deg, #ff7ad9, #7b3cff 55%, #1d0d3f)',
-							boxShadow: '0 30px 80px rgb(0 0 0 / 0.5)',
-							fontSize: 92,
-							fontWeight: 800,
-							letterSpacing: -4,
-						}}
-					>
-						NS
-					</div>
-				</AbsoluteFill>
-			</AbsoluteFill>
-
+		<AbsoluteFill style={{background: PAPER, color: INK, fontFamily: 'Geist, sans-serif'}}>
 			<div
 				style={{
 					position: 'absolute',
-					left: 90,
-					right: 90,
-					top: 640,
-					textAlign: 'center',
-					opacity: rise,
-					transform: `translateY(${(1 - rise) * 24}px)`,
+					top: GUTTER,
+					left: GUTTER,
+					right: GUTTER,
+					display: 'flex',
+					gap: 28,
 				}}
 			>
-				<div style={{fontSize: 24, letterSpacing: 6, color: '#b9a8d9'}}>
-					NIGHT SHIFT · EPISODE 42
+				<Cover />
+				<div style={{paddingTop: 8}}>
+					<div style={{fontSize: 21, fontWeight: 600, letterSpacing: 0.3, color: TOMATO}}>
+						{SHOW} · {EPISODE}
+					</div>
+					<div style={{...serif, marginTop: 10, fontSize: 50, fontWeight: 560, letterSpacing: -1}}>
+						{EPISODE_TITLE}
+					</div>
 				</div>
+				{/* The ring breathes with the voice, so it reads as someone speaking. */}
 				<div
-					style={{
-						marginTop: 22,
-						fontSize: 58,
-						fontWeight: 700,
-						lineHeight: 1.08,
-						letterSpacing: -1.5,
-					}}
+					style={{position: 'relative', marginLeft: 'auto', width: 156, height: 156, flex: 'none'}}
 				>
-					Why every loud record sounds quiet now
-				</div>
-				<div style={{marginTop: 20, fontSize: 26, color: '#b9a8d9'}}>
-					with Mara Quinn, mastering engineer
+					<Circle
+						{...audio}
+						playAudio
+						width={156}
+						height={156}
+						circleVariant="waveform-ring"
+						radius={0.7}
+						lineThickness={2}
+						startColor={TOMATO}
+						endColor={TOMATO}
+						style={{position: 'absolute', inset: 0}}
+					/>
+					<svg
+						width={156}
+						height={156}
+						viewBox="0 0 156 156"
+						style={{position: 'absolute', inset: 0}}
+					>
+						<circle cx={78} cy={78} r={34} fill={INK} />
+						<rect x={71} y={58} width={14} height={26} rx={7} fill={PAPER} />
+						<path
+							d="M64 76a14 14 0 0 0 28 0M78 90v8"
+							fill="none"
+							stroke={PAPER}
+							strokeWidth={3}
+							strokeLinecap="round"
+						/>
+					</svg>
 				</div>
 			</div>
 
-			<div style={{position: 'absolute', left: 90, right: 90, bottom: 96}}>
-				<Waveform {...audio} width={SIZE - 180} height={90} color="#e9dcff" windowInSeconds={3} />
+			<div style={{position: 'absolute', top: 318, left: GUTTER, right: GUTTER}}>
+				<div style={{...serif, height: 96, fontSize: 200, lineHeight: 1, color: TOMATO}}>“</div>
 				<div
-					style={{height: 4, marginTop: 18, borderRadius: 2, background: 'rgb(255 255 255 / 0.15)'}}
+					style={{...serif, fontSize: 94, fontWeight: 520, letterSpacing: -2.5, lineHeight: 1.04}}
 				>
-					<div
-						style={{
-							width: `${progress * 100}%`,
-							height: '100%',
-							borderRadius: 2,
-							background: '#e9dcff',
-						}}
-					/>
+					{words.map((word, i) => (
+						<span
+							key={`${index}-${i}`}
+							style={{
+								color: INK,
+								opacity: interpolate(spoken - i, [0, 0.6], [0.22, 1], {
+									extrapolateLeft: 'clamp',
+									extrapolateRight: 'clamp',
+								}),
+							}}
+						>
+							{word}{' '}
+						</span>
+					))}
+				</div>
+			</div>
+
+			<div style={{position: 'absolute', left: GUTTER, right: GUTTER, bottom: GUTTER}}>
+				<Waveform
+					{...audio}
+					width={width - 2 * GUTTER}
+					height={120}
+					color={INK}
+					windowInSeconds={2.4}
+				/>
+				<div
+					style={{
+						marginTop: 18,
+						paddingTop: 16,
+						borderTop: `2px solid ${INK}`,
+						display: 'flex',
+						justifyContent: 'space-between',
+						fontSize: 21,
+						fontWeight: 600,
+					}}
+				>
+					<span>Listen to the full episode</span>
+					<span style={{fontFamily: 'Geist Mono, monospace', fontWeight: 500}}>
+						{clock(CLIP_AT + time)}
+					</span>
 				</div>
 			</div>
 		</AbsoluteFill>

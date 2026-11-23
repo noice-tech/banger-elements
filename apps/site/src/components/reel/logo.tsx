@@ -1,5 +1,5 @@
 import {Easing, Img, spring, staticFile, useVideoConfig} from 'remotion';
-import {BEAT, BAR} from './scenes';
+import {BEAT, BAR, TICK} from './scenes';
 import {pulse, ramp} from './fx';
 import {BANGER, ELEMENTS, type Letter} from './wordmark';
 
@@ -18,7 +18,7 @@ export const LOGO_HEIGHT = VIEW.height * UNIT;
 
 /** When each piece lands, in frames after the hit: on the kicks of the two outro bars. */
 const SLIDE = BEAT;
-const FIRST_LETTER = BEAT + 6.5;
+const FIRST_LETTER = BEAT + 6.5 * TICK;
 /** The full stop of "banger." lands on the third kick, and ELEMENTS unfurls from it. */
 const ELEMENTS_AT = BEAT * 3;
 const LETTER_EVERY = (ELEMENTS_AT - FIRST_LETTER) / 6;
@@ -43,7 +43,7 @@ const Stamp = ({
 }) => {
 	const pop = springIn(o - start, fps);
 	if (o < start) return null;
-	const opacity = Math.min(1, (o - start) / 1.5);
+	const opacity = Math.min(1, (o - start) / (1.5 * TICK));
 	return (
 		<g
 			style={{
@@ -61,8 +61,8 @@ const Stamp = ({
 
 /** One ELEMENTS letter, flying out from the middle of the word. */
 const Unfurl = ({letter, index, o}: {letter: Letter; index: number; o: number}) => {
-	const start = ELEMENTS_AT + index * 0.7;
-	const spread = 1 - Easing.out(Easing.exp)(Math.min(1, Math.max(0, (o - start) / 13)));
+	const start = ELEMENTS_AT + index * 0.7 * TICK;
+	const spread = 1 - Easing.out(Easing.exp)(Math.min(1, Math.max(0, (o - start) / (13 * TICK))));
 	if (o < start) return null;
 	const center = letter.x + letter.width / 2;
 	return (
@@ -70,7 +70,7 @@ const Unfurl = ({letter, index, o}: {letter: Letter; index: number; o: number}) 
 			style={{
 				transform: `translateX(${(WORDMARK_CENTER - center) * spread}px)`,
 				filter: spread > 0.01 ? `blur(${px(10 * spread)}px)` : undefined,
-				opacity: Math.min(1, (o - start) / 2),
+				opacity: Math.min(1, (o - start) / (2 * TICK)),
 			}}
 		>
 			<path d={letter.d} fill="url(#reel-logo-fill)" />
@@ -82,16 +82,16 @@ const Unfurl = ({letter, index, o}: {letter: Letter; index: number; o: number}) 
 export const Logo = ({o, k}: {o: number; k: number}) => {
 	const {fps} = useVideoConfig();
 	const slam = springIn(o, fps, 12);
-	const slide = ramp(o, SLIDE, SLIDE + 7, Easing.bezier(0.7, 0, 0.2, 1));
-	const ignite = pulse(o, IGNITE, 5);
-	const landing = pulse(o, ELEMENTS_AT, 6);
+	const slide = ramp(o, SLIDE, SLIDE + 7 * TICK, Easing.bezier(0.7, 0, 0.2, 1));
+	const ignite = pulse(o, IGNITE, 5 * TICK);
+	const landing = pulse(o, ELEMENTS_AT, 6 * TICK);
 	const breathe = 1 + 0.02 * k + 0.012 * landing;
 	// The mark starts huge and centred, then shrinks and slides to its place in the lockup.
 	const markScale = (1 + 1.1 * (1 - slam)) * (1 + 0.85 * (1 - slide));
 	const markShift = (LOCKUP_CENTER - ICON_CENTER) * UNIT * (1 - slide);
-	const glint = ramp(o, IGNITE + 3, IGNITE + 24, Easing.inOut(Easing.quad));
+	const glint = ramp(o, IGNITE + 3 * TICK, IGNITE + 24 * TICK, Easing.inOut(Easing.quad));
 	const glintX = -700 + glint * 5100;
-	const glow = 0.55 + 0.3 * k + 0.9 * ignite;
+	const glow = 0.45 + 0.2 * k + 0.45 * ignite;
 	return (
 		<div
 			style={{
@@ -103,7 +103,7 @@ export const Logo = ({o, k}: {o: number; k: number}) => {
 				marginLeft: -LOGO_WIDTH / 2,
 				marginTop: -LOGO_HEIGHT / 2,
 				transform: `scale(${breathe})`,
-				filter: `drop-shadow(0 0 ${14 * glow}px rgb(143 107 255 / ${Math.min(1, glow)})) drop-shadow(0 0 ${60 * glow}px rgb(122 92 255 / 0.55)) brightness(${1 + 0.9 * ignite})`,
+				filter: `drop-shadow(0 0 ${14 * glow}px rgb(143 107 255 / ${Math.min(1, glow)})) drop-shadow(0 0 ${60 * glow}px rgb(122 92 255 / 0.55)) brightness(${1 + 0.3 * ignite})`,
 			}}
 		>
 			<Img
@@ -116,7 +116,7 @@ export const Logo = ({o, k}: {o: number; k: number}) => {
 					height: ICON.height * UNIT,
 					transform: `translateX(${markShift}px) scale(${markScale})`,
 					filter: slam < 0.99 ? `blur(${18 * (1 - slam)}px)` : undefined,
-					opacity: Math.min(1, o / 1.2 + 0.001),
+					opacity: Math.min(1, o / (1.2 * TICK) + 0.001),
 				}}
 			/>
 			<svg

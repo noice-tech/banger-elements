@@ -1,5 +1,5 @@
 // Render the curated compositions on /examples from src/components/recipes,
-// with sound, plus a poster for each. usage: node scripts/recipes.mjs [id,...]
+// plus a poster for each. usage: node scripts/recipes.mjs [id,...]
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, rmSync} from 'node:fs';
 import {createRequire} from 'node:module';
@@ -16,7 +16,7 @@ const cli = path.join(
 	'remotion-cli.js',
 );
 const out = path.join(workspace, 'static/recipes');
-mkdirSync(out, {recursive: true});
+mkdirSync(path.join(out, 'icons'), {recursive: true});
 
 const only = process.argv[2]?.split(',');
 
@@ -45,7 +45,7 @@ for (const recipe of recipes) {
 		'--codec=vp9',
 		`--scale=${recipe.scale}`,
 		`--crf=${recipe.crf ?? 44}`,
-		'--audio-bitrate=128k',
+		recipe.silent ? '--muted' : '--audio-bitrate=128k',
 		// More tabs than this starve each other of the software GPU and the audio fetch.
 		'--concurrency=4',
 	]);
@@ -61,6 +61,11 @@ for (const recipe of recipes) {
 	await sharp(still)
 		.webp({quality: 80})
 		.toFile(path.join(out, `${recipe.id}.webp`));
+	// The home page stacks small copies of the posters in its link to /examples.
+	await sharp(still)
+		.resize({width: 96})
+		.webp({quality: 65})
+		.toFile(path.join(out, 'icons', `${recipe.id}.webp`));
 	rmSync(still);
 	console.log(`Rendered ${recipe.id}.`);
 }

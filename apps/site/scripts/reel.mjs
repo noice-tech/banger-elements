@@ -17,7 +17,7 @@ const out = path.join(workspace, 'static/reel');
 mkdirSync(out, {recursive: true});
 
 // A frame from the Liquid × Ferrofluid scene, on a kick.
-const POSTER_FRAME = 459;
+const POSTER_FRAME = 919;
 const render = (args) => {
 	const result = spawnSync(
 		process.execPath,
@@ -39,7 +39,7 @@ render([
 	path.join(out, 'reel.webm'),
 	'--codec=vp9',
 	'--scale=0.75',
-	'--crf=46',
+	'--crf=48',
 	'--audio-bitrate=128k',
 	// Halo's trails build on the previous frames, so render them in order.
 	'--concurrency=1',

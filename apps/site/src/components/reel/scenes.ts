@@ -1,5 +1,7 @@
 // Shared by the reel composition and the timeline under the clip.
-export const REEL_FPS = 30;
+export const REEL_FPS = 60;
+/** A thirtieth of a second, in frames: the reel's fades, decays and hits are counted in these. */
+export const TICK = REEL_FPS / 30;
 export const BEAT = (60 / 122) * REEL_FPS;
 export const BAR = BEAT * 4;
 /** Where the reel starts in the song, in frames: one bar before the drop. */

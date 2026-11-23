@@ -3,23 +3,29 @@ title: Getting started
 description: Install a source Element, connect your audio, and render in Remotion.
 ---
 
-## From preview to composition
+## Install an Element
 
-Browse and preview Elements right here, then add them to your own Remotion project. Each Element installs as an editable TSX file, not a runtime library.
+Preview Elements on this site, then add them to your own Remotion project. Each Element installs as a TSX file you can edit, not as a runtime library.
 
-1. Open your Remotion project in **Studio** and select the composition you want to work on.
-2. Choose an [Element](/) on this site and try its preview settings.
-3. Click **Install in Studio**, or drag **Drag to Studio** onto your Studio canvas. On a touch device, use **Install in Studio**.
-4. **Review and confirm in Studio.** “Awaiting confirmation” means the request arrived, not that installation has completed.
+1. Open your Remotion project in Studio and select the composition you want to work on.
+2. Choose an [Element](/) on this site and adjust its preview settings.
+3. Click **Install in Studio**, or drag **Drag to Studio** onto the Studio canvas. On a touch device, use **Install in Studio**.
+4. Review and confirm the request in Studio. "Awaiting confirmation" means the request arrived. It does not mean the installation finished.
 5. Select the installed Element to adjust its audio, size, colors, transforms and timing.
 
-Install and drag use your current preview settings. The website changes the defaults in the source before it sends the source to Studio. Settings that match the source defaults need no changes. You can edit the installed source or use its Interactive controls.
+Install and drag both use your current preview settings. The site writes those settings into the source as its defaults before it sends the file to Studio. After installation you can edit the source or use the Element's Interactive controls in Studio.
 
-For local audio or image files, use a hosted URL before installation. Browser file URLs do not work in Studio. **Download TSX** keeps the original source defaults. To use that download with your preview settings, expand **Use these settings in code** and choose **Copy configured JSX**.
+Studio can't open browser file URLs, so a local audio or image file needs a hosted URL before you install. **Download TSX** keeps the original defaults. To use a download with your preview settings, expand **Use these settings in code** and choose **Copy configured JSX**.
 
 ### If Studio is not found
 
-Keep your intended Studio open and focused before sending the request. Check that it uses a compatible Remotion version, runs on a port between **3000 and 3009**, and that your browser allows local-network access when prompted. Tested with **Remotion 4.0.532**, React 19.3.1 and aligned `@remotion/*` versions. You can also [download the source](#download-instead) if the connection is unavailable.
+Keep the Studio you want to use open and focused when you send the request. If the site still can't find it, check that:
+
+- Studio runs a compatible Remotion version. We test with Remotion 4.0.532, React 19.3.1 and matching `@remotion/*` versions.
+- Studio runs on a port between 3000 and 3009.
+- Your browser allows local network access when it asks.
+
+If the connection still fails, [download the source](#download-instead) instead.
 
 ## Install from the command line
 
@@ -33,7 +39,7 @@ Replace the URL with any Element page and `MyComposition` with your composition 
 
 ## Add the collection to Studio
 
-Use **Add Library to Studio** in the desktop header or at the bottom of a page. Confirm in Studio and restart it to load the collection in Browse Elements. Keep this import in `remotion.config.ts` so the protocol can append a working call:
+Click **Add Library to Studio** in the desktop header or at the bottom of a page. Confirm in Studio, then restart Studio to see the collection in Browse Elements. The install appends a call to `remotion.config.ts`, so keep this import in that file:
 
 ```ts
 import { Config } from "@remotion/cli/config";
@@ -41,18 +47,17 @@ import { Config } from "@remotion/cli/config";
 
 ## Visualizers, shaders and effects
 
-**Visualizers** draw your audio as shapes, spectra and particles. **Shaders** are full-frame procedural backgrounds: try [Trip](/trip.html), [Space](/space.html), [Synthwave](/synthwave.html), [Mushrooms](/mushrooms.html), [Fractals](/fractals.html), [Hyperloop](/hyperloop.html), [Downfall](/downfall.html), [Rail](/rail.html), or [Rain](/rain.html).
+Visualizers draw your audio as shapes, spectra and particles. Shaders are full-frame procedural backgrounds, such as [Pulse](/pulse.html), [Cathedral](/cathedral.html), [Liquid](/liquid.html) and [Trip](/trip.html). The [shaders page](/shaders.html) lists them all.
 
-Trip preserves banger.show's five controls: `baseColor`, `intensifyColor`, `thickness`, `pattern` and `intensity`. Its `intensity` changes the raymarch iteration count, **not audio gain**; fractional values truncate to whole iterations. Use `inputGainDb` for audio response.
-
-- `bpm` sets the animation tempo (default 120). It is not automatic beat detection or a keyframable speed ramp.
-- `timeOffsetInSeconds` selects animation phase independently of the audio trim. Motion uses the element's local frame, so use this offset to align separately placed instances.
-- Trip is opaque within its bounds. Place it behind other elements and enable audio playback on only one layer.
-- The original spherical projection uses a fixed camera; actual width/height determine perspective framing. Higher intensity costs more GPU time. Animation continues in silence and after audio ends.
+- Every shader takes `timeOffsetInSeconds`, which sets the animation phase separately from the audio trim. Motion follows the Element's local frame, so use this offset to line up instances that start at different times.
+- Shaders with a `bpm` prop use it as the animation tempo, 120 by default. It does not detect beats, and you can't keyframe it as a speed ramp.
+- Shaders are opaque inside their bounds. Place them behind other Elements, and turn on audio playback for only one layer.
+- `inputGainDb` sets how strongly a shader responds to audio. Each shader page lists its other controls. On Trip, for example, `intensity` sets the raymarch iteration count, not the audio gain.
+- Shader motion continues through silence and after the audio ends.
 
 ### Effects wrap your content
 
-[VHS](/vhs.html), [Fisheye](/fisheye.html) and [Wet Glass](/wet-glass.html) are wrappers, not overlays over sibling layers. Install or download one, then move your existing Elements and text inside it in code. Installation does not automatically wrap selected Studio layers. The site's demo children are not included in the source.
+[VHS](/vhs.html), [Fisheye](/fisheye.html) and [Wet Glass](/wet-glass.html) are wrappers. They change only their children, not sibling layers. Install or download one, then move your existing Elements and text inside it in code. Installing does not wrap the layers you have selected in Studio, and the source does not include the site's demo children.
 
 ```tsx
 import {Fisheye} from './fisheye.element';
@@ -62,11 +67,18 @@ import {Fisheye} from './fisheye.element';
 </Fisheye>
 ```
 
-Match child drawing dimensions and use absolute positioning to stack layers. Each wrapper owns its Sequence and moves the group; children retain their own timing. Set `strength={0}` for a clean bypass. Effects do not play or analyze audio: the preview's **Demo audio** controls affect only the demo children. The WebGL path uses Remotion’s experimental HTML-in-canvas support to process the group. Browser preview requires Chrome 149+ with `chrome://flags/#canvas-draw-element` enabled. Unsupported browsers use deterministic SVG approximations (Wet Glass draws its droplet field on a separate canvas and feeds it to the SVG filter); the Fisheye fallback follows the same lens equation through a sampled displacement map but may look slightly softer near the edges. Rendering uses Remotion’s bundled browser and requires `--gl=angle` or `--gl=swangle` for the faithful path. Do not nest HTML-in-canvas effects.
+Give each child the same drawing size as the wrapper, and use absolute positioning to stack layers. The wrapper has its own Sequence and moves the whole group. Each child keeps its own timing. To bypass the effect, set `strength` to 0, or `amount` on Wet Glass. Effects don't play or analyze audio, so the preview's **Demo audio** controls change only the demo children.
+
+The WebGL path uses Remotion's experimental HTML-in-canvas support to process the group.
+
+- The browser preview needs Chrome 149 or later with `chrome://flags/#canvas-draw-element` turned on.
+- Other browsers get deterministic SVG approximations. Wet Glass draws its droplet field on a separate canvas and passes it to the SVG filter. The Fisheye fallback uses the same lens equation through a sampled displacement map, and it can look a little softer near the edges.
+- Renders use Remotion's bundled browser and need `--gl=angle` or `--gl=swangle` to take the WebGL path.
+- Don't nest one HTML-in-canvas effect inside another.
 
 ## Audio setup
 
-For visualizers and shaders, no props are required: `audioSrc` defaults to Remotion’s hosted example audio. Choose an asset with the Studio control, or supply an HTTPS URL that allows CORS. For an asset in your own Remotion project's `public/` directory:
+Visualizers and shaders need no props. `audioSrc` defaults to Remotion's hosted example audio. To use your own track, choose an asset with the Studio control or pass an HTTPS URL that allows CORS. For a file in your project's `public/` directory:
 
 ```tsx
 import { staticFile } from "remotion";
@@ -82,20 +94,20 @@ export const MyComposition = () => (
 );
 ```
 
-Use audio you have permission to use. No user-provided audio or artwork is distributed by this site.
+Use only audio you have permission to use. This site does not distribute any audio or artwork you provide.
 
-- `playAudio` defaults to `true`. Enable it on **only one Element** when stacking instances on the same track.
-- `inputGainDb` controls analysis gain, **not playback volume**.
-- Analysis uses the first channel; playback preserves the source channels.
-- `audioOffsetInSeconds` selects source time and is rounded to the nearest composition frame. Moving an Element does not change that offset; trimming advances local source time.
-- Analysis uses fixed 60 Hz timing and 20-second decode chunks. Elements wait for complete neighboring windows and decode independently. More instances cost more memory.
-- Silence follows the end of the source; procedural shader motion may continue.
+- `playAudio` defaults to `true`. When you stack several Elements on the same track, turn it on for only one of them.
+- `inputGainDb` sets the analysis gain. It does not change playback volume.
+- Analysis reads the first channel. Playback keeps all of the source channels.
+- `audioOffsetInSeconds` sets the source time where the Element starts, rounded to the nearest composition frame. Moving an Element on the timeline does not change the offset. Trimming its start moves the source time forward.
+- Analysis runs at a fixed 60 Hz and decodes audio in 20-second chunks. Each Element decodes its own chunks and waits until the chunks around the current frame are ready, so more instances use more memory.
+- After the source ends, the audio is silent. Shader motion can continue.
 
 ## Timing and sizing
 
-Every Element owns its Sequence. VHS intentionally contains child Elements with their own Sequences. Otherwise, **do not add an extra `<Sequence>` around an Element**: selecting the outer Sequence would show its controls instead of the Element schema. Use the Element’s Studio timing controls.
+Every Element has its own Sequence. Don't wrap an Element in an extra `<Sequence>`. If you do, selecting the outer Sequence in Studio shows the Sequence's controls instead of the Element's. Use the Element's own timing controls in Studio. Effects are the exception, because they contain child Elements that keep their own Sequences.
 
-Insertion starts at **480 frames**; its duration in seconds depends on the target FPS. Site previews using the default Remotion track are 540 frames at 60 FPS; Ferrofluid, Halo and particle previews remain 960 frames. Use `width` and `height` for drawing bounds and Studio transforms for positioning or scaling.
+Studio inserts an Element with a duration of 480 frames, so its length in seconds depends on the composition's frame rate. Site previews last 540 frames at 60 fps. Effect and Audio Particles previews last 960 frames to match the demo track. Use `width` and `height` to set the drawing bounds, and use Studio transforms to position or scale the Element.
 
 ## Download instead
 
@@ -107,18 +119,18 @@ import { Waveform } from "./elements/waveform.element";
 export const MyComposition = () => <Waveform width={900} height={300} />;
 ```
 
-The downloaded file uses only external imports: React, Remotion, `@remotion/media` and `@remotion/media-utils`. Install those packages in your own project, keeping all `@remotion/*` versions aligned with your Remotion version.
+The downloaded file imports only React, Remotion, `@remotion/media` and `@remotion/media-utils`. Install those packages in your project, and keep every `@remotion/*` package on the same version as Remotion.
 
 ## Rendering with ANGLE
 
-WebGL2 Elements may require **ANGLE** when rendering with Remotion, depending on your system and graphics environment. If an Element previews correctly but renders blank or reports a WebGL error, try adding `--gl=angle` to your render command:
+Some systems need ANGLE to render WebGL2 Elements. If an Element previews correctly but renders blank or reports a WebGL error, add `--gl=angle` to your render command:
 
 ```bash
 npx remotion render src/index.ts MyComposition out/video.mp4 --gl=angle
 ```
 
-Replace the entry point, composition ID and output path with those from your project. This selects Chromium’s ANGLE graphics backend; it is not required for the SVG-only Waveform and Oscilloscope Elements. Graphics support still depends on the rendering environment.
+Replace the entry point, composition ID and output path with your own. The flag switches Chromium to its ANGLE graphics backend. Waveform and Oscilloscope use SVG only and don't need it.
 
 ## Renderer compatibility
 
-Waveform and Oscilloscope use SVG. Spectre, Circle, Pulsar, Halo, Audio Particles, Ferrofluid and all shaders require WebGL2 with graphics acceleration. Unsupported shaders report failure rather than switching to a different visual. Avoid running many WebGL previews at once.
+Waveform and Oscilloscope use SVG. Spectre, Circle, Pulsar, Halo, Audio Particles, Ferrofluid and all shaders need WebGL2 with graphics acceleration. If WebGL2 isn't available, a shader reports an error instead of switching to a different visual. Each WebGL preview uses its own GPU context, so avoid running many at once.

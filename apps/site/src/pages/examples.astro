@@ -2,15 +2,21 @@
 import Showcase from '../layouts/Showcase.astro';
 import {elements} from '../data/elements';
 import {highlightLine} from '../components/highlight';
-import {RECIPE_FPS, RECIPE_FRAMES, recipes} from '../components/recipes/recipes';
+import {DEMO_SONG, RECIPE_FPS, recipes} from '../components/recipes/recipes';
 import episodeClip from '../components/recipes/episode-clip.tsx?raw';
+import lyricVideo from '../components/recipes/lyric-video.tsx?raw';
+import musicVisualizer from '../components/recipes/music-visualizer.tsx?raw';
+import releaseReel from '../components/recipes/release-reel.tsx?raw';
 import releaseTeaser from '../components/recipes/release-teaser.tsx?raw';
 import verticalCanvas from '../components/recipes/vertical-canvas.tsx?raw';
 import rainyStream from '../components/recipes/rainy-stream.tsx?raw';
 
 const sources: Record<string, string> = {
 	'episode-clip': episodeClip,
+	'lyric-video': lyricVideo,
+	'music-visualizer': musicVisualizer,
 	'release-teaser': releaseTeaser,
+	'release-reel': releaseReel,
 	'vertical-canvas': verticalCanvas,
 	'rainy-stream': rainyStream,
 };
@@ -28,36 +34,43 @@ const forReaders = (source: string) =>
 			.join('\n'),
 	);
 
-const seconds = (RECIPE_FRAMES / RECIPE_FPS).toFixed(1);
-const shapes = {square: 'Square', wide: 'Landscape', tall: 'Vertical'} as const;
-const shapeOf = (width: number, height: number): keyof typeof shapes =>
-	width === height ? 'square' : width > height ? 'wide' : 'tall';
+const shapeOf = (width: number, height: number) => (width === height ? 'square' : width > height ? 'wide' : 'tall');
+const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
-const cards = recipes.map((recipe, index) => {
+const cards = recipes.map((recipe) => {
 	const code = forReaders(sources[recipe.id]!).trimEnd();
-	const lines = code.split('\n');
+	const scale = recipe.outputScale ?? 1;
+	const seconds = recipe.durationInFrames / RECIPE_FPS;
+	const flags = [
+		'--gl=angle',
+		...(scale === 1 ? [] : [`--scale=${scale}`]),
+		...(recipe.silent ? ['--codec=h264', '--muted'] : []),
+	];
 	return {
 		...recipe,
-		number: String(index + 1).padStart(2, '0'),
 		shape: shapeOf(recipe.width, recipe.height),
-		code,
-		lines: lines.map(highlightLine),
+		format: `${recipe.width * scale} × ${recipe.height * scale}`,
+		seconds,
+		length: `${Number(seconds.toFixed(1))} s`,
+		command: `npx remotion render ${recipe.component} ${flags.join(' ')}`,
+		audio: recipe.audioFile ? `/${recipe.audioFile}` : DEMO_SONG,
+		lines: code.split('\n').map(highlightLine),
 		layerEntries: recipe.layers.map(element),
 	};
 });
 ---
 <Showcase
 	title="Examples"
-	description="Finished Remotion compositions built from Banger Elements: an audiogram, a release teaser, a vertical loop and a stream background, each with the code that rendered it."
+	description="Seven Remotion compositions made with Banger Elements: a lyric video, a music visualizer, a release trailer, a work-in-progress reel, a Spotify Canvas, a podcast clip and a lo-fi stream background. Each one comes with the code that rendered it."
 	pageClass="page-examples"
 >
 	<div class="wrap">
 		<header class="page-hero">
 			<nav class="kicker" aria-label="Breadcrumb"><a href="/getting-started.html">Docs</a><span aria-hidden="true">/</span><span aria-current="page">Examples</span><span class="kicker-count">{recipes.length}</span></nav>
-			<h1>Real compositions, <span class="tone">ready to copy.</span></h1>
+			<h1>Built from <span class="tone">the collection.</span></h1>
 			<p class="lede">
-				Finished pieces built only from the collection, each in the format it ships in. The code under every clip is the
-				exact composition that rendered it. Swap in your track, change the words and render.
+				Each of these seven Remotion compositions matches the size its platform expects. Under each clip is the file that
+				rendered it. Replace the audio and the text, then render your own.
 			</p>
 		</header>
 
@@ -65,50 +78,56 @@ const cards = recipes.map((recipe, index) => {
 			{cards.map((card) => (
 				<a href={`#${card.id}`}>
 					<img src={`/recipes/${card.id}.webp`} alt="" loading="lazy" decoding="async" />
-					<span class="recipe-index-text">
-						<span>{card.title}</span>
-						<span>{shapes[card.shape]} · {card.width} × {card.height}</span>
-					</span>
+					<span>{card.title}</span>
 				</a>
 			))}
 		</nav>
 
 		{cards.map((card) => (
 			<article class="recipe" id={card.id} data-shape={card.shape} aria-labelledby={`${card.id}-title`}>
-				<div class="recipe-media" style={`--ratio: ${card.width} / ${card.height}`}>
+				<div class="recipe-player" style={`--ratio: ${card.width} / ${card.height}`} data-player>
 					<video muted loop playsinline preload="none" poster={`/recipes/${card.id}.webp`} data-play-visible>
 						<source src={`/recipes/${card.id}.webm`} type="video/webm" />
 					</video>
-					<button class="recipe-sound" type="button" aria-pressed="false" data-recipe-sound>
-						<svg viewBox="0 0 16 16" aria-hidden="true">
-							<path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor"></path>
-							<path class="sound-waves" d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
-							<path class="sound-muted" d="m10.5 6 4 4m0-4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
-						</svg>
-						<span class="sr-only">Sound</span>
-					</button>
+					<div class="player-bar">
+						<button class="player-button" type="button" aria-label="Play" data-player-toggle>
+							<svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4a.6.6 0 0 0 .9.5l8.2-5.2a.6.6 0 0 0 0-1L5.4 2.3a.6.6 0 0 0-.9.5z" fill="currentColor"></path></svg>
+							<svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="0.8" fill="currentColor"></rect><rect x="9.5" y="2.5" width="3" height="11" rx="0.8" fill="currentColor"></rect></svg>
+						</button>
+						<input class="player-seek" type="range" min="0" max={card.seconds} step="any" value="0" aria-label={`Seek ${card.title}`} data-player-seek />
+						<span class="player-time" aria-hidden="true" data-player-time>0:00 / {clock(card.seconds)}</span>
+						{!card.silent && <button class="player-button" type="button" aria-pressed="false" data-recipe-sound>
+							<svg viewBox="0 0 16 16" aria-hidden="true">
+								<path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor"></path>
+								<path class="sound-waves" d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
+								<path class="sound-muted" d="m10.5 6 4 4m0-4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
+							</svg>
+							<span class="sr-only">Sound</span>
+						</button>}
+					</div>
 				</div>
 				<div class="recipe-body">
-					<p class="recipe-use"><span>{card.number}</span>{card.use}</p>
+					<p class="recipe-use">{card.use}</p>
 					<h2 id={`${card.id}-title`}>{card.title}</h2>
 					<p class="recipe-description">{card.description}</p>
-					<dl class="recipe-specs">
-						<div><dt>Format</dt><dd>{card.width} × {card.height}</dd></div>
-						<div><dt>Length</dt><dd>4 bars · {seconds} s</dd></div>
-						<div><dt>Frame rate</dt><dd>{RECIPE_FPS} fps</dd></div>
-					</dl>
+					<p class="recipe-facts">
+						<span>{card.format}</span><span>{card.length}</span><span>{RECIPE_FPS} fps</span>
+					</p>
 					<p class="recipe-layers-label">Layers, back to front</p>
 					<ol class="recipe-layers">
 						{card.layerEntries.map((entry) => (
 							<li>
 								<a href={`/${entry.slug}.html`}>
 									<img src={`/posters/${entry.slug}.webp`} alt="" loading="lazy" decoding="async" />
-									<span>{entry.title}</span>
-									<span class="recipe-layer-kind">{entry.category === 'effects' ? 'Effect' : entry.category === 'shaders' ? 'Shader' : 'Visualizer'}</span>
+									{entry.title}
 								</a>
 							</li>
 						))}
 					</ol>
+					{card.audioCredit && <p class="recipe-credit">
+						Music: <a href={card.audioCredit.source}>{card.audioCredit.title}</a> by {card.audioCredit.artist},
+						<a href={card.audioCredit.licenseUrl}>{card.audioCredit.license}</a>
+					</p>}
 				</div>
 				<details class="recipe-code code-window">
 					<summary class="code-window-bar">
@@ -116,31 +135,17 @@ const cards = recipes.map((recipe, index) => {
 						<span class="recipe-code-meta"><span class="recipe-code-count">{card.lines.length} lines</span><span class="recipe-code-toggle" aria-hidden="true"></span></span>
 					</summary>
 					<div class="recipe-code-actions">
-						<code><span aria-hidden="true">$ </span>npx remotion render {card.component} --gl=angle</code>
-						<button type="button" class="code-copy" data-copy-recipe>Copy code</button>
+						<code><span aria-hidden="true">$ </span>{card.command}</code>
+						<span class="recipe-code-buttons">
+							<a class="code-copy" href={card.audio} download>Download audio</a>
+							<button type="button" class="code-copy" data-copy-recipe>Copy code</button>
+						</span>
 					</div>
 <pre class="code-lines"><code>{card.lines.map((html) => <span class="line" set:html={html} />)}</code></pre>
 				</details>
 			</article>
 		))}
 
-		<section class="recipe-next" aria-labelledby="recipe-next-title">
-			<h2 id="recipe-next-title">Make one yours</h2>
-			<ol>
-				<li>
-					<span>Install the layers</span>
-					<p>Open each element in the stack and install it in Studio, or download its TSX next to your composition.</p>
-				</li>
-				<li>
-					<span>Bring your track</span>
-					<p>Put the audio in <code>public/</code>, and set <code>START</code> to the moment the clip should begin. <a href="/getting-started.html#audio-setup">Audio setup</a></p>
-				</li>
-				<li>
-					<span>Render</span>
-					<p>The shaders need WebGL2, so render with <code>--gl=angle</code> if a layer comes out blank. <a href="/getting-started.html#rendering-with-angle">Rendering with ANGLE</a></p>
-				</li>
-			</ol>
-		</section>
 	</div>
 </Showcase>
 <script>
@@ -159,21 +164,74 @@ const cards = recipes.map((recipe, index) => {
 		});
 	}
 
-	// One clip plays sound at a time.
-	const toggles = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-recipe-sound]'));
-	const videoOf = (button: HTMLButtonElement) => button.closest('.recipe-media')!.querySelector('video')!;
-	for (const button of toggles) {
-		button.addEventListener('click', () => {
-			const video = videoOf(button);
+	const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+	const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+	const sounds: {button: HTMLButtonElement; video: HTMLVideoElement}[] = [];
+
+	for (const player of document.querySelectorAll<HTMLElement>('[data-player]')) {
+		const video = player.querySelector('video')!;
+		const toggle = player.querySelector<HTMLButtonElement>('[data-player-toggle]')!;
+		const seek = player.querySelector<HTMLInputElement>('[data-player-seek]')!;
+		const time = player.querySelector<HTMLElement>('[data-player-time]')!;
+		const total = Number(seek.max);
+		let raf = 0;
+
+		const paint = () => {
+			const at = Math.min(video.currentTime, total);
+			seek.value = String(at);
+			seek.style.setProperty('--progress', String(at / total));
+			seek.setAttribute('aria-valuetext', `${clock(at)} of ${clock(total)}`);
+			time.textContent = `${clock(at)} / ${clock(total)}`;
+		};
+		const tick = () => {
+			paint();
+			raf = requestAnimationFrame(tick);
+		};
+
+		// The page plays clips while they are on screen. Pausing one takes it out of
+		// that until it is played again, so it stays where it was left.
+		const play = () => {
+			if (!motion.matches) video.toggleAttribute('data-play-visible', true);
+			void video.play().catch(() => {});
+		};
+		const pause = () => {
+			video.removeAttribute('data-play-visible');
+			video.pause();
+		};
+		const flip = () => (video.paused ? play() : pause());
+
+		video.addEventListener('play', () => {
+			player.toggleAttribute('data-playing', true);
+			toggle.setAttribute('aria-label', 'Pause');
+			cancelAnimationFrame(raf);
+			raf = requestAnimationFrame(tick);
+		});
+		video.addEventListener('pause', () => {
+			player.toggleAttribute('data-playing', false);
+			toggle.setAttribute('aria-label', 'Play');
+			cancelAnimationFrame(raf);
+			paint();
+		});
+		toggle.addEventListener('click', flip);
+		video.addEventListener('click', flip);
+		seek.addEventListener('input', () => {
+			video.currentTime = Number(seek.value);
+			paint();
+		});
+
+		const sound = player.querySelector<HTMLButtonElement>('[data-recipe-sound]');
+		if (!sound) continue;
+		sounds.push({button: sound, video});
+		// One clip plays sound at a time. Turning it on is a request to hear it, even under reduced motion.
+		sound.addEventListener('click', () => {
 			const on = video.muted;
-			for (const other of toggles) {
-				videoOf(other).muted = true;
-				other.setAttribute('aria-pressed', 'false');
+			for (const other of sounds) {
+				other.video.muted = true;
+				other.button.setAttribute('aria-pressed', 'false');
 			}
 			video.muted = !on;
-			button.setAttribute('aria-pressed', String(on));
-			// Turning sound on is a request to hear it, even under reduced motion.
-			if (on && video.paused) void video.play().catch(() => {});
+			sound.setAttribute('aria-pressed', String(on));
+			if (on && video.paused) play();
 		});
 	}
 </script>
