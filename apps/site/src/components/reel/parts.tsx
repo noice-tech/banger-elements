@@ -26,7 +26,7 @@ import {
 	ramp,
 	useReelFrame,
 } from './fx';
-import {BAR, BEAT, REEL_FPS, SONG_FRAME} from './scenes';
+import {BAR, BEAT, REEL_FPS, SONG_FRAME, TICK} from './scenes';
 
 export const TRACK = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
 export const W = 1280;
@@ -50,9 +50,9 @@ const Intro: Part = ({from}) => {
 	const frame = useReelFrame(from);
 	const {durationInFrames} = useVideoConfig();
 	const rise = ramp(frame, 0, BAR * 0.75, Easing.out(Easing.cubic));
-	const charge = ramp(frame, BEAT * 2, durationInFrames - 3, Easing.in(Easing.cubic));
-	const ignite = ramp(frame, 5, BEAT * 1.6, Easing.out(Easing.cubic));
-	const blackout = frame >= durationInFrames - 3 ? 1 : 0;
+	const charge = ramp(frame, BEAT * 2, durationInFrames - 3 * TICK, Easing.in(Easing.cubic));
+	const ignite = ramp(frame, 5 * TICK, BEAT * 1.6, Easing.out(Easing.cubic));
+	const blackout = frame >= durationInFrames - 3 * TICK ? 1 : 0;
 	return (
 		<AbsoluteFill style={{background: '#000'}}>
 			<AbsoluteFill
@@ -82,7 +82,7 @@ const Intro: Part = ({from}) => {
 					style={{
 						justifyContent: 'center',
 						clipPath: `inset(0 ${(1 - ignite) * 50}% 0 ${(1 - ignite) * 50}%)`,
-						filter: `drop-shadow(0 0 ${8 + charge * 22}px #8f6bff)`,
+						filter: `drop-shadow(0 0 ${8 + charge * 22}px #8f6bff) saturate(0.75)`,
 					}}
 				>
 					<Waveform
@@ -117,12 +117,12 @@ const Intro: Part = ({from}) => {
 const Drop: Part = ({from}) => {
 	const frame = useReelFrame(from);
 	const since = frame - from;
-	const k = kick(frame, 3);
+	const k = kick(frame);
 	const turn = ramp(frame, from + BAR * 0.85, from + BAR * 1.25);
 	const hits = kicksBetween(from, from + BAR * 2);
 	return (
-		<Cut zoom={0.55} blur={20} flare={1.8} length={11}>
-			<Shake frame={frame} amount={22 * Math.exp(-since / 14) + 4 * k}>
+		<Cut zoom={0.55} blur={20} flare={1.8} length={11 * TICK}>
+			<Shake frame={frame} amount={22 * Math.exp(-since / (14 * TICK)) + 4 * k}>
 				<AbsoluteFill
 					style={{
 						transform: `scale(${1.06 + 0.1 * (since / (BAR * 2))})`,
@@ -172,7 +172,7 @@ const Drop: Part = ({from}) => {
 					color="#d9c2ff"
 					from={150}
 					to={980}
-					life={22}
+					life={22 * TICK}
 					width={5}
 				/>
 				<Streak amount={k * 0.9} color="#cdb4ff" thickness={6} />
@@ -187,7 +187,7 @@ const OPEN = 1e6;
 /** A night drive: sunset synthwave, an equalizer along the road, and a riser that winds up into the next cut. */
 const Ride: Part = ({from, length}) => {
 	const frame = useReelFrame(from);
-	const k = kick(frame, 3);
+	const k = kick(frame);
 	const second = ramp(frame, from + BAR, from + BAR * 1.15);
 	// The tom fill on the last beat: zoom toward the sun, flash on every 16th.
 	const fillStart = from + length - BEAT;
@@ -214,7 +214,7 @@ const Ride: Part = ({from, length}) => {
 					/>
 					<AbsoluteFill
 						style={{
-							background: `repeating-conic-gradient(from ${(frame - from) * 0.5}deg at 50% 29%, rgb(255 214 150 / 0.6) 0deg 4deg, transparent 4deg 14deg)`,
+							background: `repeating-conic-gradient(from ${((frame - from) / TICK) * 0.5}deg at 50% 29%, rgb(255 214 150 / 0.6) 0deg 4deg, transparent 4deg 14deg)`,
 							maskImage: 'radial-gradient(circle at 50% 29%, #000 0%, transparent 72%)',
 							mixBlendMode: 'screen',
 							opacity: (0.18 + 0.3 * second) * (0.55 + 0.45 * k),
@@ -256,9 +256,9 @@ const Ride: Part = ({from, length}) => {
  */
 const Tape: Part = ({from}) => {
 	const frame = useReelFrame(from);
-	const k = kick(frame, 3);
+	const k = kick(frame);
 	const second = frame >= from + BAR;
-	const tear = Math.exp(-(frame - (second ? from + BAR : from)) / 9);
+	const tear = Math.exp(-(frame - (second ? from + BAR : from)) / (9 * TICK));
 	return (
 		<Shake frame={frame} amount={1.5 * k + 7 * tear}>
 			<Vhs
@@ -335,12 +335,12 @@ const Tape: Part = ({from}) => {
 /** Molten Liquid behind a Ferrofluid that bristles on every kick. */
 const Metal: Part = ({from, length}) => {
 	const frame = useReelFrame(from);
-	const k = kick(frame, 3);
+	const k = kick(frame);
 	const local = frame - from;
 	const grow = ramp(frame, from, from + Math.min(length, BAR), Easing.out(Easing.quad));
 	return (
 		<Cut zoom={0.5} blur={18} flare={1.6}>
-			<Shake frame={frame} amount={10 * Math.exp(-local / 8) + 5 * k}>
+			<Shake frame={frame} amount={10 * Math.exp(-local / (8 * TICK)) + 5 * k}>
 				<AbsoluteFill
 					style={{filter: 'saturate(1.2) contrast(1.1)', transform: `scale(${1.04 + 0.1 * grow})`}}
 				>
@@ -387,7 +387,7 @@ const Metal: Part = ({from, length}) => {
 					color="#ffb878"
 					from={200}
 					to={1000}
-					life={20}
+					life={20 * TICK}
 					width={5}
 				/>
 			</Shake>
@@ -414,8 +414,13 @@ export const Recap: Part = ({from, length}) => {
 	}));
 	const wallStart = Math.round(BEAT * 2);
 	// The last beat has no kick: the wall rushes into its centre and whites out.
-	const fall = ramp(frame, from + BEAT * 3, from + length - 4, Easing.in(Easing.quad));
-	const white = ramp(frame, from + length - 12, from + length - 5, Easing.in(Easing.quad));
+	const fall = ramp(frame, from + BEAT * 3, from + length - 4 * TICK, Easing.in(Easing.quad));
+	const white = ramp(
+		frame,
+		from + length - 12 * TICK,
+		from + length - 5 * TICK,
+		Easing.in(Easing.quad),
+	);
 	const tile = (index: number) => ({
 		left: (index % 2) * (W / 2),
 		top: Math.floor(index / 2) * (H / 2),

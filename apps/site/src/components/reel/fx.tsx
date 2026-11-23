@@ -1,6 +1,6 @@
 import {createContext, useContext, type CSSProperties, type ReactNode} from 'react';
 import {AbsoluteFill, Easing, interpolate, random, useCurrentFrame, useVideoConfig} from 'remotion';
-import {BEAT, DROP, KICKS_END, OUTRO} from './scenes';
+import {BEAT, DROP, KICKS_END, OUTRO, TICK} from './scenes';
 
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
 const outCubic = Easing.out(Easing.cubic);
@@ -15,14 +15,14 @@ const kicking = (frame: number) => (frame >= DROP && frame < KICKS_END) || frame
 const kickFrame = (beat: number) => Math.round(DROP + beat * BEAT);
 
 /** 1 on a kick, easing to 0 before the next. Silent before the drop and on the riser. */
-export const kick = (frame: number, decay = 3) => {
+export const kick = (frame: number, decay = 3 * TICK) => {
 	if (!kicking(frame)) return 0;
 	const beat = Math.floor((frame - DROP + 0.5) / BEAT);
 	return Math.exp(-(frame - kickFrame(beat)) / decay);
 };
 
 /** 1 on `start`, easing to 0 with the same curve as a kick; 0 before it. */
-export const pulse = (frame: number, start: number, decay = 3) =>
+export const pulse = (frame: number, start: number, decay = 3 * TICK) =>
 	frame >= start ? Math.exp(-(frame - start) / decay) : 0;
 
 /** The frames of every kick inside a stretch, for effects that spawn one thing per hit. */
@@ -35,7 +35,7 @@ export const kicksBetween = (from: number, to: number) => {
 	return hits;
 };
 
-/** Frame-by-frame jitter, so impacts read as a hit rather than a wobble. */
+/** Jitter that jumps every tick, so impacts read as a hit rather than a wobble at any frame rate. */
 export const Shake = ({
 	frame,
 	amount,
@@ -45,9 +45,10 @@ export const Shake = ({
 	amount: number;
 	children: ReactNode;
 }) => {
-	const x = (random(`shake-x-${frame}`) - 0.5) * 2 * amount;
-	const y = (random(`shake-y-${frame}`) - 0.5) * 2 * amount;
-	const turn = (random(`shake-r-${frame}`) - 0.5) * amount * 0.03;
+	const step = Math.floor(frame / TICK);
+	const x = (random(`shake-x-${step}`) - 0.5) * 2 * amount;
+	const y = (random(`shake-y-${step}`) - 0.5) * 2 * amount;
+	const turn = (random(`shake-r-${step}`) - 0.5) * amount * 0.03;
 	return (
 		<AbsoluteFill style={{transform: `translate(${x}px, ${y}px) rotate(${turn}deg)`}}>
 			{children}
@@ -62,7 +63,7 @@ export const Shockwaves = ({
 	color,
 	from = 80,
 	to = 1100,
-	life = 20,
+	life = 20 * TICK,
 	width = 4,
 	strength = 1,
 	y = '50%',
@@ -147,8 +148,8 @@ export const Cut = ({
 	zoom: fullZoom = 0.3,
 	blur: fullBlur = 14,
 	flare: fullFlare = 0.9,
-	length: fullLength = 9,
-	anticipate = 3,
+	length: fullLength = 9 * TICK,
+	anticipate = 3 * TICK,
 }: {
 	children: ReactNode;
 	zoom?: number;
@@ -161,7 +162,7 @@ export const Cut = ({
 	const {durationInFrames} = useVideoConfig();
 	const scaleBy = useContext(CutScale);
 	const [zoom, blur, flare] = [fullZoom * scaleBy, fullBlur * scaleBy, fullFlare * scaleBy];
-	const length = Math.max(3, fullLength * scaleBy);
+	const length = Math.max(3 * TICK, fullLength * scaleBy);
 	const entering = 1 - outCubic(clamp(frame / length));
 	const leaving = clamp((frame - (durationInFrames - anticipate)) / anticipate);
 	const scale = 1 + zoom * entering + 0.06 * leaving;
