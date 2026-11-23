@@ -11,6 +11,8 @@ export type Recipe = {
 	readonly description: string;
 	readonly width: number;
 	readonly height: number;
+	/** Render scale that brings a 720p composition to the 1080p it ships at. */
+	readonly outputScale?: number;
 	readonly durationInFrames: number;
 	/** Local demo audio, relative to the site's static directory. Otherwise use the demo song. */
 	readonly audioFile?: string;
@@ -38,9 +40,10 @@ export const recipes: readonly Recipe[] = [
 		title: 'Lyric video',
 		use: 'Lyrics timed to the vocal',
 		description:
-			'Each line appears word by word as it is sung, above a ring of light rising from the bottom edge. The ring stays white until the title line, then opens up in full colour. For your own song, replace LINES with your lyrics and the seconds each line starts and ends.',
+			'The lyrics appear word by word in time with the vocal, above a ring of light that rises from the bottom edge. The ring stays white until the title line, then turns full colour. For your own song, put your lyrics in LINES and set the second each line starts and ends.',
 		width: 1280,
 		height: 720,
+		outputScale: 1.5,
 		durationInFrames: 21 * RECIPE_FPS,
 		audioFile: 'recipes/invisible-light.mp3',
 		audioCredit: {
@@ -62,9 +65,10 @@ export const recipes: readonly Recipe[] = [
 		title: 'Music visualizer',
 		use: 'Full-track visualizer',
 		description:
-			'The video you upload alongside a single, styled like a now-playing screen. The cover is a live Flowers shader that blooms with the music, the same shader washes the background in its colours, and a rainbow spectrum and progress bar run under the title. Set SONG, CLIP_AT and TRACK_LENGTH, then render the full song.',
+			'This is the video you upload with a single, laid out like a now-playing screen. The cover is a Flowers shader that reacts to the music. A small copy of the same shader, stretched and blurred, fills the background with its colours. A rainbow spectrum and a progress bar sit under the title. Set SONG, CLIP_AT and TRACK_LENGTH, then render the full song.',
 		width: 1280,
 		height: 720,
+		outputScale: 1.5,
 		durationInFrames: Math.round(13.5 * RECIPE_FPS),
 		audioFile: 'recipes/haze.mp3',
 		audioCredit: {
@@ -84,11 +88,12 @@ export const recipes: readonly Recipe[] = [
 		id: 'release-teaser',
 		component: 'ReleaseTeaser',
 		title: 'Release trailer',
-		use: 'Landscape single release',
+		use: 'Trailer for a new single',
 		description:
-			'Cut to the music: a slit of the night sky during the pickup, a burst of light and the title on the hit, the artist on a close-up a bar later, then a release card where each streaming button lands on a beat. Set DROP and BPM from your track and every cut moves with them.',
+			"Every cut follows the music. During the pickup you see a slit of night sky. On the hit, a burst of light reveals the title, and a bar later the artist's name appears in close-up. On the release card, each streaming button appears on a beat. Set DROP and BPM from your track and the cuts move with them.",
 		width: 1280,
 		height: 720,
+		outputScale: 1.5,
 		durationInFrames: Math.round(14.1 * RECIPE_FPS),
 		audioFile: 'recipes/swansong.mp3',
 		audioCredit: {
@@ -108,9 +113,9 @@ export const recipes: readonly Recipe[] = [
 		id: 'release-reel',
 		component: 'ReleaseReel',
 		title: 'Work-in-progress reel',
-		use: 'Vertical song tease',
+		use: 'Teaser for an unfinished song',
 		description:
-			'Show a song before it is finished, the way artists tease new music on Reels, Shorts and TikTok. A playhead runs through a half-written arrangement while captions talk over it, and the music stops where the track does. Edit LANES and CAPTIONS to match your session.',
+			'Post this on Reels, Shorts or TikTok to tease a song you have not finished. A playhead moves through a half-written arrangement while captions appear over it, and the music stops where the written part ends. Edit LANES and CAPTIONS to match your session.',
 		width: 1080,
 		height: 1920,
 		// Five bars at 122 BPM, then a hold on the stopped playhead.
@@ -125,9 +130,10 @@ export const recipes: readonly Recipe[] = [
 		title: 'Spotify Canvas',
 		use: 'Silent cover-art loop',
 		description:
-			'An endless ride along a rainbow rail toward a low sun, made to loop behind a single on Spotify. A second copy of the shader runs one lap ahead and fades out over the first 1.5 seconds, so the last frame leads straight back into the first. Render it muted as an MP4.',
+			"The camera moves along a rainbow rail toward a low sun, in a loop made for a single's Spotify Canvas. A second copy of the shader runs one lap ahead and fades out over the first 1.5 seconds, so the end joins the start without a jump. Render it muted as an MP4.",
 		width: 720,
 		height: 1280,
+		outputScale: 1.5,
 		durationInFrames: 8 * RECIPE_FPS,
 		silent: true,
 		scale: 0.6,
@@ -142,7 +148,7 @@ export const recipes: readonly Recipe[] = [
 		title: 'Episode clip',
 		use: 'Podcast audiogram',
 		description:
-			'A spoken excerpt from a fictional audio-engineering podcast, set like a printed pull quote. Each word darkens as it is spoken, so the hook reads with the sound off, while a ring around the microphone and the waveform follow the voice.',
+			'This clip is from a made-up audio-engineering podcast, laid out like a printed pull quote. Each word darkens as the host says it, so viewers can follow the quote with the sound off. A ring around the microphone and the waveform move with the voice.',
 		width: 1080,
 		height: 1080,
 		durationInFrames: Math.round(11.5 * RECIPE_FPS),
@@ -157,9 +163,10 @@ export const recipes: readonly Recipe[] = [
 		title: 'Lo-fi stream background',
 		use: 'Livestream backdrop',
 		description:
-			'A night view through a rainy window in a lamp-lit room, with the station name and a now-playing card on the glass and a clock, a steaming mug and a plant on the sill. Wet Glass covers only the panes, so the overlays and the window frame stay sharp. Loop it behind a stream, or render it for the length of your playlist.',
+			'You look out of a rainy window at night from a lamp-lit room. The station name and a now-playing card sit on the glass, and a clock, a steaming mug and a plant sit on the sill. Wet Glass covers only the panes, so the overlays and the window frame stay sharp. Loop it behind a stream, or render it for the length of your playlist.',
 		width: 1280,
 		height: 720,
+		outputScale: 1.5,
 		durationInFrames: 16 * RECIPE_FPS,
 		audioFile: 'recipes/caden-currie-lofi.mp3',
 		audioCredit: {

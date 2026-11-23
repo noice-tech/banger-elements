@@ -112,11 +112,12 @@ test('static navigation, assets and fragment targets resolve without a backend',
 	}
 });
 
-test('each example has its rendered assets and only audible examples have a sound toggle', async () => {
+test('each example has its rendered assets and a play control, and only audible examples have a sound toggle', async () => {
 	const html = await readFile(path.join(dist, 'examples.html'), 'utf8');
 	for (const {id, silent} of recipes) {
 		const card = new RegExp(`<article[^>]*id="${id}"[^>]*>([\\s\\S]*?)</article>`).exec(html)?.[1];
 		assert.ok(card, id);
+		assert.ok(card.includes('data-player-toggle'), id);
 		assert.equal(card.includes('data-recipe-sound'), !silent, id);
 		assert.ok(card.includes(`/recipes/${id}.webm`), id);
 		assert.ok(card.includes(`/recipes/${id}.webp`), id);
