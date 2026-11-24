@@ -7,7 +7,6 @@ import {
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -31,7 +30,7 @@ type NeuronOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type NeuronProps = InteractiveTransformProps & NeuronOptions;
+type NeuronProps = Omit<NeuronOptions, 'width' | 'height'>;
 const neuronSchema = {
 	audioSrc: {
 		type: 'asset',
@@ -148,26 +147,6 @@ const neuronSchema = {
 		step: 0.01,
 		hiddenFromList: false,
 		description: 'Animation phase offset (independent of audio trim)',
-		keyframable: false,
-	},
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
 		keyframable: false,
 	},
 } as const satisfies InteractivitySchema;
@@ -1177,10 +1156,8 @@ const NeuronInner: React.FC<NeuronProps> = ({
 	cameraMovement = neuronSchema.cameraMovement.default,
 	bpm = neuronSchema.bpm.default,
 	timeOffsetInSeconds = neuronSchema.timeOffsetInSeconds.default,
-	width = neuronSchema.width.default,
-	height = neuronSchema.height.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
 		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -1191,7 +1168,6 @@ const NeuronInner: React.FC<NeuronProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<NeuronContent
@@ -1220,6 +1196,7 @@ const NeuronInner: React.FC<NeuronProps> = ({
 };
 export const Neuron = Interactive.create({
 	Component: NeuronInner,
+	layout: 'absolute-fill',
 	componentName: '<Neuron>',
 	schema: neuronSchema,
 });

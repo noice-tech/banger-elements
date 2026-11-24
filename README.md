@@ -23,9 +23,13 @@ The [examples page](https://banger-elements.dev/examples) has four finished comp
 3. Click Install in Studio and confirm the request in Studio. The installed file uses your preview settings as its defaults. You can also download the TSX.
 4. Pass your audio to a visualizer or shader, or move your existing layers inside an effect.
 
-To get the whole collection in Studio's Browse Elements panel, use Add Library to Studio and restart Studio.
+To get the whole collection in Studio's Browse Elements panel, use Add Library to Studio and restart Studio, or run `npx remotion elements add-library https://banger-elements.dev` (Remotion 4.0.547 or later).
 
-You can also install an element from its page URL with `npx remotion elements use https://banger-elements.dev/halo.html`.
+You can also install an element from its page URL with `npx remotion elements use https://banger-elements.dev/halo`.
+
+Shaders fill whatever composition you place them in, including vertical and square ones. Visualizers and effects draw in a 1280×720 box that you can resize with `width` and `height`.
+
+For coding agents, [llms.txt](https://banger-elements.dev/llms.txt) indexes the collection, and every page has a Markdown version at its URL plus `.md`, such as [halo.md](https://banger-elements.dev/halo.md).
 
 Elements need Remotion 4.0.536 or later. Downloaded files import only React, `remotion`, `@remotion/media` and `@remotion/media-utils`. WebGL elements may need `--gl=angle` when you render, or `--gl=swangle` on a machine without a GPU. The [getting started guide](apps/site/src/content/docs/getting-started.mdx) covers audio setup, timing, effects and rendering.
 

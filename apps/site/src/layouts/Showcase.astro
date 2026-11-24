@@ -10,9 +10,25 @@ interface Props {
 	description: string;
 	pageClass?: string;
 	searchable?: boolean;
+	/** Open Graph image under static/share, built by `bun run share-images`. */
+	image?: string;
+	imageAlt?: string;
+	/** The page's Markdown twin for coding agents. */
+	markdown?: string;
 }
-const {title, description, pageClass, searchable = false} = Astro.props;
-const canonical = new URL(Astro.url.pathname.replace(/\/$/, '') || '/', Astro.site).href;
+const {
+	title,
+	description,
+	pageClass,
+	searchable = false,
+	image = '/share/site.jpg',
+	imageAlt = 'A grid of Banger Elements visualizers, shaders and effects',
+	markdown,
+} = Astro.props;
+// The host serves pages without the .html extension and redirects to that form.
+const pathname = Astro.url.pathname.replace(/(index)?\.html$/, '').replace(/\/$/, '') || '/';
+const canonical = new URL(pathname, Astro.site).href;
+const imageUrl = new URL(image, Astro.site).href;
 const fullTitle = title.includes('Banger Elements') ? title : `${title} | Banger Elements`;
 ---
 <!doctype html>
@@ -33,7 +49,15 @@ const fullTitle = title.includes('Banger Elements') ? title : `${title} | Banger
 		<meta property="og:description" content={description} />
 		<meta property="og:url" content={canonical} />
 		<meta property="og:site_name" content="Banger Elements" />
+		<meta property="og:image" content={imageUrl} />
+		<meta property="og:image:type" content="image/jpeg" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content={imageAlt} />
 		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:image" content={imageUrl} />
+		<meta name="twitter:image:alt" content={imageAlt} />
+		<link rel="alternate" type="text/markdown" href={markdown ?? '/llms.txt'} title="Markdown for coding agents" />
 		<slot name="head" />
 	</head>
 	<body class:list={['showcase', pageClass]}>

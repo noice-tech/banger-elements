@@ -11,7 +11,6 @@ import {
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -32,7 +31,7 @@ type HyperloopOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type HyperloopProps = InteractiveTransformProps & HyperloopOptions;
+type HyperloopProps = Omit<HyperloopOptions, 'width' | 'height'>;
 
 const hyperloopSchema = {
 	audioSrc: {
@@ -59,26 +58,6 @@ const hyperloopSchema = {
 		keyframable: false,
 	},
 
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
-		keyframable: false,
-	},
 	inputGainDb: {
 		type: 'number',
 		default: 0,
@@ -707,8 +686,6 @@ const HyperloopContent: React.FC<Required<HyperloopOptions>> = (props) => {
 };
 
 const HyperloopInner: React.FC<HyperloopProps> = ({
-	width = hyperloopSchema.width.default,
-	height = hyperloopSchema.height.default,
 	audioSrc = hyperloopSchema.audioSrc.default,
 	audioOffsetInSeconds = hyperloopSchema.audioOffsetInSeconds.default,
 	playAudio = hyperloopSchema.playAudio.default,
@@ -721,8 +698,8 @@ const HyperloopInner: React.FC<HyperloopProps> = ({
 	pattern = hyperloopSchema.pattern.default,
 	responsive = hyperloopSchema.responsive.default,
 	timeOffsetInSeconds = hyperloopSchema.timeOffsetInSeconds.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
 	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -733,7 +710,6 @@ const HyperloopInner: React.FC<HyperloopProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<HyperloopContent
@@ -759,6 +735,7 @@ const HyperloopInner: React.FC<HyperloopProps> = ({
 
 export const Hyperloop = Interactive.create({
 	Component: HyperloopInner,
+	layout: 'absolute-fill',
 	componentName: '<Hyperloop>',
 	schema: hyperloopSchema,
 });

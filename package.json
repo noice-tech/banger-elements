@@ -41,8 +41,8 @@
 		"clean": "node scripts/clean.mjs"
 	},
 	"devDependencies": {
-		"@remotion/cli": "4.0.546",
-		"@remotion/eslint-config-flat": "4.0.546",
+		"@remotion/cli": "4.0.547",
+		"@remotion/eslint-config-flat": "4.0.547",
 		"@types/node": "24.19.2",
 		"eslint": "9.39.5",
 		"globals": "17.14.0",

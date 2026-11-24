@@ -11,7 +11,6 @@ import {
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -35,7 +34,7 @@ type SynthwaveOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type SynthwaveProps = InteractiveTransformProps & SynthwaveOptions;
+type SynthwaveProps = Omit<SynthwaveOptions, 'width' | 'height'>;
 
 const synthwaveSchema = {
 	audioSrc: {
@@ -62,26 +61,6 @@ const synthwaveSchema = {
 		keyframable: false,
 	},
 
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
-		keyframable: false,
-	},
 	inputGainDb: {
 		type: 'number',
 		default: 0,
@@ -1281,8 +1260,6 @@ const SynthwaveContent: React.FC<Required<SynthwaveOptions>> = (props) => {
 };
 
 const SynthwaveInner: React.FC<SynthwaveProps> = ({
-	width = synthwaveSchema.width.default,
-	height = synthwaveSchema.height.default,
 	audioSrc = synthwaveSchema.audioSrc.default,
 	audioOffsetInSeconds = synthwaveSchema.audioOffsetInSeconds.default,
 	playAudio = synthwaveSchema.playAudio.default,
@@ -1298,8 +1275,8 @@ const SynthwaveInner: React.FC<SynthwaveProps> = ({
 	responsive = synthwaveSchema.responsive.default,
 	bpm = synthwaveSchema.bpm.default,
 	timeOffsetInSeconds = synthwaveSchema.timeOffsetInSeconds.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
 	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -1310,7 +1287,6 @@ const SynthwaveInner: React.FC<SynthwaveProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<SynthwaveContent
@@ -1339,6 +1315,7 @@ const SynthwaveInner: React.FC<SynthwaveProps> = ({
 
 export const Synthwave = Interactive.create({
 	Component: SynthwaveInner,
+	layout: 'absolute-fill',
 	componentName: '<Synthwave>',
 	schema: synthwaveSchema,
 });

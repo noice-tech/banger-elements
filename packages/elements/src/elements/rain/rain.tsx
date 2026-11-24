@@ -11,7 +11,6 @@ import {
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -30,7 +29,7 @@ type RainOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type RainProps = InteractiveTransformProps & RainOptions;
+type RainProps = Omit<RainOptions, 'width' | 'height'>;
 
 const rainSchema = {
 	audioSrc: {
@@ -57,26 +56,6 @@ const rainSchema = {
 		keyframable: false,
 	},
 
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
-		keyframable: false,
-	},
 	inputGainDb: {
 		type: 'number',
 		default: 0,
@@ -774,8 +753,6 @@ const RainContent: React.FC<Required<RainOptions>> = (props) => {
 };
 
 const RainInner: React.FC<RainProps> = ({
-	width = rainSchema.width.default,
-	height = rainSchema.height.default,
 	audioSrc = rainSchema.audioSrc.default,
 	audioOffsetInSeconds = rainSchema.audioOffsetInSeconds.default,
 	playAudio = rainSchema.playAudio.default,
@@ -786,8 +763,8 @@ const RainInner: React.FC<RainProps> = ({
 	blur = rainSchema.blur.default,
 	intensity = rainSchema.intensity.default,
 	timeOffsetInSeconds = rainSchema.timeOffsetInSeconds.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
 	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -798,7 +775,6 @@ const RainInner: React.FC<RainProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<RainContent
@@ -822,6 +798,7 @@ const RainInner: React.FC<RainProps> = ({
 
 export const Rain = Interactive.create({
 	Component: RainInner,
+	layout: 'absolute-fill',
 	componentName: '<Rain>',
 	schema: rainSchema,
 });

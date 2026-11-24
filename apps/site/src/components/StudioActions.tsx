@@ -68,8 +68,10 @@ export default function StudioActions({
 		try {
 			const result = library
 				? await addElementLibraryToStudio({
-						url: new URL('/index.html', location.href).href,
-						displayName: 'banger-elements',
+						// Same URL and name as `npx remotion elements add-library https://banger-elements.dev`,
+						// which reads og:site_name, so Studio doesn't list the collection twice.
+						url: new URL('/', location.href).href,
+						displayName: 'Banger Elements',
 					})
 				: await installInStudio({payload: payload!});
 			setMessage(

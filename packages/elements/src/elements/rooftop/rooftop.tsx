@@ -7,7 +7,6 @@ import {
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -31,7 +30,7 @@ type RooftopOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type RooftopProps = InteractiveTransformProps & RooftopOptions;
+type RooftopProps = Omit<RooftopOptions, 'width' | 'height'>;
 const rooftopSchema = {
 	audioSrc: {
 		type: 'asset',
@@ -140,26 +139,6 @@ const rooftopSchema = {
 		step: 0.01,
 		hiddenFromList: false,
 		description: 'Animation phase offset (independent of audio trim)',
-		keyframable: false,
-	},
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
 		keyframable: false,
 	},
 } as const satisfies InteractivitySchema;
@@ -1252,10 +1231,8 @@ const RooftopInner: React.FC<RooftopProps> = ({
 	fog = rooftopSchema.fog.default,
 	bpm = rooftopSchema.bpm.default,
 	timeOffsetInSeconds = rooftopSchema.timeOffsetInSeconds.default,
-	width = rooftopSchema.width.default,
-	height = rooftopSchema.height.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
 		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -1266,7 +1243,6 @@ const RooftopInner: React.FC<RooftopProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<RooftopContent
@@ -1295,6 +1271,7 @@ const RooftopInner: React.FC<RooftopProps> = ({
 };
 export const Rooftop = Interactive.create({
 	Component: RooftopInner,
+	layout: 'absolute-fill',
 	componentName: '<Rooftop>',
 	schema: rooftopSchema,
 });

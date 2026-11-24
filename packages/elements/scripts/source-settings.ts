@@ -1,6 +1,15 @@
 import ts from 'typescript';
 
+type SourceSetting = {start: number; end: number; value: unknown};
+
+const unwrap = (expression: ts.Expression) => {
+	while (ts.isAsExpression(expression) || ts.isSatisfiesExpression(expression))
+		expression = expression.expression;
+	return expression;
+};
+
 // Record edit locations at build time. No TypeScript parser is sent to the browser.
+// Fields may be inline or shared constants, and enum variants nest more fields.
 export function sourceSettings(source: string) {
 	const file = ts.createSourceFile(
 		'element.tsx',
@@ -10,7 +19,7 @@ export function sourceSettings(source: string) {
 		ts.ScriptKind.TSX,
 	);
 	const constants = new Map<string, ts.Expression>();
-	const settings: Record<string, {start: number; end: number; value: unknown}> = {};
+	const settings: Record<string, SourceSetting> = {};
 	const visit = (node: ts.Node) => {
 		if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
 			constants.set(node.name.text, node.initializer);
@@ -18,6 +27,56 @@ export function sourceSettings(source: string) {
 		ts.forEachChild(node, visit);
 	};
 	visit(file);
+	const resolve = (expression: ts.Expression) => {
+		const unwrapped = unwrap(expression);
+		return ts.isIdentifier(unwrapped)
+			? unwrap(constants.get(unwrapped.text) ?? unwrapped)
+			: unwrapped;
+	};
+	const property = (object: ts.ObjectLiteralExpression, name: string) => {
+		const found = object.properties.find(
+			(p) => ts.isPropertyAssignment(p) && p.name.getText(file) === name,
+		);
+		return found && ts.isPropertyAssignment(found) ? found : null;
+	};
+	const readSchema = (schema: ts.ObjectLiteralExpression) => {
+		for (const prop of schema.properties) {
+			if (!ts.isPropertyAssignment(prop)) continue;
+			const field = resolve(prop.initializer);
+			if (!ts.isObjectLiteralExpression(field)) continue;
+			const variants = property(field, 'variants');
+			if (variants && ts.isObjectLiteralExpression(variants.initializer)) {
+				for (const variant of variants.initializer.properties) {
+					if (!ts.isPropertyAssignment(variant)) continue;
+					const nested = resolve(variant.initializer);
+					if (ts.isObjectLiteralExpression(nested)) readSchema(nested);
+				}
+			}
+			const def = property(field, 'default');
+			if (!def) continue;
+			const expression = ts.isIdentifier(def.initializer)
+				? (constants.get(def.initializer.text) ?? def.initializer)
+				: def.initializer;
+			const text = expression.getText(file);
+			const value = ts.isStringLiteral(expression)
+				? expression.text
+				: text === 'true'
+					? true
+					: text === 'false'
+						? false
+						: text === 'undefined'
+							? null
+							: Number(text);
+			if (typeof value === 'number' && !Number.isFinite(value))
+				throw new Error(`Unsupported default: ${text}`);
+			const key = prop.name.getText(file).replace(/^['"]|['"]$/g, '');
+			const setting = {start: expression.getStart(file), end: expression.end, value};
+			const existing = settings[key];
+			if (existing && (existing.start !== setting.start || existing.end !== setting.end))
+				throw new Error(`${key} has more than one default in the source`);
+			settings[key] = setting;
+		}
+	};
 	const scan = (node: ts.Node) => {
 		if (
 			ts.isVariableDeclaration(node) &&
@@ -25,39 +84,8 @@ export function sourceSettings(source: string) {
 			node.name.text.endsWith('Schema') &&
 			node.initializer
 		) {
-			let schema = node.initializer;
-			while (ts.isAsExpression(schema) || ts.isSatisfiesExpression(schema))
-				schema = schema.expression;
-			if (ts.isObjectLiteralExpression(schema)) {
-				for (const prop of schema.properties) {
-					if (!ts.isPropertyAssignment(prop) || !ts.isObjectLiteralExpression(prop.initializer))
-						continue;
-					const def = prop.initializer.properties.find(
-						(p) => ts.isPropertyAssignment(p) && p.name.getText(file) === 'default',
-					);
-					if (!def || !ts.isPropertyAssignment(def)) continue;
-					const expression = ts.isIdentifier(def.initializer)
-						? (constants.get(def.initializer.text) ?? def.initializer)
-						: def.initializer;
-					const text = expression.getText(file);
-					const value = ts.isStringLiteral(expression)
-						? expression.text
-						: text === 'true'
-							? true
-							: text === 'false'
-								? false
-								: text === 'undefined'
-									? null
-									: Number(text);
-					if (typeof value === 'number' && !Number.isFinite(value))
-						throw new Error(`Unsupported default: ${text}`);
-					settings[prop.name.getText(file)] = {
-						start: expression.getStart(file),
-						end: expression.end,
-						value,
-					};
-				}
-			}
+			const schema = unwrap(node.initializer);
+			if (ts.isObjectLiteralExpression(schema)) readSchema(schema);
 		}
 		ts.forEachChild(node, scan);
 	};

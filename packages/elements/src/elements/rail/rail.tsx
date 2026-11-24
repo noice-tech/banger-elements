@@ -11,7 +11,6 @@ import {
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -38,7 +37,7 @@ type RailOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type RailProps = InteractiveTransformProps & RailOptions;
+type RailProps = Omit<RailOptions, 'width' | 'height'>;
 
 const railSchema = {
 	audioSrc: {
@@ -65,26 +64,6 @@ const railSchema = {
 		keyframable: false,
 	},
 
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
-		keyframable: false,
-	},
 	inputGainDb: {
 		type: 'number',
 		default: 0,
@@ -954,8 +933,6 @@ const RailContent: React.FC<Required<RailOptions>> = (props) => {
 };
 
 const RailInner: React.FC<RailProps> = ({
-	width = railSchema.width.default,
-	height = railSchema.height.default,
 	audioSrc = railSchema.audioSrc.default,
 	audioOffsetInSeconds = railSchema.audioOffsetInSeconds.default,
 	playAudio = railSchema.playAudio.default,
@@ -974,8 +951,8 @@ const RailInner: React.FC<RailProps> = ({
 	intensity = railSchema.intensity.default,
 	stroke = railSchema.stroke.default,
 	timeOffsetInSeconds = railSchema.timeOffsetInSeconds.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
 	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -986,7 +963,6 @@ const RailInner: React.FC<RailProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<RailContent
@@ -1018,6 +994,7 @@ const RailInner: React.FC<RailProps> = ({
 
 export const Rail = Interactive.create({
 	Component: RailInner,
+	layout: 'absolute-fill',
 	componentName: '<Rail>',
 	schema: railSchema,
 });

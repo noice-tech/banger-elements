@@ -11,7 +11,6 @@ import {
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -32,7 +31,7 @@ type FlowersOptions = {
 	readonly pattern?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type FlowersProps = InteractiveTransformProps & FlowersOptions;
+type FlowersProps = Omit<FlowersOptions, 'width' | 'height'>;
 
 const flowersSchema = {
 	audioSrc: {
@@ -138,26 +137,6 @@ const flowersSchema = {
 		max: 86400,
 		step: 0.01,
 		description: 'Animation phase offset in seconds (independent of audio trim)',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -844,10 +823,8 @@ const FlowersInner: React.FC<FlowersProps> = ({
 	volume = flowersSchema.volume.default,
 	pattern = flowersSchema.pattern.default,
 	timeOffsetInSeconds = flowersSchema.timeOffsetInSeconds.default,
-	width = 1280,
-	height = 720,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
 		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -858,7 +835,6 @@ const FlowersInner: React.FC<FlowersProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<FlowersContent
@@ -884,6 +860,7 @@ const FlowersInner: React.FC<FlowersProps> = ({
 };
 export const Flowers = Interactive.create({
 	Component: FlowersInner,
+	layout: 'absolute-fill',
 	componentName: '<Flowers>',
 	schema: flowersSchema,
 });

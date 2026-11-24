@@ -7,7 +7,6 @@ import {
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -30,7 +29,7 @@ type LiquidOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type LiquidProps = InteractiveTransformProps & LiquidOptions;
+type LiquidProps = Omit<LiquidOptions, 'width' | 'height'>;
 const liquidSchema = {
 	audioSrc: {
 		type: 'asset',
@@ -138,26 +137,6 @@ const liquidSchema = {
 		step: 0.01,
 		hiddenFromList: false,
 		description: 'Animation phase offset (independent of audio trim)',
-		keyframable: false,
-	},
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
 		keyframable: false,
 	},
 } as const satisfies InteractivitySchema;
@@ -1130,10 +1109,8 @@ const LiquidInner: React.FC<LiquidProps> = ({
 	fog = liquidSchema.fog.default,
 	bpm = liquidSchema.bpm.default,
 	timeOffsetInSeconds = liquidSchema.timeOffsetInSeconds.default,
-	width = liquidSchema.width.default,
-	height = liquidSchema.height.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
 		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -1144,7 +1121,6 @@ const LiquidInner: React.FC<LiquidProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<LiquidContent
@@ -1172,6 +1148,7 @@ const LiquidInner: React.FC<LiquidProps> = ({
 };
 export const Liquid = Interactive.create({
 	Component: LiquidInner,
+	layout: 'absolute-fill',
 	componentName: '<Liquid>',
 	schema: liquidSchema,
 });

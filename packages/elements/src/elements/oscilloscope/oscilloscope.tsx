@@ -27,6 +27,16 @@ type OscilloscopeOptions = {
 
 type OscilloscopeProps = InteractiveTransformProps & OscilloscopeOptions;
 
+const timeSpanMsField = {
+	type: 'number',
+	default: 46.4,
+	min: 5,
+	max: 200,
+	step: 0.1,
+	description: 'Visible time span in milliseconds (pitch and free modes)',
+	hiddenFromList: false,
+} as const;
+
 const oscilloscopeSchema = {
 	audioSrc: {
 		type: 'asset',
@@ -109,20 +119,19 @@ const oscilloscopeSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	timeSpanMs: {
-		type: 'number',
-		default: 46.4,
-		min: 5,
-		max: 200,
-		step: 0.1,
-		description: 'Visible time span in milliseconds (pitch and free modes)',
-		hiddenFromList: false,
-	},
 	displayMode: {
 		type: 'enum',
 		default: 'pitch',
 		description: 'Trigger mode',
-		variants: {pitch: {}, 'single-cycle': {}, free: {}},
+		variants: {
+			pitch: {
+				timeSpanMs: timeSpanMsField,
+			},
+			'single-cycle': {},
+			free: {
+				timeSpanMs: timeSpanMsField,
+			},
+		},
 	},
 } as const satisfies InteractivitySchema;
 
@@ -402,7 +411,7 @@ const OscilloscopeInner: React.FC<OscilloscopeProps> = ({
 	lineColor = oscilloscopeSchema.lineColor.default,
 	lineWidth = oscilloscopeSchema.lineWidth.default,
 	sampleCount = oscilloscopeSchema.sampleCount.default,
-	timeSpanMs = oscilloscopeSchema.timeSpanMs.default,
+	timeSpanMs = timeSpanMsField.default,
 	displayMode = oscilloscopeSchema.displayMode.default,
 	style,
 }) => {

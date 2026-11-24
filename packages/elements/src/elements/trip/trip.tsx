@@ -11,7 +11,6 @@ import {
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -31,7 +30,7 @@ type TripOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type TripProps = InteractiveTransformProps & TripOptions;
+type TripProps = Omit<TripOptions, 'width' | 'height'>;
 
 const tripSchema = {
 	audioSrc: {
@@ -58,26 +57,6 @@ const tripSchema = {
 		keyframable: false,
 	},
 
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
-		keyframable: false,
-	},
 	baseColor: {type: 'color', default: '#ff00ff', description: 'Base color'},
 	intensifyColor: {
 		type: 'color',
@@ -696,8 +675,6 @@ const TripContent: React.FC<Required<TripOptions>> = (props) => {
 };
 
 const TripInner: React.FC<TripProps> = ({
-	width = tripSchema.width.default,
-	height = tripSchema.height.default,
 	audioSrc = tripSchema.audioSrc.default,
 	audioOffsetInSeconds = tripSchema.audioOffsetInSeconds.default,
 	playAudio = tripSchema.playAudio.default,
@@ -709,8 +686,8 @@ const TripInner: React.FC<TripProps> = ({
 	intensity = tripSchema.intensity.default,
 	bpm = tripSchema.bpm.default,
 	timeOffsetInSeconds = tripSchema.timeOffsetInSeconds.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
 	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -721,7 +698,6 @@ const TripInner: React.FC<TripProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<TripContent
@@ -746,6 +722,7 @@ const TripInner: React.FC<TripProps> = ({
 
 export const Trip = Interactive.create({
 	Component: TripInner,
+	layout: 'absolute-fill',
 	componentName: '<Trip>',
 	schema: tripSchema,
 });

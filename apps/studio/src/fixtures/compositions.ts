@@ -49,4 +49,6 @@ export const compositions = [
 	{id: 'Trip', slug: 'trip'},
 	{id: 'TripCustom', slug: null},
 	{id: 'TripAndCircle', slug: null},
+	// Shaders fill their composition, so a vertical one must be covered edge to edge.
+	{id: 'TripVertical', slug: null, width: 1080, height: 1920},
 ] as const;

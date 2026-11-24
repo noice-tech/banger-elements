@@ -129,6 +129,7 @@ const components = {
 			timeOffsetInSeconds={3}
 		/>
 	),
+	TripVertical: Trip,
 	TripAndCircle: () => (
 		<AbsoluteFill>
 			<AbsoluteFill>
@@ -148,13 +149,13 @@ const standaloneCompositions = compositions.filter(
 
 export const Root = () => (
 	<>
-		{standaloneCompositions.map(({id}) => (
+		{standaloneCompositions.map((composition) => (
 			<Composition
-				key={id}
-				id={id}
-				component={components[id]}
-				width={1280}
-				height={720}
+				key={composition.id}
+				id={composition.id}
+				component={components[composition.id]}
+				width={'width' in composition ? composition.width : 1280}
+				height={'height' in composition ? composition.height : 720}
 				fps={60}
 				durationInFrames={960}
 			/>

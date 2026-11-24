@@ -28,7 +28,7 @@
 			"cache": false,
 			"persistent": true
 		},
-		"smoke": {"dependsOn": ["^build"], "cache": false},
+		"smoke": {"dependsOn": ["^build"], "passThroughEnv": ["REMOTION_GL"], "cache": false},
 		"render": {"dependsOn": ["^build"], "cache": false},
 		"previews": {"dependsOn": ["^build"], "cache": false}
 	}

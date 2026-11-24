@@ -11,7 +11,6 @@ import {
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -33,7 +32,7 @@ type KaleidoscopeOptions = {
 	readonly amount?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type KaleidoscopeProps = InteractiveTransformProps & KaleidoscopeOptions;
+type KaleidoscopeProps = Omit<KaleidoscopeOptions, 'width' | 'height'>;
 
 const kaleidoscopeSchema = {
 	audioSrc: {
@@ -124,26 +123,6 @@ const kaleidoscopeSchema = {
 		max: 86400,
 		step: 0.01,
 		description: 'Animation phase offset in seconds (independent of audio trim)',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -609,10 +588,8 @@ const KaleidoscopeInner: React.FC<KaleidoscopeProps> = ({
 	pattern = kaleidoscopeSchema.pattern.default,
 	amount = kaleidoscopeSchema.amount.default,
 	timeOffsetInSeconds = kaleidoscopeSchema.timeOffsetInSeconds.default,
-	width = 1280,
-	height = 720,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
 		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -623,7 +600,6 @@ const KaleidoscopeInner: React.FC<KaleidoscopeProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<KaleidoscopeContent
@@ -650,6 +626,7 @@ const KaleidoscopeInner: React.FC<KaleidoscopeProps> = ({
 };
 export const Kaleidoscope = Interactive.create({
 	Component: KaleidoscopeInner,
+	layout: 'absolute-fill',
 	componentName: '<Kaleidoscope>',
 	schema: kaleidoscopeSchema,
 });
