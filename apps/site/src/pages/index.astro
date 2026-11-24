@@ -33,6 +33,7 @@ const otherExamples = recipes.filter((recipe) => recipe !== featuredExample);
 const divisor = (a: number, b: number): number => (b === 0 ? a : divisor(b, a % b));
 const shape = divisor(featuredExample.width, featuredExample.height);
 const featuredRatio = `${featuredExample.width / shape}:${featuredExample.height / shape}`;
+// The release line above the headline: the newest elements, and what shipped in this minor version.
 const release = {
 	version: version.split('.').slice(0, 2).join('.'),
 	added: ['wet-glass', ...Object.keys(shaderDetails)].map((slug) => elements.find((entry) => entry.slug === slug)!),
@@ -45,17 +46,22 @@ const release = {
 >
 	<section class="hero">
 		<div class="wrap hero-copy">
-			<a class="announce" href="/wet-glass.html">
-				<span class="deck" aria-hidden="true">
-					{release.added.map((entry, index) => (
-						<img src={`/posters/icons/${entry.slug}.webp`} alt="" width="32" height="18" decoding="async" style={`--i: ${index}`} />
-					))}
-				</span>
-				<span class="announce-text">
-					<strong>Wet Glass</strong> and {release.added.length - 1} shaders
-				</span>
-				<span class="announce-version">new in {release.version}</span>
-			</a>
+			<div class="announce">
+				<a class="announce-link" href="/wet-glass.html" aria-label={`Wet Glass and ${release.added.length - 1} shaders`}>
+					<span class="deck" aria-hidden="true">
+						{release.added.map((entry, index) => (
+							<img src={`/posters/icons/${entry.slug}.webp`} alt="" width="32" height="18" decoding="async" style={`--i: ${index}`} />
+						))}
+					</span>
+					<span class="announce-text">
+						<strong>Wet Glass</strong> and {release.added.length - 1} shaders
+					</span>
+				</a>
+				<a class="announce-link" href="/getting-started.html#install-from-the-command-line">
+					<code class="announce-command">npx remotion elements use</code>
+					<span class="announce-version">new in {release.version}</span>
+				</a>
+			</div>
 			<h1>
 				Give your sound
 				<span class="tone">
