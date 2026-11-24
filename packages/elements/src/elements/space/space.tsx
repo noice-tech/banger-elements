@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -41,12 +31,12 @@ type SpaceOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type SpaceProps = InteractiveBaseProps & InteractiveTransformProps & SpaceOptions;
+type SpaceProps = InteractiveTransformProps & SpaceOptions;
 
 const spaceSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -154,7 +144,6 @@ const spaceSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -677,81 +666,57 @@ const SpaceContent: React.FC<Required<SpaceOptions>> = (props) => {
 	);
 };
 
-const SpaceInner = forwardRef<
-	HTMLDivElement,
-	SpaceProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = spaceSchema.width.default,
-			height = spaceSchema.height.default,
-			audioSrc = spaceSchema.audioSrc.default,
-			audioOffsetInSeconds = spaceSchema.audioOffsetInSeconds.default,
-			playAudio = spaceSchema.playAudio.default,
-			inputGainDb = spaceSchema.inputGainDb.default,
-			baseColor = spaceSchema.baseColor.default,
-			zoom = spaceSchema.zoom.default,
-			stellarDensity = spaceSchema.stellarDensity.default,
-			pattern = spaceSchema.pattern.default,
-			speed = spaceSchema.speed.default,
-			responsive = spaceSchema.responsive.default,
-			timeOffsetInSeconds = spaceSchema.timeOffsetInSeconds.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Space'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<SpaceContent
-						key={audioSrc}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						baseColor={baseColor}
-						zoom={zoom}
-						stellarDensity={stellarDensity}
-						pattern={pattern}
-						speed={speed}
-						responsive={responsive}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const SpaceInner: React.FC<SpaceProps> = ({
+	width = spaceSchema.width.default,
+	height = spaceSchema.height.default,
+	audioSrc = spaceSchema.audioSrc.default,
+	audioOffsetInSeconds = spaceSchema.audioOffsetInSeconds.default,
+	playAudio = spaceSchema.playAudio.default,
+	inputGainDb = spaceSchema.inputGainDb.default,
+	baseColor = spaceSchema.baseColor.default,
+	zoom = spaceSchema.zoom.default,
+	stellarDensity = spaceSchema.stellarDensity.default,
+	pattern = spaceSchema.pattern.default,
+	speed = spaceSchema.speed.default,
+	responsive = spaceSchema.responsive.default,
+	timeOffsetInSeconds = spaceSchema.timeOffsetInSeconds.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<SpaceContent
+				key={audioSrc}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				baseColor={baseColor}
+				zoom={zoom}
+				stellarDensity={stellarDensity}
+				pattern={pattern}
+				speed={speed}
+				responsive={responsive}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
 
-export const Space = Interactive.withSchema({
+export const Space = Interactive.create({
 	Component: SpaceInner,
 	componentName: '<Space>',
-	componentIdentity: null,
 	schema: spaceSchema,
-	supportsEffects: false,
-}) as React.FC<SpaceProps>;
+});

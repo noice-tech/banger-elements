@@ -1,24 +1,14 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type RooftopOptions = {
@@ -41,11 +31,11 @@ type RooftopOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type RooftopProps = InteractiveBaseProps & InteractiveTransformProps & RooftopOptions;
+type RooftopProps = InteractiveTransformProps & RooftopOptions;
 const rooftopSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -172,7 +162,6 @@ const rooftopSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -1246,90 +1235,66 @@ const RooftopContent: React.FC<Required<RooftopOptions> & {width: number; height
 	);
 };
 
-const RooftopInner = forwardRef<
-	HTMLDivElement,
-	RooftopProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = rooftopSchema.audioSrc.default,
-			audioOffsetInSeconds = rooftopSchema.audioOffsetInSeconds.default,
-			playAudio = rooftopSchema.playAudio.default,
-			inputGainDb = rooftopSchema.inputGainDb.default,
-			skyColor = rooftopSchema.skyColor.default,
-			buildingColor = rooftopSchema.buildingColor.default,
-			streetColor = rooftopSchema.streetColor.default,
-			lightColor = rooftopSchema.lightColor.default,
-			cameraHeight = rooftopSchema.cameraHeight.default,
-			gridDensity = rooftopSchema.gridDensity.default,
-			carDensity = rooftopSchema.carDensity.default,
-			responsive = rooftopSchema.responsive.default,
-			speed = rooftopSchema.speed.default,
-			fog = rooftopSchema.fog.default,
-			bpm = rooftopSchema.bpm.default,
-			timeOffsetInSeconds = rooftopSchema.timeOffsetInSeconds.default,
-			width = rooftopSchema.width.default,
-			height = rooftopSchema.height.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Rooftop'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<RooftopContent
-						key={audioSrc}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						skyColor={skyColor}
-						buildingColor={buildingColor}
-						streetColor={streetColor}
-						lightColor={lightColor}
-						cameraHeight={cameraHeight}
-						gridDensity={gridDensity}
-						carDensity={carDensity}
-						responsive={responsive}
-						speed={speed}
-						fog={fog}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-						width={drawingWidth}
-						height={drawingHeight}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Rooftop = Interactive.withSchema({
+const RooftopInner: React.FC<RooftopProps> = ({
+	audioSrc = rooftopSchema.audioSrc.default,
+	audioOffsetInSeconds = rooftopSchema.audioOffsetInSeconds.default,
+	playAudio = rooftopSchema.playAudio.default,
+	inputGainDb = rooftopSchema.inputGainDb.default,
+	skyColor = rooftopSchema.skyColor.default,
+	buildingColor = rooftopSchema.buildingColor.default,
+	streetColor = rooftopSchema.streetColor.default,
+	lightColor = rooftopSchema.lightColor.default,
+	cameraHeight = rooftopSchema.cameraHeight.default,
+	gridDensity = rooftopSchema.gridDensity.default,
+	carDensity = rooftopSchema.carDensity.default,
+	responsive = rooftopSchema.responsive.default,
+	speed = rooftopSchema.speed.default,
+	fog = rooftopSchema.fog.default,
+	bpm = rooftopSchema.bpm.default,
+	timeOffsetInSeconds = rooftopSchema.timeOffsetInSeconds.default,
+	width = rooftopSchema.width.default,
+	height = rooftopSchema.height.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<RooftopContent
+				key={audioSrc}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				skyColor={skyColor}
+				buildingColor={buildingColor}
+				streetColor={streetColor}
+				lightColor={lightColor}
+				cameraHeight={cameraHeight}
+				gridDensity={gridDensity}
+				carDensity={carDensity}
+				responsive={responsive}
+				speed={speed}
+				fog={fog}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+				width={drawingWidth}
+				height={drawingHeight}
+			/>
+		</div>
+	);
+};
+export const Rooftop = Interactive.create({
 	Component: RooftopInner,
 	componentName: '<Rooftop>',
-	componentIdentity: null,
 	schema: rooftopSchema,
-	supportsEffects: false,
-}) as React.FC<RooftopProps>;
+});

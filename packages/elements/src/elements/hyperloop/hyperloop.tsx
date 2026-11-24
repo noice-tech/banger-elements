@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -42,12 +32,12 @@ type HyperloopOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type HyperloopProps = InteractiveBaseProps & InteractiveTransformProps & HyperloopOptions;
+type HyperloopProps = InteractiveTransformProps & HyperloopOptions;
 
 const hyperloopSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -165,7 +155,6 @@ const hyperloopSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -717,83 +706,59 @@ const HyperloopContent: React.FC<Required<HyperloopOptions>> = (props) => {
 	);
 };
 
-const HyperloopInner = forwardRef<
-	HTMLDivElement,
-	HyperloopProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = hyperloopSchema.width.default,
-			height = hyperloopSchema.height.default,
-			audioSrc = hyperloopSchema.audioSrc.default,
-			audioOffsetInSeconds = hyperloopSchema.audioOffsetInSeconds.default,
-			playAudio = hyperloopSchema.playAudio.default,
-			inputGainDb = hyperloopSchema.inputGainDb.default,
-			baseColor = hyperloopSchema.baseColor.default,
-			volume = hyperloopSchema.volume.default,
-			depth = hyperloopSchema.depth.default,
-			speed = hyperloopSchema.speed.default,
-			rotationSpeed = hyperloopSchema.rotationSpeed.default,
-			pattern = hyperloopSchema.pattern.default,
-			responsive = hyperloopSchema.responsive.default,
-			timeOffsetInSeconds = hyperloopSchema.timeOffsetInSeconds.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Hyperloop'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<HyperloopContent
-						key={audioSrc}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						baseColor={baseColor}
-						volume={volume}
-						depth={depth}
-						speed={speed}
-						rotationSpeed={rotationSpeed}
-						pattern={pattern}
-						responsive={responsive}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const HyperloopInner: React.FC<HyperloopProps> = ({
+	width = hyperloopSchema.width.default,
+	height = hyperloopSchema.height.default,
+	audioSrc = hyperloopSchema.audioSrc.default,
+	audioOffsetInSeconds = hyperloopSchema.audioOffsetInSeconds.default,
+	playAudio = hyperloopSchema.playAudio.default,
+	inputGainDb = hyperloopSchema.inputGainDb.default,
+	baseColor = hyperloopSchema.baseColor.default,
+	volume = hyperloopSchema.volume.default,
+	depth = hyperloopSchema.depth.default,
+	speed = hyperloopSchema.speed.default,
+	rotationSpeed = hyperloopSchema.rotationSpeed.default,
+	pattern = hyperloopSchema.pattern.default,
+	responsive = hyperloopSchema.responsive.default,
+	timeOffsetInSeconds = hyperloopSchema.timeOffsetInSeconds.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<HyperloopContent
+				key={audioSrc}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				baseColor={baseColor}
+				volume={volume}
+				depth={depth}
+				speed={speed}
+				rotationSpeed={rotationSpeed}
+				pattern={pattern}
+				responsive={responsive}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
 
-export const Hyperloop = Interactive.withSchema({
+export const Hyperloop = Interactive.create({
 	Component: HyperloopInner,
 	componentName: '<Hyperloop>',
-	componentIdentity: null,
 	schema: hyperloopSchema,
-	supportsEffects: false,
-}) as React.FC<HyperloopProps>;
+});

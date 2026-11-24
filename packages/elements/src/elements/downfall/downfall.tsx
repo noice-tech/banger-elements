@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -44,12 +34,12 @@ type DownfallOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type DownfallProps = InteractiveBaseProps & InteractiveTransformProps & DownfallOptions;
+type DownfallProps = InteractiveTransformProps & DownfallOptions;
 
 const downfallSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -102,7 +92,13 @@ const downfallSchema = {
 	},
 	startColor: {type: 'color', default: '#9333ea', description: 'Base Color'},
 	endColor: {type: 'color', default: '#ff00ff', description: 'Mix Color'},
-	textureSrc: {type: 'asset', default: '', description: 'Texture', keyframable: false},
+	textureSrc: {
+		type: 'asset',
+		assetType: 'image',
+		default: '',
+		description: 'Texture',
+		keyframable: false,
+	},
 	textureScale: {
 		type: 'number',
 		default: 1.0,
@@ -168,7 +164,6 @@ const downfallSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -941,87 +936,63 @@ const DownfallContent: React.FC<Required<DownfallOptions>> = (props) => {
 	);
 };
 
-const DownfallInner = forwardRef<
-	HTMLDivElement,
-	DownfallProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = downfallSchema.width.default,
-			height = downfallSchema.height.default,
-			audioSrc = downfallSchema.audioSrc.default,
-			audioOffsetInSeconds = downfallSchema.audioOffsetInSeconds.default,
-			playAudio = downfallSchema.playAudio.default,
-			inputGainDb = downfallSchema.inputGainDb.default,
-			startColor = downfallSchema.startColor.default,
-			endColor = downfallSchema.endColor.default,
-			textureSrc = downfallSchema.textureSrc.default,
-			textureScale = downfallSchema.textureScale.default,
-			textureRotation = downfallSchema.textureRotation.default,
-			variant = downfallSchema.variant.default,
-			bloating = downfallSchema.bloating.default,
-			intensity = downfallSchema.intensity.default,
-			bpm = downfallSchema.bpm.default,
-			timeOffsetInSeconds = downfallSchema.timeOffsetInSeconds.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Downfall'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<DownfallContent
-						key={`${audioSrc}:${textureSrc}`}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						startColor={startColor}
-						endColor={endColor}
-						textureSrc={textureSrc}
-						textureScale={textureScale}
-						textureRotation={textureRotation}
-						variant={variant}
-						bloating={bloating}
-						intensity={intensity}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const DownfallInner: React.FC<DownfallProps> = ({
+	width = downfallSchema.width.default,
+	height = downfallSchema.height.default,
+	audioSrc = downfallSchema.audioSrc.default,
+	audioOffsetInSeconds = downfallSchema.audioOffsetInSeconds.default,
+	playAudio = downfallSchema.playAudio.default,
+	inputGainDb = downfallSchema.inputGainDb.default,
+	startColor = downfallSchema.startColor.default,
+	endColor = downfallSchema.endColor.default,
+	textureSrc = downfallSchema.textureSrc.default,
+	textureScale = downfallSchema.textureScale.default,
+	textureRotation = downfallSchema.textureRotation.default,
+	variant = downfallSchema.variant.default,
+	bloating = downfallSchema.bloating.default,
+	intensity = downfallSchema.intensity.default,
+	bpm = downfallSchema.bpm.default,
+	timeOffsetInSeconds = downfallSchema.timeOffsetInSeconds.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<DownfallContent
+				key={`${audioSrc}:${textureSrc}`}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				startColor={startColor}
+				endColor={endColor}
+				textureSrc={textureSrc}
+				textureScale={textureScale}
+				textureRotation={textureRotation}
+				variant={variant}
+				bloating={bloating}
+				intensity={intensity}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
 
-export const Downfall = Interactive.withSchema({
+export const Downfall = Interactive.create({
 	Component: DownfallInner,
 	componentName: '<Downfall>',
-	componentIdentity: null,
 	schema: downfallSchema,
-	supportsEffects: false,
-}) as React.FC<DownfallProps>;
+});

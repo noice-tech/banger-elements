@@ -1,24 +1,14 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type ChromeOptions = {
@@ -44,11 +34,11 @@ type ChromeOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type ChromeProps = InteractiveBaseProps & InteractiveTransformProps & ChromeOptions;
+type ChromeProps = InteractiveTransformProps & ChromeOptions;
 const chromeSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -81,7 +71,13 @@ const chromeSchema = {
 	color1: {type: 'color', default: '#c0c0c0', description: 'Metal Color 1'},
 	color2: {type: 'color', default: '#d4af37', description: 'Metal Color 2'},
 	color3: {type: 'color', default: '#b87333', description: 'Metal Color 3'},
-	textureSrc: {type: 'asset', default: '', description: 'Custom Texture', keyframable: false},
+	textureSrc: {
+		type: 'asset',
+		assetType: 'image',
+		default: '',
+		description: 'Custom Texture',
+		keyframable: false,
+	},
 	textureScale: {
 		type: 'number',
 		default: 1,
@@ -202,7 +198,6 @@ const chromeSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -1256,96 +1251,72 @@ const ChromeContent: React.FC<Required<ChromeOptions> & {width: number; height: 
 	);
 };
 
-const ChromeInner = forwardRef<
-	HTMLDivElement,
-	ChromeProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = chromeSchema.audioSrc.default,
-			audioOffsetInSeconds = chromeSchema.audioOffsetInSeconds.default,
-			playAudio = chromeSchema.playAudio.default,
-			inputGainDb = chromeSchema.inputGainDb.default,
-			color1 = chromeSchema.color1.default,
-			color2 = chromeSchema.color2.default,
-			color3 = chromeSchema.color3.default,
-			textureSrc = chromeSchema.textureSrc.default,
-			textureScale = chromeSchema.textureScale.default,
-			textureBlend = chromeSchema.textureBlend.default,
-			warpIntensity = chromeSchema.warpIntensity.default,
-			warpSpeed = chromeSchema.warpSpeed.default,
-			colorCycle = chromeSchema.colorCycle.default,
-			bumpStrength = chromeSchema.bumpStrength.default,
-			specularPower = chromeSchema.specularPower.default,
-			responsive = chromeSchema.responsive.default,
-			lightMovement = chromeSchema.lightMovement.default,
-			bpm = chromeSchema.bpm.default,
-			timeOffsetInSeconds = chromeSchema.timeOffsetInSeconds.default,
-			width = chromeSchema.width.default,
-			height = chromeSchema.height.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Chrome'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<ChromeContent
-						key={audioSrc}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						color1={color1}
-						color2={color2}
-						color3={color3}
-						textureSrc={textureSrc}
-						textureScale={textureScale}
-						textureBlend={textureBlend}
-						warpIntensity={warpIntensity}
-						warpSpeed={warpSpeed}
-						colorCycle={colorCycle}
-						bumpStrength={bumpStrength}
-						specularPower={specularPower}
-						responsive={responsive}
-						lightMovement={lightMovement}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-						width={drawingWidth}
-						height={drawingHeight}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Chrome = Interactive.withSchema({
+const ChromeInner: React.FC<ChromeProps> = ({
+	audioSrc = chromeSchema.audioSrc.default,
+	audioOffsetInSeconds = chromeSchema.audioOffsetInSeconds.default,
+	playAudio = chromeSchema.playAudio.default,
+	inputGainDb = chromeSchema.inputGainDb.default,
+	color1 = chromeSchema.color1.default,
+	color2 = chromeSchema.color2.default,
+	color3 = chromeSchema.color3.default,
+	textureSrc = chromeSchema.textureSrc.default,
+	textureScale = chromeSchema.textureScale.default,
+	textureBlend = chromeSchema.textureBlend.default,
+	warpIntensity = chromeSchema.warpIntensity.default,
+	warpSpeed = chromeSchema.warpSpeed.default,
+	colorCycle = chromeSchema.colorCycle.default,
+	bumpStrength = chromeSchema.bumpStrength.default,
+	specularPower = chromeSchema.specularPower.default,
+	responsive = chromeSchema.responsive.default,
+	lightMovement = chromeSchema.lightMovement.default,
+	bpm = chromeSchema.bpm.default,
+	timeOffsetInSeconds = chromeSchema.timeOffsetInSeconds.default,
+	width = chromeSchema.width.default,
+	height = chromeSchema.height.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<ChromeContent
+				key={audioSrc}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				color1={color1}
+				color2={color2}
+				color3={color3}
+				textureSrc={textureSrc}
+				textureScale={textureScale}
+				textureBlend={textureBlend}
+				warpIntensity={warpIntensity}
+				warpSpeed={warpSpeed}
+				colorCycle={colorCycle}
+				bumpStrength={bumpStrength}
+				specularPower={specularPower}
+				responsive={responsive}
+				lightMovement={lightMovement}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+				width={drawingWidth}
+				height={drawingHeight}
+			/>
+		</div>
+	);
+};
+export const Chrome = Interactive.create({
 	Component: ChromeInner,
 	componentName: '<Chrome>',
-	componentIdentity: null,
 	schema: chromeSchema,
-	supportsEffects: false,
-}) as React.FC<ChromeProps>;
+});

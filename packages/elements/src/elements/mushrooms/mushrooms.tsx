@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -41,12 +31,12 @@ type MushroomsOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type MushroomsProps = InteractiveBaseProps & InteractiveTransformProps & MushroomsOptions;
+type MushroomsProps = InteractiveTransformProps & MushroomsOptions;
 
 const mushroomsSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -145,7 +135,6 @@ const mushroomsSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -728,81 +717,57 @@ const MushroomsContent: React.FC<Required<MushroomsOptions>> = (props) => {
 	);
 };
 
-const MushroomsInner = forwardRef<
-	HTMLDivElement,
-	MushroomsProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = mushroomsSchema.width.default,
-			height = mushroomsSchema.height.default,
-			audioSrc = mushroomsSchema.audioSrc.default,
-			audioOffsetInSeconds = mushroomsSchema.audioOffsetInSeconds.default,
-			playAudio = mushroomsSchema.playAudio.default,
-			inputGainDb = mushroomsSchema.inputGainDb.default,
-			baseColor = mushroomsSchema.baseColor.default,
-			mixColor = mushroomsSchema.mixColor.default,
-			colorful = mushroomsSchema.colorful.default,
-			contrast = mushroomsSchema.contrast.default,
-			cubeScale = mushroomsSchema.cubeScale.default,
-			responsive = mushroomsSchema.responsive.default,
-			timeOffsetInSeconds = mushroomsSchema.timeOffsetInSeconds.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Mushrooms'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<MushroomsContent
-						key={audioSrc}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						baseColor={baseColor}
-						mixColor={mixColor}
-						colorful={colorful}
-						contrast={contrast}
-						cubeScale={cubeScale}
-						responsive={responsive}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const MushroomsInner: React.FC<MushroomsProps> = ({
+	width = mushroomsSchema.width.default,
+	height = mushroomsSchema.height.default,
+	audioSrc = mushroomsSchema.audioSrc.default,
+	audioOffsetInSeconds = mushroomsSchema.audioOffsetInSeconds.default,
+	playAudio = mushroomsSchema.playAudio.default,
+	inputGainDb = mushroomsSchema.inputGainDb.default,
+	baseColor = mushroomsSchema.baseColor.default,
+	mixColor = mushroomsSchema.mixColor.default,
+	colorful = mushroomsSchema.colorful.default,
+	contrast = mushroomsSchema.contrast.default,
+	cubeScale = mushroomsSchema.cubeScale.default,
+	responsive = mushroomsSchema.responsive.default,
+	timeOffsetInSeconds = mushroomsSchema.timeOffsetInSeconds.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<MushroomsContent
+				key={audioSrc}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				baseColor={baseColor}
+				mixColor={mixColor}
+				colorful={colorful}
+				contrast={contrast}
+				cubeScale={cubeScale}
+				responsive={responsive}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
 
-export const Mushrooms = Interactive.withSchema({
+export const Mushrooms = Interactive.create({
 	Component: MushroomsInner,
 	componentName: '<Mushrooms>',
-	componentIdentity: null,
 	schema: mushroomsSchema,
-	supportsEffects: false,
-}) as React.FC<MushroomsProps>;
+});

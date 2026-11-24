@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -45,12 +35,12 @@ type SynthwaveOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type SynthwaveProps = InteractiveBaseProps & InteractiveTransformProps & SynthwaveOptions;
+type SynthwaveProps = InteractiveTransformProps & SynthwaveOptions;
 
 const synthwaveSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -178,7 +168,6 @@ const synthwaveSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -1291,89 +1280,65 @@ const SynthwaveContent: React.FC<Required<SynthwaveOptions>> = (props) => {
 	);
 };
 
-const SynthwaveInner = forwardRef<
-	HTMLDivElement,
-	SynthwaveProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = synthwaveSchema.width.default,
-			height = synthwaveSchema.height.default,
-			audioSrc = synthwaveSchema.audioSrc.default,
-			audioOffsetInSeconds = synthwaveSchema.audioOffsetInSeconds.default,
-			playAudio = synthwaveSchema.playAudio.default,
-			inputGainDb = synthwaveSchema.inputGainDb.default,
-			startColor = synthwaveSchema.startColor.default,
-			endColor = synthwaveSchema.endColor.default,
-			sphereColor = synthwaveSchema.sphereColor.default,
-			hideSphere = synthwaveSchema.hideSphere.default,
-			mountainsPattern = synthwaveSchema.mountainsPattern.default,
-			mountainsHeight = synthwaveSchema.mountainsHeight.default,
-			mountainsSmoothness = synthwaveSchema.mountainsSmoothness.default,
-			mountainsDistance = synthwaveSchema.mountainsDistance.default,
-			responsive = synthwaveSchema.responsive.default,
-			bpm = synthwaveSchema.bpm.default,
-			timeOffsetInSeconds = synthwaveSchema.timeOffsetInSeconds.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Synthwave'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<SynthwaveContent
-						key={audioSrc}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						startColor={startColor}
-						endColor={endColor}
-						sphereColor={sphereColor}
-						hideSphere={hideSphere}
-						mountainsPattern={mountainsPattern}
-						mountainsHeight={mountainsHeight}
-						mountainsSmoothness={mountainsSmoothness}
-						mountainsDistance={mountainsDistance}
-						responsive={responsive}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const SynthwaveInner: React.FC<SynthwaveProps> = ({
+	width = synthwaveSchema.width.default,
+	height = synthwaveSchema.height.default,
+	audioSrc = synthwaveSchema.audioSrc.default,
+	audioOffsetInSeconds = synthwaveSchema.audioOffsetInSeconds.default,
+	playAudio = synthwaveSchema.playAudio.default,
+	inputGainDb = synthwaveSchema.inputGainDb.default,
+	startColor = synthwaveSchema.startColor.default,
+	endColor = synthwaveSchema.endColor.default,
+	sphereColor = synthwaveSchema.sphereColor.default,
+	hideSphere = synthwaveSchema.hideSphere.default,
+	mountainsPattern = synthwaveSchema.mountainsPattern.default,
+	mountainsHeight = synthwaveSchema.mountainsHeight.default,
+	mountainsSmoothness = synthwaveSchema.mountainsSmoothness.default,
+	mountainsDistance = synthwaveSchema.mountainsDistance.default,
+	responsive = synthwaveSchema.responsive.default,
+	bpm = synthwaveSchema.bpm.default,
+	timeOffsetInSeconds = synthwaveSchema.timeOffsetInSeconds.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<SynthwaveContent
+				key={audioSrc}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				startColor={startColor}
+				endColor={endColor}
+				sphereColor={sphereColor}
+				hideSphere={hideSphere}
+				mountainsPattern={mountainsPattern}
+				mountainsHeight={mountainsHeight}
+				mountainsSmoothness={mountainsSmoothness}
+				mountainsDistance={mountainsDistance}
+				responsive={responsive}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
 
-export const Synthwave = Interactive.withSchema({
+export const Synthwave = Interactive.create({
 	Component: SynthwaveInner,
 	componentName: '<Synthwave>',
-	componentIdentity: null,
 	schema: synthwaveSchema,
-	supportsEffects: false,
-}) as React.FC<SynthwaveProps>;
+});

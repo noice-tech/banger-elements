@@ -1,16 +1,12 @@
-import React, {forwardRef, useCallback, useId, useImperativeHandle, useRef} from 'react';
+import React, {useId} from 'react';
 import {
+	createEffect,
 	HtmlInCanvas,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
-	type HtmlInCanvasOnInit,
-	type HtmlInCanvasOnPaint,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 // Faithful wrapper adaptation of banger.show's current layered VHS shader.
@@ -27,13 +23,13 @@ type VhsOptions = {
 	readonly period?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type VhsProps = InteractiveBaseProps & InteractiveTransformProps & VhsOptions;
+type VhsProps = InteractiveTransformProps & VhsOptions;
 type ResolvedVhsProps = Required<Omit<VhsOptions, 'children'>> & {
 	readonly children?: React.ReactNode;
 };
+type VhsEffectParams = Omit<ResolvedVhsProps, 'children'> & {readonly time: number};
 
 const vhsSchema = {
-	...Interactive.baseSchema,
 	width: {
 		type: 'number',
 		default: 1280,
@@ -106,7 +102,6 @@ const vhsSchema = {
 		description: 'Effect phase, independent of child media trim',
 		hiddenFromList: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -212,7 +207,6 @@ type VhsWebGlState = {
 	readonly vao: WebGLVertexArrayObject;
 	readonly buffer: WebGLBuffer;
 	readonly texture: WebGLTexture;
-	readonly textureSize: {width: number; height: number};
 	readonly uniforms: Record<string, WebGLUniformLocation | null>;
 };
 
@@ -229,7 +223,7 @@ function compileShader(gl: WebGL2RenderingContext, type: GLenum, source: string)
 	return shader;
 }
 
-function createVhsWebGl(canvas: OffscreenCanvas): VhsWebGlState {
+function createVhsWebGl(canvas: HTMLCanvasElement): VhsWebGlState {
 	const gl = canvas.getContext('webgl2', {premultipliedAlpha: true});
 	if (!gl) throw new Error('VHS requires WebGL2.');
 	const vertex = compileShader(gl, gl.VERTEX_SHADER, vertexShader);
@@ -276,7 +270,6 @@ function createVhsWebGl(canvas: OffscreenCanvas): VhsWebGlState {
 		vao,
 		buffer,
 		texture,
-		textureSize: {width: 0, height: 0},
 		uniforms: Object.fromEntries(names.map((name) => [name, gl.getUniformLocation(program, name)])),
 	};
 }
@@ -289,57 +282,34 @@ function cleanupVhsWebGl({gl, program, vao, buffer, texture}: VhsWebGlState) {
 }
 
 /**
- * Upload the captured children into the bound texture at `width` x `height`
- * pixels. The HTML-in-canvas API is experimental and its WebGL entry point has
- * changed between Chrome releases: 158+ copies into storage you allocate (and
- * its ElementImage no longer reports a size), 156-157 take (target, format,
- * image), and 149 takes the full texImage2D-style overload.
+ * Upload the effect source as premultiplied alpha, matching the context. The
+ * shaders sample with a top-left origin, which is how DOM-oriented canvases
+ * arrive (`flipSourceY` is true). Only sources that are already flipped for
+ * WebGL need to be flipped back.
  */
-function uploadElementImage(
-	gl: WebGL2RenderingContext,
-	size: {width: number; height: number},
-	elementImage: ElementImage,
-	width: number,
-	height: number,
-) {
-	if (typeof gl.texElementSubImage2D === 'function') {
-		if (size.width !== width || size.height !== height) {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-			size.width = width;
-			size.height = height;
-		}
-		gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, elementImage, {width, height});
-	} else if (gl.texElementImage2D.length === 3) {
-		(
-			gl.texElementImage2D as unknown as (
-				target: GLenum,
-				internalformat: GLenum,
-				image: ElementImage,
-			) => void
-		)(gl.TEXTURE_2D, gl.RGBA8, elementImage);
-	} else {
-		gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, elementImage);
-	}
+function uploadSource(gl: WebGL2RenderingContext, source: TexImageSource, flipSourceY: boolean) {
+	gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !flipSourceY);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 }
 
 function drawVhsWebGl(
 	state: VhsWebGlState,
-	elementImage: ElementImage,
-	props: Omit<ResolvedVhsProps, 'children'>,
-	time: number,
-	pixelDensity: number,
+	source: TexImageSource,
+	props: VhsEffectParams,
+	width: number,
+	height: number,
+	flipSourceY: boolean,
 ) {
 	const {gl, uniforms} = state;
-	const width = Math.ceil(props.width * pixelDensity);
-	const height = Math.ceil(props.height * pixelDensity);
 	gl.viewport(0, 0, width, height);
 	gl.useProgram(state.program);
 	gl.bindVertexArray(state.vao);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, state.texture);
-	uploadElementImage(gl, state.textureSize, elementImage, width, height);
+	uploadSource(gl, source, flipSourceY);
 	gl.uniform1i(uniforms.inputTexture, 0);
-	gl.uniform1f(uniforms.globalTime, time);
+	gl.uniform1f(uniforms.globalTime, props.time);
 	gl.uniform1f(
 		uniforms.horizontalDistortion,
 		bounded(props.horizontalDistortion, 0.005, 0.07, 0.02),
@@ -352,39 +322,33 @@ function drawVhsWebGl(
 	if (gl.getError() !== gl.NO_ERROR) throw new Error('VHS failed to draw its WebGL frame.');
 }
 
-function VhsCanvas(props: ResolvedVhsProps) {
+const vhsEffect = createEffect<VhsEffectParams, VhsWebGlState>({
+	type: 'dev.banger-elements.vhs',
+	label: 'vhs()',
+	documentationLink: 'https://banger-elements.dev/vhs',
+	backend: 'webgl2',
+	calculateKey: (params) => `vhs-${JSON.stringify(params)}`,
+	setup: createVhsWebGl,
+	apply: ({source, width, height, params, state, flipSourceY}) =>
+		drawVhsWebGl(state, source as TexImageSource, params, width, height, flipSourceY),
+	cleanup: cleanupVhsWebGl,
+	// The Element's own Interactive.create() schema already exposes these controls.
+	schema: {},
+	validateParams: () => undefined,
+});
+
+function VhsCanvas({children, ...params}: ResolvedVhsProps) {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();
-	const state = useRef<VhsWebGlState | null>(null);
-	const onInit = useCallback<HtmlInCanvasOnInit>(({canvas}) => {
-		state.current = createVhsWebGl(canvas);
-		return () => {
-			if (state.current) cleanupVhsWebGl(state.current);
-			state.current = null;
-		};
-	}, []);
-	const onPaint = useCallback<HtmlInCanvasOnPaint>(
-		({elementImage, pixelDensity}) => {
-			if (!state.current) throw new Error('VHS WebGL was not initialized.');
-			drawVhsWebGl(
-				state.current,
-				elementImage,
-				props,
-				frame / fps + bounded(props.timeOffsetInSeconds, -86400, 86400, 0),
-				pixelDensity,
-			);
-		},
-		[frame, fps, props],
-	);
+	const time = frame / fps + bounded(params.timeOffsetInSeconds, -86400, 86400, 0);
 	return (
 		<HtmlInCanvas
-			width={props.width}
-			height={props.height}
+			width={params.width}
+			height={params.height}
 			showInTimeline={false}
-			onInit={onInit}
-			onPaint={onPaint}
+			effects={[vhsEffect({...params, time})]}
 		>
-			{props.children}
+			{children}
 		</HtmlInCanvas>
 	);
 }
@@ -518,74 +482,51 @@ function VhsContent(props: ResolvedVhsProps) {
 	return HtmlInCanvas.isSupported() ? <VhsCanvas {...props} /> : <VhsFallback {...props} />;
 }
 
-const VhsInner = forwardRef<
-	HTMLDivElement,
-	VhsProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			children,
-			width = vhsSchema.width.default,
-			height = vhsSchema.height.default,
-			strength = vhsSchema.strength.default,
-			horizontalDistortion = vhsSchema.horizontalDistortion.default,
-			glitch = vhsSchema.glitch.default,
-			line = vhsSchema.line.default,
-			period = vhsSchema.period.default,
-			timeOffsetInSeconds = vhsSchema.timeOffsetInSeconds.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'VHS'}
-				outlineRef={outlineRef}
+const VhsInner: React.FC<VhsProps> = ({
+	children,
+	width = vhsSchema.width.default,
+	height = vhsSchema.height.default,
+	strength = vhsSchema.strength.default,
+	horizontalDistortion = vhsSchema.horizontalDistortion.default,
+	glitch = vhsSchema.glitch.default,
+	line = vhsSchema.line.default,
+	period = vhsSchema.period.default,
+	timeOffsetInSeconds = vhsSchema.timeOffsetInSeconds.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				// Avoid isolation here: with overflow: hidden it makes Chrome 158 drop the
+				// HtmlInCanvas paint record during renders.
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<VhsContent
+				width={drawingWidth}
+				height={drawingHeight}
+				strength={strength}
+				horizontalDistortion={horizontalDistortion}
+				glitch={glitch}
+				line={line}
+				period={period}
+				timeOffsetInSeconds={timeOffsetInSeconds}
 			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						isolation: 'isolate',
-						...style,
-					}}
-				>
-					<VhsContent
-						width={drawingWidth}
-						height={drawingHeight}
-						strength={strength}
-						horizontalDistortion={horizontalDistortion}
-						glitch={glitch}
-						line={line}
-						period={period}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					>
-						{children}
-					</VhsContent>
-				</div>
-			</Sequence>
-		);
-	},
-);
+				{children}
+			</VhsContent>
+		</div>
+	);
+};
 
-export const Vhs = Interactive.withSchema({
+export const Vhs = Interactive.create({
 	Component: VhsInner,
 	componentName: '<Vhs>',
-	componentIdentity: null,
 	schema: vhsSchema,
-	supportsEffects: false,
-}) as React.FC<VhsProps>;
+});

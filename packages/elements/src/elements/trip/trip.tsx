@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -41,12 +31,12 @@ type TripOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type TripProps = InteractiveBaseProps & InteractiveTransformProps & TripOptions;
+type TripProps = InteractiveTransformProps & TripOptions;
 
 const tripSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -150,7 +140,6 @@ const tripSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -706,81 +695,57 @@ const TripContent: React.FC<Required<TripOptions>> = (props) => {
 	);
 };
 
-const TripInner = forwardRef<
-	HTMLDivElement,
-	TripProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			width = tripSchema.width.default,
-			height = tripSchema.height.default,
-			audioSrc = tripSchema.audioSrc.default,
-			audioOffsetInSeconds = tripSchema.audioOffsetInSeconds.default,
-			playAudio = tripSchema.playAudio.default,
-			inputGainDb = tripSchema.inputGainDb.default,
-			baseColor = tripSchema.baseColor.default,
-			intensifyColor = tripSchema.intensifyColor.default,
-			thickness = tripSchema.thickness.default,
-			pattern = tripSchema.pattern.default,
-			intensity = tripSchema.intensity.default,
-			bpm = tripSchema.bpm.default,
-			timeOffsetInSeconds = tripSchema.timeOffsetInSeconds.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Trip'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<TripContent
-						key={audioSrc}
-						width={drawingWidth}
-						height={drawingHeight}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						baseColor={baseColor}
-						intensifyColor={intensifyColor}
-						thickness={thickness}
-						pattern={pattern}
-						intensity={intensity}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const TripInner: React.FC<TripProps> = ({
+	width = tripSchema.width.default,
+	height = tripSchema.height.default,
+	audioSrc = tripSchema.audioSrc.default,
+	audioOffsetInSeconds = tripSchema.audioOffsetInSeconds.default,
+	playAudio = tripSchema.playAudio.default,
+	inputGainDb = tripSchema.inputGainDb.default,
+	baseColor = tripSchema.baseColor.default,
+	intensifyColor = tripSchema.intensifyColor.default,
+	thickness = tripSchema.thickness.default,
+	pattern = tripSchema.pattern.default,
+	intensity = tripSchema.intensity.default,
+	bpm = tripSchema.bpm.default,
+	timeOffsetInSeconds = tripSchema.timeOffsetInSeconds.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<TripContent
+				key={audioSrc}
+				width={drawingWidth}
+				height={drawingHeight}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				baseColor={baseColor}
+				intensifyColor={intensifyColor}
+				thickness={thickness}
+				pattern={pattern}
+				intensity={intensity}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+			/>
+		</div>
+	);
+};
 
-export const Trip = Interactive.withSchema({
+export const Trip = Interactive.create({
 	Component: TripInner,
 	componentName: '<Trip>',
-	componentIdentity: null,
 	schema: tripSchema,
-	supportsEffects: false,
-}) as React.FC<TripProps>;
+});

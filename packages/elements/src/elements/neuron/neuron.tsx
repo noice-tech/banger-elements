@@ -1,24 +1,14 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type NeuronOptions = {
@@ -41,11 +31,11 @@ type NeuronOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type NeuronProps = InteractiveBaseProps & InteractiveTransformProps & NeuronOptions;
+type NeuronProps = InteractiveTransformProps & NeuronOptions;
 const neuronSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -180,7 +170,6 @@ const neuronSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -1171,90 +1160,66 @@ const NeuronContent: React.FC<Required<NeuronOptions> & {width: number; height: 
 	);
 };
 
-const NeuronInner = forwardRef<
-	HTMLDivElement,
-	NeuronProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = neuronSchema.audioSrc.default,
-			audioOffsetInSeconds = neuronSchema.audioOffsetInSeconds.default,
-			playAudio = neuronSchema.playAudio.default,
-			inputGainDb = neuronSchema.inputGainDb.default,
-			color1 = neuronSchema.color1.default,
-			color2 = neuronSchema.color2.default,
-			glowColor = neuronSchema.glowColor.default,
-			speed = neuronSchema.speed.default,
-			scale = neuronSchema.scale.default,
-			thickness = neuronSchema.thickness.default,
-			reflection = neuronSchema.reflection.default,
-			fog = neuronSchema.fog.default,
-			responsive = neuronSchema.responsive.default,
-			cameraMovement = neuronSchema.cameraMovement.default,
-			bpm = neuronSchema.bpm.default,
-			timeOffsetInSeconds = neuronSchema.timeOffsetInSeconds.default,
-			width = neuronSchema.width.default,
-			height = neuronSchema.height.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Neuron'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<NeuronContent
-						key={audioSrc}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						color1={color1}
-						color2={color2}
-						glowColor={glowColor}
-						speed={speed}
-						scale={scale}
-						thickness={thickness}
-						reflection={reflection}
-						fog={fog}
-						responsive={responsive}
-						cameraMovement={cameraMovement}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-						width={drawingWidth}
-						height={drawingHeight}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Neuron = Interactive.withSchema({
+const NeuronInner: React.FC<NeuronProps> = ({
+	audioSrc = neuronSchema.audioSrc.default,
+	audioOffsetInSeconds = neuronSchema.audioOffsetInSeconds.default,
+	playAudio = neuronSchema.playAudio.default,
+	inputGainDb = neuronSchema.inputGainDb.default,
+	color1 = neuronSchema.color1.default,
+	color2 = neuronSchema.color2.default,
+	glowColor = neuronSchema.glowColor.default,
+	speed = neuronSchema.speed.default,
+	scale = neuronSchema.scale.default,
+	thickness = neuronSchema.thickness.default,
+	reflection = neuronSchema.reflection.default,
+	fog = neuronSchema.fog.default,
+	responsive = neuronSchema.responsive.default,
+	cameraMovement = neuronSchema.cameraMovement.default,
+	bpm = neuronSchema.bpm.default,
+	timeOffsetInSeconds = neuronSchema.timeOffsetInSeconds.default,
+	width = neuronSchema.width.default,
+	height = neuronSchema.height.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<NeuronContent
+				key={audioSrc}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				color1={color1}
+				color2={color2}
+				glowColor={glowColor}
+				speed={speed}
+				scale={scale}
+				thickness={thickness}
+				reflection={reflection}
+				fog={fog}
+				responsive={responsive}
+				cameraMovement={cameraMovement}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+				width={drawingWidth}
+				height={drawingHeight}
+			/>
+		</div>
+	);
+};
+export const Neuron = Interactive.create({
 	Component: NeuronInner,
 	componentName: '<Neuron>',
-	componentIdentity: null,
 	schema: neuronSchema,
-	supportsEffects: false,
-}) as React.FC<NeuronProps>;
+});

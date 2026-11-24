@@ -1,24 +1,14 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type CathedralOptions = {
@@ -40,11 +30,11 @@ type CathedralOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type CathedralProps = InteractiveBaseProps & InteractiveTransformProps & CathedralOptions;
+type CathedralProps = InteractiveTransformProps & CathedralOptions;
 const cathedralSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -162,7 +152,6 @@ const cathedralSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -1248,88 +1237,64 @@ const CathedralContent: React.FC<Required<CathedralOptions> & {width: number; he
 	);
 };
 
-const CathedralInner = forwardRef<
-	HTMLDivElement,
-	CathedralProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = cathedralSchema.audioSrc.default,
-			audioOffsetInSeconds = cathedralSchema.audioOffsetInSeconds.default,
-			playAudio = cathedralSchema.playAudio.default,
-			inputGainDb = cathedralSchema.inputGainDb.default,
-			stoneColor = cathedralSchema.stoneColor.default,
-			glassColor1 = cathedralSchema.glassColor1.default,
-			glassColor2 = cathedralSchema.glassColor2.default,
-			lightColor = cathedralSchema.lightColor.default,
-			speed = cathedralSchema.speed.default,
-			columnScale = cathedralSchema.columnScale.default,
-			glassGlow = cathedralSchema.glassGlow.default,
-			responsive = cathedralSchema.responsive.default,
-			fog = cathedralSchema.fog.default,
-			bpm = cathedralSchema.bpm.default,
-			timeOffsetInSeconds = cathedralSchema.timeOffsetInSeconds.default,
-			width = cathedralSchema.width.default,
-			height = cathedralSchema.height.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Cathedral'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<CathedralContent
-						key={audioSrc}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						stoneColor={stoneColor}
-						glassColor1={glassColor1}
-						glassColor2={glassColor2}
-						lightColor={lightColor}
-						speed={speed}
-						columnScale={columnScale}
-						glassGlow={glassGlow}
-						responsive={responsive}
-						fog={fog}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-						width={drawingWidth}
-						height={drawingHeight}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Cathedral = Interactive.withSchema({
+const CathedralInner: React.FC<CathedralProps> = ({
+	audioSrc = cathedralSchema.audioSrc.default,
+	audioOffsetInSeconds = cathedralSchema.audioOffsetInSeconds.default,
+	playAudio = cathedralSchema.playAudio.default,
+	inputGainDb = cathedralSchema.inputGainDb.default,
+	stoneColor = cathedralSchema.stoneColor.default,
+	glassColor1 = cathedralSchema.glassColor1.default,
+	glassColor2 = cathedralSchema.glassColor2.default,
+	lightColor = cathedralSchema.lightColor.default,
+	speed = cathedralSchema.speed.default,
+	columnScale = cathedralSchema.columnScale.default,
+	glassGlow = cathedralSchema.glassGlow.default,
+	responsive = cathedralSchema.responsive.default,
+	fog = cathedralSchema.fog.default,
+	bpm = cathedralSchema.bpm.default,
+	timeOffsetInSeconds = cathedralSchema.timeOffsetInSeconds.default,
+	width = cathedralSchema.width.default,
+	height = cathedralSchema.height.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<CathedralContent
+				key={audioSrc}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				stoneColor={stoneColor}
+				glassColor1={glassColor1}
+				glassColor2={glassColor2}
+				lightColor={lightColor}
+				speed={speed}
+				columnScale={columnScale}
+				glassGlow={glassGlow}
+				responsive={responsive}
+				fog={fog}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+				width={drawingWidth}
+				height={drawingHeight}
+			/>
+		</div>
+	);
+};
+export const Cathedral = Interactive.create({
 	Component: CathedralInner,
 	componentName: '<Cathedral>',
-	componentIdentity: null,
 	schema: cathedralSchema,
-	supportsEffects: false,
-}) as React.FC<CathedralProps>;
+});

@@ -6,8 +6,24 @@ import {
 	installInStudio,
 	isInsideStudio,
 	setStudioDragData,
+	type AddElementLibraryToStudioErrorCode,
+	type InstallInStudioErrorCode,
 	type StudioElementPayload,
 } from '@remotion/studio-protocol';
+
+// Next steps for the failures Remotion's library guide asks libraries to explain.
+const nextStep: Partial<
+	Record<InstallInStudioErrorCode | AddElementLibraryToStudioErrorCode, string>
+> = {
+	'no-compatible-studio': 'Start Remotion Studio on a port between 3000 and 3009, then try again.',
+	'no-installable-target': 'Focus the Remotion Studio tab to install into, then try again.',
+	'no-configurable-target': 'Focus the Remotion Studio tab to add the library to, then try again.',
+	'no-config-file': 'Add a remotion.config.ts file to your project, then try again.',
+	'studio-upgrade-required':
+		'Upgrade Remotion in your project with npx remotion upgrade, then try again.',
+	'loopback-network-permission-denied':
+		'Allow local network access for this site in your browser, then try again.',
+};
 
 export default function StudioActions({
 	slug,
@@ -59,7 +75,7 @@ export default function StudioActions({
 			setMessage(
 				result.success
 					? `Awaiting confirmation in ${result.target.studioOrigin}. Review and approve there; nothing is installed yet.${library ? ' After approval, restart Studio to load the catalog.' : ''}`
-					: `${result.code}: ${result.message} Start a compatible Studio on ports 3000–3009 and try again.`,
+					: `${result.message} ${nextStep[result.code] ?? 'Try again, or download the TSX instead.'}`,
 			);
 		} catch (error) {
 			setMessage(error instanceof Error ? error.message : String(error));

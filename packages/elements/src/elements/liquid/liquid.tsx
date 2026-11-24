@@ -1,24 +1,14 @@
 import {Audio} from '@remotion/media';
 import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useId,
-	useImperativeHandle,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-} from 'react';
+import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type LiquidOptions = {
@@ -40,11 +30,11 @@ type LiquidOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type LiquidProps = InteractiveBaseProps & InteractiveTransformProps & LiquidOptions;
+type LiquidProps = InteractiveTransformProps & LiquidOptions;
 const liquidSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -170,7 +160,6 @@ const liquidSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 const decodeWindowSeconds = 20;
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -1125,88 +1114,64 @@ const LiquidContent: React.FC<Required<LiquidOptions> & {width: number; height: 
 	);
 };
 
-const LiquidInner = forwardRef<
-	HTMLDivElement,
-	LiquidProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			audioSrc = liquidSchema.audioSrc.default,
-			audioOffsetInSeconds = liquidSchema.audioOffsetInSeconds.default,
-			playAudio = liquidSchema.playAudio.default,
-			inputGainDb = liquidSchema.inputGainDb.default,
-			color1 = liquidSchema.color1.default,
-			color2 = liquidSchema.color2.default,
-			glowColor = liquidSchema.glowColor.default,
-			speed = liquidSchema.speed.default,
-			swirl = liquidSchema.swirl.default,
-			distortion = liquidSchema.distortion.default,
-			tunnelRadius = liquidSchema.tunnelRadius.default,
-			responsive = liquidSchema.responsive.default,
-			fog = liquidSchema.fog.default,
-			bpm = liquidSchema.bpm.default,
-			timeOffsetInSeconds = liquidSchema.timeOffsetInSeconds.default,
-			width = liquidSchema.width.default,
-			height = liquidSchema.height.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
-			drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Liquid'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<LiquidContent
-						key={audioSrc}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						color1={color1}
-						color2={color2}
-						glowColor={glowColor}
-						speed={speed}
-						swirl={swirl}
-						distortion={distortion}
-						tunnelRadius={tunnelRadius}
-						responsive={responsive}
-						fog={fog}
-						bpm={bpm}
-						timeOffsetInSeconds={timeOffsetInSeconds}
-						width={drawingWidth}
-						height={drawingHeight}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
-export const Liquid = Interactive.withSchema({
+const LiquidInner: React.FC<LiquidProps> = ({
+	audioSrc = liquidSchema.audioSrc.default,
+	audioOffsetInSeconds = liquidSchema.audioOffsetInSeconds.default,
+	playAudio = liquidSchema.playAudio.default,
+	inputGainDb = liquidSchema.inputGainDb.default,
+	color1 = liquidSchema.color1.default,
+	color2 = liquidSchema.color2.default,
+	glowColor = liquidSchema.glowColor.default,
+	speed = liquidSchema.speed.default,
+	swirl = liquidSchema.swirl.default,
+	distortion = liquidSchema.distortion.default,
+	tunnelRadius = liquidSchema.tunnelRadius.default,
+	responsive = liquidSchema.responsive.default,
+	fog = liquidSchema.fog.default,
+	bpm = liquidSchema.bpm.default,
+	timeOffsetInSeconds = liquidSchema.timeOffsetInSeconds.default,
+	width = liquidSchema.width.default,
+	height = liquidSchema.height.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
+		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<LiquidContent
+				key={audioSrc}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				color1={color1}
+				color2={color2}
+				glowColor={glowColor}
+				speed={speed}
+				swirl={swirl}
+				distortion={distortion}
+				tunnelRadius={tunnelRadius}
+				responsive={responsive}
+				fog={fog}
+				bpm={bpm}
+				timeOffsetInSeconds={timeOffsetInSeconds}
+				width={drawingWidth}
+				height={drawingHeight}
+			/>
+		</div>
+	);
+};
+export const Liquid = Interactive.create({
 	Component: LiquidInner,
 	componentName: '<Liquid>',
-	componentIdentity: null,
 	schema: liquidSchema,
-	supportsEffects: false,
-}) as React.FC<LiquidProps>;
+});

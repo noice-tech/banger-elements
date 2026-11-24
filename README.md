@@ -25,7 +25,9 @@ The [examples page](https://banger-elements.dev/examples) has four finished comp
 
 To get the whole collection in Studio's Browse Elements panel, use Add Library to Studio and restart Studio.
 
-Downloaded files import only React, `remotion`, `@remotion/media` and `@remotion/media-utils`. WebGL elements may need `--gl=angle` when you render. The [getting started guide](apps/site/src/content/docs/getting-started.mdx) covers audio setup, timing, effects and rendering.
+You can also install an element from its page URL with `npx remotion elements use https://banger-elements.dev/halo.html`.
+
+Elements need Remotion 4.0.536 or later. Downloaded files import only React, `remotion`, `@remotion/media` and `@remotion/media-utils`. WebGL elements may need `--gl=angle` when you render, or `--gl=swangle` on a machine without a GPU. The [getting started guide](apps/site/src/content/docs/getting-started.mdx) covers audio setup, timing, effects and rendering.
 
 ## Run locally
 

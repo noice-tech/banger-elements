@@ -21,11 +21,11 @@ Studio can't open browser file URLs, so a local audio or image file needs a host
 
 Keep the Studio you want to use open and focused when you send the request. If the site still can't find it, check that:
 
-- Studio runs a compatible Remotion version. We test with Remotion 4.0.532, React 19.3.1 and matching `@remotion/*` versions.
+- Studio runs Remotion 4.0.536 or later, which supports `Interactive.create()`. We test with Remotion 4.0.546, React 19.3.1 and matching `@remotion/*` versions.
 - Studio runs on a port between 3000 and 3009.
 - Your browser allows local network access when it asks.
 
-If the connection still fails, [download the source](#download-instead) instead.
+If the connection still fails, [install from the command line](#install-from-the-command-line) or [download the source](#download-instead).
 
 ## Install from the command line
 
@@ -35,7 +35,7 @@ With Remotion **4.0.542 or newer**, run [`npx remotion elements use`](https://ww
 npx remotion elements use https://banger-elements.dev/waveform --composition MyComposition
 ```
 
-Replace the URL with any Element page and `MyComposition` with your composition ID. The CLI shows what it will change before asking for confirmation. It installs the Element with its original defaults, not settings from the website preview.
+Replace the URL with any Element page and `MyComposition` with your composition ID. The CLI shows what it will change before asking for confirmation. Add `--dry-run` to see the plan without writing any files. The CLI installs the Element with its original defaults, not settings from the website preview.
 
 ## Add the collection to Studio
 
@@ -130,6 +130,8 @@ npx remotion render src/index.ts MyComposition out/video.mp4 --gl=angle
 ```
 
 Replace the entry point, composition ID and output path with your own. The flag switches Chromium to its ANGLE graphics backend. Waveform and Oscilloscope use SVG only and don't need it.
+
+On a machine without a usable GPU, such as CI, a server or WSL, use `--gl=swangle` instead. It renders in software, so it is slower.
 
 ## Renderer compatibility
 

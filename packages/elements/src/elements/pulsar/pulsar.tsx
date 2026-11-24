@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -41,12 +31,12 @@ type PulsarOptions = {
 	readonly volume?: number;
 };
 
-type PulsarProps = InteractiveBaseProps & InteractiveTransformProps & PulsarOptions;
+type PulsarProps = InteractiveTransformProps & PulsarOptions;
 
 const pulsarSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
 		keyframable: false,
@@ -141,7 +131,6 @@ const pulsarSchema = {
 		description: 'Volume size',
 		hiddenFromList: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -680,81 +669,55 @@ const PulsarContent: React.FC<Required<PulsarOptions>> = (props) => {
 	);
 };
 
-const PulsarInner = forwardRef<
-	HTMLDivElement,
-	PulsarProps & {
-		readonly controls: SequenceControls | undefined;
-	}
->(
-	(
-		{
-			width = pulsarSchema.width.default,
-			height = pulsarSchema.height.default,
-			audioSrc = pulsarSchema.audioSrc.default,
-			audioOffsetInSeconds = pulsarSchema.audioOffsetInSeconds.default,
-			playAudio = pulsarSchema.playAudio.default,
-			inputGainDb = pulsarSchema.inputGainDb.default,
-			intensity = pulsarSchema.intensity.default,
-			startColor = pulsarSchema.startColor.default,
-			endColor = pulsarSchema.endColor.default,
-			colorMode = pulsarSchema.colorMode.default,
-			density = pulsarSchema.density.default,
-			pattern = pulsarSchema.pattern.default,
-			volume = pulsarSchema.volume.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Pulsar'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width,
-						height,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<PulsarContent
-						key={audioSrc}
-						width={width}
-						height={height}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						intensity={intensity}
-						startColor={startColor}
-						endColor={endColor}
-						colorMode={colorMode}
-						density={density}
-						pattern={pattern}
-						volume={volume}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const PulsarInner: React.FC<PulsarProps> = ({
+	width = pulsarSchema.width.default,
+	height = pulsarSchema.height.default,
+	audioSrc = pulsarSchema.audioSrc.default,
+	audioOffsetInSeconds = pulsarSchema.audioOffsetInSeconds.default,
+	playAudio = pulsarSchema.playAudio.default,
+	inputGainDb = pulsarSchema.inputGainDb.default,
+	intensity = pulsarSchema.intensity.default,
+	startColor = pulsarSchema.startColor.default,
+	endColor = pulsarSchema.endColor.default,
+	colorMode = pulsarSchema.colorMode.default,
+	density = pulsarSchema.density.default,
+	pattern = pulsarSchema.pattern.default,
+	volume = pulsarSchema.volume.default,
+	style,
+}) => {
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width,
+				height,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<PulsarContent
+				key={audioSrc}
+				width={width}
+				height={height}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				intensity={intensity}
+				startColor={startColor}
+				endColor={endColor}
+				colorMode={colorMode}
+				density={density}
+				pattern={pattern}
+				volume={volume}
+			/>
+		</div>
+	);
+};
 
-export const Pulsar = Interactive.withSchema({
+export const Pulsar = Interactive.create({
 	Component: PulsarInner,
 	componentName: '<Pulsar>',
-	componentIdentity: null,
 	schema: pulsarSchema,
-	supportsEffects: false,
-}) as React.FC<PulsarProps>;
+});

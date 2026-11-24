@@ -4,24 +4,14 @@ import {
 	visualizeAudio,
 	type MediaUtilsAudioData,
 } from '@remotion/media-utils';
-import React, {
-	forwardRef,
-	useRef,
-	useImperativeHandle,
-	useId,
-	useMemo,
-	useLayoutEffect,
-} from 'react';
+import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	cancelRender,
 	Interactive,
-	Sequence,
 	useCurrentFrame,
 	useVideoConfig,
 	useDelayRender,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
-	type SequenceControls,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -48,7 +38,7 @@ type SpectreOptions = {
 	readonly spectreVariant?: 'bars' | 'segmented';
 };
 
-type SpectreProps = InteractiveBaseProps & InteractiveTransformProps & SpectreOptions;
+type SpectreProps = InteractiveTransformProps & SpectreOptions;
 
 const DEFAULT_AUDIO_SRC = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3';
 const DEFAULT_WIDTH = 1280;
@@ -66,9 +56,9 @@ const DEFAULT_BOTTOM = false;
 const DEFAULT_VARIANT = 'bars';
 
 const spectreSchema = {
-	...Interactive.baseSchema,
 	audioSrc: {
 		type: 'asset',
+		assetType: 'audio',
 		default: DEFAULT_AUDIO_SRC,
 		description: 'Audio source',
 		keyframable: false,
@@ -182,7 +172,6 @@ const spectreSchema = {
 		description: 'Intensity',
 		hiddenFromList: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 const decodeWindowSeconds = 20;
@@ -813,95 +802,69 @@ const SpectreContent: React.FC<Required<SpectreOptions>> = (props) => {
 	);
 };
 
-const SpectreInner = forwardRef<
-	HTMLDivElement,
-	SpectreProps & {
-		readonly controls: SequenceControls | undefined;
-	}
->(
-	(
-		{
-			width = DEFAULT_WIDTH,
-			height = DEFAULT_HEIGHT,
-			audioSrc = DEFAULT_AUDIO_SRC,
-			audioOffsetInSeconds = DEFAULT_AUDIO_OFFSET,
-			playAudio = DEFAULT_PLAY_AUDIO,
-			inputGainDb = DEFAULT_INPUT_GAIN_DB,
-			intensity = DEFAULT_INTENSITY,
-			startColor = DEFAULT_START_COLOR,
-			endColor = DEFAULT_END_COLOR,
-			colorMode = DEFAULT_COLOR_MODE,
-			count = DEFAULT_COUNT,
-			barWidth = DEFAULT_BAR_WIDTH,
-			bottom = DEFAULT_BOTTOM,
-			spectreVariant = DEFAULT_VARIANT,
-			middleColor = spectreSchema.middleColor.default,
-			rainbowSpeed = spectreSchema.rainbowSpeed.default,
-			saturation = spectreSchema.saturation.default,
-			brightness = spectreSchema.brightness.default,
-			gradientAngle = spectreSchema.gradientAngle.default,
-			segmentGap = spectreSchema.segmentGap.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Spectre'}
-				outlineRef={outlineRef}
-			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width,
-						height,
-						overflow: 'hidden',
-						...style,
-					}}
-				>
-					<SpectreContent
-						key={audioSrc}
-						width={width}
-						height={height}
-						audioSrc={audioSrc}
-						audioOffsetInSeconds={audioOffsetInSeconds}
-						playAudio={playAudio}
-						inputGainDb={inputGainDb}
-						intensity={intensity}
-						startColor={startColor}
-						endColor={endColor}
-						colorMode={colorMode}
-						count={count}
-						barWidth={barWidth}
-						bottom={bottom}
-						spectreVariant={spectreVariant}
-						middleColor={middleColor}
-						rainbowSpeed={rainbowSpeed}
-						saturation={saturation}
-						brightness={brightness}
-						gradientAngle={gradientAngle}
-						segmentGap={segmentGap}
-					/>
-				</div>
-			</Sequence>
-		);
-	},
-);
+const SpectreInner: React.FC<SpectreProps> = ({
+	width = DEFAULT_WIDTH,
+	height = DEFAULT_HEIGHT,
+	audioSrc = DEFAULT_AUDIO_SRC,
+	audioOffsetInSeconds = DEFAULT_AUDIO_OFFSET,
+	playAudio = DEFAULT_PLAY_AUDIO,
+	inputGainDb = DEFAULT_INPUT_GAIN_DB,
+	intensity = DEFAULT_INTENSITY,
+	startColor = DEFAULT_START_COLOR,
+	endColor = DEFAULT_END_COLOR,
+	colorMode = DEFAULT_COLOR_MODE,
+	count = DEFAULT_COUNT,
+	barWidth = DEFAULT_BAR_WIDTH,
+	bottom = DEFAULT_BOTTOM,
+	spectreVariant = DEFAULT_VARIANT,
+	middleColor = spectreSchema.middleColor.default,
+	rainbowSpeed = spectreSchema.rainbowSpeed.default,
+	saturation = spectreSchema.saturation.default,
+	brightness = spectreSchema.brightness.default,
+	gradientAngle = spectreSchema.gradientAngle.default,
+	segmentGap = spectreSchema.segmentGap.default,
+	style,
+}) => {
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width,
+				height,
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<SpectreContent
+				key={audioSrc}
+				width={width}
+				height={height}
+				audioSrc={audioSrc}
+				audioOffsetInSeconds={audioOffsetInSeconds}
+				playAudio={playAudio}
+				inputGainDb={inputGainDb}
+				intensity={intensity}
+				startColor={startColor}
+				endColor={endColor}
+				colorMode={colorMode}
+				count={count}
+				barWidth={barWidth}
+				bottom={bottom}
+				spectreVariant={spectreVariant}
+				middleColor={middleColor}
+				rainbowSpeed={rainbowSpeed}
+				saturation={saturation}
+				brightness={brightness}
+				gradientAngle={gradientAngle}
+				segmentGap={segmentGap}
+			/>
+		</div>
+	);
+};
 
-export const Spectre = Interactive.withSchema({
+export const Spectre = Interactive.create({
 	Component: SpectreInner,
 	componentName: '<Spectre>',
-	componentIdentity: null,
 	schema: spectreSchema,
-	supportsEffects: false,
-}) as React.FC<SpectreProps>;
+});

@@ -1,14 +1,10 @@
-import React, {forwardRef, useCallback, useId, useImperativeHandle, useMemo, useRef} from 'react';
+import React, {useId, useMemo} from 'react';
 import {
+	createEffect,
 	HtmlInCanvas,
 	Interactive,
-	Sequence,
-	type HtmlInCanvasOnInit,
-	type HtmlInCanvasOnPaint,
-	type InteractiveBaseProps,
 	type InteractiveTransformProps,
 	type InteractivitySchema,
-	type SequenceControls,
 } from 'remotion';
 
 type FisheyeOptions = {
@@ -18,13 +14,13 @@ type FisheyeOptions = {
 	readonly strength?: number;
 	readonly perspectiveFactor?: number;
 };
-type FisheyeProps = InteractiveBaseProps & InteractiveTransformProps & FisheyeOptions;
+type FisheyeProps = InteractiveTransformProps & FisheyeOptions;
 type ResolvedFisheyeProps = Required<Omit<FisheyeOptions, 'children'>> & {
 	readonly children?: React.ReactNode;
 };
+type FisheyeEffectParams = Omit<ResolvedFisheyeProps, 'children'>;
 
 const fisheyeSchema = {
-	...Interactive.baseSchema,
 	width: {
 		type: 'number',
 		default: 1280,
@@ -61,7 +57,6 @@ const fisheyeSchema = {
 		description: 'Perspective compensation',
 		hiddenFromList: false,
 	},
-	...Interactive.transformSchema,
 } as const satisfies InteractivitySchema;
 
 function bounded(value: number, min: number, max: number, fallback: number) {
@@ -107,7 +102,6 @@ type FisheyeWebGlState = {
 	readonly vao: WebGLVertexArrayObject;
 	readonly buffer: WebGLBuffer;
 	readonly texture: WebGLTexture;
-	readonly textureSize: {width: number; height: number};
 	readonly uniforms: Record<string, WebGLUniformLocation | null>;
 };
 
@@ -124,7 +118,7 @@ function compileShader(gl: WebGL2RenderingContext, type: GLenum, source: string)
 	return shader;
 }
 
-function createFisheyeWebGl(canvas: OffscreenCanvas): FisheyeWebGlState {
+function createFisheyeWebGl(canvas: HTMLCanvasElement): FisheyeWebGlState {
 	const gl = canvas.getContext('webgl2', {premultipliedAlpha: true});
 	if (!gl) throw new Error('Fisheye requires WebGL2.');
 	const vertex = compileShader(gl, gl.VERTEX_SHADER, vertexShader);
@@ -163,7 +157,6 @@ function createFisheyeWebGl(canvas: OffscreenCanvas): FisheyeWebGlState {
 		vao,
 		buffer,
 		texture,
-		textureSize: {width: 0, height: 0},
 		uniforms: Object.fromEntries(names.map((name) => [name, gl.getUniformLocation(program, name)])),
 	};
 }
@@ -176,54 +169,32 @@ function cleanupFisheyeWebGl({gl, program, vao, buffer, texture}: FisheyeWebGlSt
 }
 
 /**
- * Upload the captured children into the bound texture at `width` x `height`
- * pixels. The HTML-in-canvas API is experimental and its WebGL entry point has
- * changed between Chrome releases: 158+ copies into storage you allocate (and
- * its ElementImage no longer reports a size), 156-157 take (target, format,
- * image), and 149 takes the full texImage2D-style overload.
+ * Upload the effect source as premultiplied alpha, matching the context. The
+ * shaders sample with a top-left origin, which is how DOM-oriented canvases
+ * arrive (`flipSourceY` is true). Only sources that are already flipped for
+ * WebGL need to be flipped back.
  */
-function uploadElementImage(
-	gl: WebGL2RenderingContext,
-	size: {width: number; height: number},
-	elementImage: ElementImage,
-	width: number,
-	height: number,
-) {
-	if (typeof gl.texElementSubImage2D === 'function') {
-		if (size.width !== width || size.height !== height) {
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-			size.width = width;
-			size.height = height;
-		}
-		gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, elementImage, {width, height});
-	} else if (gl.texElementImage2D.length === 3) {
-		(
-			gl.texElementImage2D as unknown as (
-				target: GLenum,
-				internalformat: GLenum,
-				image: ElementImage,
-			) => void
-		)(gl.TEXTURE_2D, gl.RGBA8, elementImage);
-	} else {
-		gl.texElementImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, elementImage);
-	}
+function uploadSource(gl: WebGL2RenderingContext, source: TexImageSource, flipSourceY: boolean) {
+	gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !flipSourceY);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
 }
 
 function drawFisheyeWebGl(
 	state: FisheyeWebGlState,
-	elementImage: ElementImage,
-	props: Omit<ResolvedFisheyeProps, 'children'>,
-	pixelDensity: number,
+	source: TexImageSource,
+	props: FisheyeEffectParams,
+	width: number,
+	height: number,
+	flipSourceY: boolean,
 ) {
 	const {gl, uniforms} = state;
-	const width = Math.ceil(props.width * pixelDensity);
-	const height = Math.ceil(props.height * pixelDensity);
 	gl.viewport(0, 0, width, height);
 	gl.useProgram(state.program);
 	gl.bindVertexArray(state.vao);
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, state.texture);
-	uploadElementImage(gl, state.textureSize, elementImage, width, height);
+	uploadSource(gl, source, flipSourceY);
 	gl.uniform1i(uniforms.inputTexture, 0);
 	gl.uniform1f(uniforms.strength, bounded(props.strength, 0, 2, 0.5));
 	gl.uniform1f(uniforms.perspectiveFactor, bounded(props.perspectiveFactor, 0, 1, 0.25));
@@ -231,31 +202,30 @@ function drawFisheyeWebGl(
 	if (gl.getError() !== gl.NO_ERROR) throw new Error('Fisheye failed to draw its WebGL frame.');
 }
 
-function FisheyeCanvas(props: ResolvedFisheyeProps) {
-	const state = useRef<FisheyeWebGlState | null>(null);
-	const onInit = useCallback<HtmlInCanvasOnInit>(({canvas}) => {
-		state.current = createFisheyeWebGl(canvas);
-		return () => {
-			if (state.current) cleanupFisheyeWebGl(state.current);
-			state.current = null;
-		};
-	}, []);
-	const onPaint = useCallback<HtmlInCanvasOnPaint>(
-		({elementImage, pixelDensity}) => {
-			if (!state.current) throw new Error('Fisheye WebGL was not initialized.');
-			drawFisheyeWebGl(state.current, elementImage, props, pixelDensity);
-		},
-		[props],
-	);
+const fisheyeEffect = createEffect<FisheyeEffectParams, FisheyeWebGlState>({
+	type: 'dev.banger-elements.fisheye',
+	label: 'fisheye()',
+	documentationLink: 'https://banger-elements.dev/fisheye',
+	backend: 'webgl2',
+	calculateKey: (params) => `fisheye-${JSON.stringify(params)}`,
+	setup: createFisheyeWebGl,
+	apply: ({source, width, height, params, state, flipSourceY}) =>
+		drawFisheyeWebGl(state, source as TexImageSource, params, width, height, flipSourceY),
+	cleanup: cleanupFisheyeWebGl,
+	// The Element's own Interactive.create() schema already exposes these controls.
+	schema: {},
+	validateParams: () => undefined,
+});
+
+function FisheyeCanvas({children, ...params}: ResolvedFisheyeProps) {
 	return (
 		<HtmlInCanvas
-			width={props.width}
-			height={props.height}
+			width={params.width}
+			height={params.height}
 			showInTimeline={false}
-			onInit={onInit}
-			onPaint={onPaint}
+			effects={[fisheyeEffect(params)]}
 		>
-			{props.children}
+			{children}
 		</HtmlInCanvas>
 	);
 }
@@ -402,66 +372,43 @@ function FisheyeContent(props: ResolvedFisheyeProps) {
 	);
 }
 
-const FisheyeInner = forwardRef<
-	HTMLDivElement,
-	FisheyeProps & {readonly controls: SequenceControls | undefined}
->(
-	(
-		{
-			children,
-			width = fisheyeSchema.width.default,
-			height = fisheyeSchema.height.default,
-			strength = fisheyeSchema.strength.default,
-			perspectiveFactor = fisheyeSchema.perspectiveFactor.default,
-			controls,
-			name,
-			style,
-			...sequenceProps
-		},
-		ref,
-	) => {
-		const outlineRef = useRef<HTMLDivElement>(null);
-		useImperativeHandle(ref, () => outlineRef.current as HTMLDivElement, []);
-		const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
-		const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
-		return (
-			<Sequence
-				layout="none"
-				{...sequenceProps}
-				controls={controls}
-				name={name ?? 'Fisheye'}
-				outlineRef={outlineRef}
+const FisheyeInner: React.FC<FisheyeProps> = ({
+	children,
+	width = fisheyeSchema.width.default,
+	height = fisheyeSchema.height.default,
+	strength = fisheyeSchema.strength.default,
+	perspectiveFactor = fisheyeSchema.perspectiveFactor.default,
+	style,
+}) => {
+	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
+	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
+	return (
+		<div
+			style={{
+				position: 'relative',
+				boxSizing: 'border-box',
+				width: drawingWidth,
+				height: drawingHeight,
+				// Avoid isolation here: with overflow: hidden it makes Chrome 158 drop the
+				// HtmlInCanvas paint record during renders.
+				overflow: 'hidden',
+				...style,
+			}}
+		>
+			<FisheyeContent
+				width={drawingWidth}
+				height={drawingHeight}
+				strength={strength}
+				perspectiveFactor={perspectiveFactor}
 			>
-				<div
-					ref={outlineRef}
-					style={{
-						position: 'relative',
-						boxSizing: 'border-box',
-						width: drawingWidth,
-						height: drawingHeight,
-						overflow: 'hidden',
-						isolation: 'isolate',
-						...style,
-					}}
-				>
-					<FisheyeContent
-						width={drawingWidth}
-						height={drawingHeight}
-						strength={strength}
-						perspectiveFactor={perspectiveFactor}
-					>
-						{children}
-					</FisheyeContent>
-				</div>
-			</Sequence>
-		);
-	},
-);
+				{children}
+			</FisheyeContent>
+		</div>
+	);
+};
 
-export const Fisheye = Interactive.withSchema({
+export const Fisheye = Interactive.create({
 	Component: FisheyeInner,
 	componentName: '<Fisheye>',
-	componentIdentity: null,
 	schema: fisheyeSchema,
-	supportsEffects: false,
-}) as React.FC<FisheyeProps>;
+});
