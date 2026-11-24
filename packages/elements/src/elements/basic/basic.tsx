@@ -11,7 +11,6 @@ import {
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -33,7 +32,7 @@ type BasicOptions = {
 	readonly speed?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type BasicProps = InteractiveTransformProps & BasicOptions;
+type BasicProps = Omit<BasicOptions, 'width' | 'height'>;
 
 const basicSchema = {
 	audioSrc: {
@@ -124,26 +123,6 @@ const basicSchema = {
 		max: 86400,
 		step: 0.01,
 		description: 'Animation phase offset in seconds (independent of audio trim)',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -743,10 +722,8 @@ const BasicInner: React.FC<BasicProps> = ({
 	pattern = basicSchema.pattern.default,
 	speed = basicSchema.speed.default,
 	timeOffsetInSeconds = basicSchema.timeOffsetInSeconds.default,
-	width = 1280,
-	height = 720,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
 		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -757,7 +734,6 @@ const BasicInner: React.FC<BasicProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<BasicContent
@@ -784,6 +760,7 @@ const BasicInner: React.FC<BasicProps> = ({
 };
 export const Basic = Interactive.create({
 	Component: BasicInner,
+	layout: 'absolute-fill',
 	componentName: '<Basic>',
 	schema: basicSchema,
 });

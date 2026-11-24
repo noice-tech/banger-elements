@@ -3,6 +3,7 @@ import {readFile, readdir, access} from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import {ELEMENT_PAYLOAD_MIME_TYPE, StudioProtocolInternals} from '@remotion/studio-protocol';
+import sharp from 'sharp';
 import {recipes} from '../src/components/recipes/recipes';
 import {sceneClip, sceneTimings} from '../src/components/scenes/timing';
 
@@ -197,4 +198,52 @@ test('static output includes only the intentional demo audio and video assets', 
 	];
 	const media = files.filter((file) => /\.(mp3|wav|mp4|mov|m4a)$/i.test(file));
 	assert.deepEqual(media.map((file) => file.replaceAll('\\', '/')).sort(), clips.sort());
+});
+
+test('every page has a 1200x630 share image and an extensionless canonical URL', async () => {
+	const site = 'https://banger-elements.dev';
+	for (const file of (await readdir(dist)).filter((name) => name.endsWith('.html'))) {
+		if (file === '404.html') continue;
+		const html = await readFile(path.join(dist, file), 'utf8');
+		const image = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
+		assert.ok(image, `${file}: og:image`);
+		assert.ok(image.startsWith(`${site}/share/`), `${file}: og:image`);
+		const {width, height, format} = await sharp(
+			path.join(dist, new URL(image).pathname.slice(1)),
+		).metadata();
+		assert.deepEqual([width, height, format], [1200, 630, 'jpeg'], file);
+		const page = file === 'index.html' ? '/' : `/${file.replace(/\.html$/, '')}`;
+		assert.match(html, new RegExp(`<link rel="canonical" href="${site}${page}"\\s?/?>`), file);
+		if (catalog.some(({slug}) => `${slug}.html` === file))
+			assert.equal(image, `${site}/share/${file.replace(/\.html$/, '')}.jpg`, file);
+	}
+});
+
+test('coding agents get a Markdown index and a Markdown twin of every page', async () => {
+	const site = 'https://banger-elements.dev';
+	const llms = await readFile(path.join(dist, 'llms.txt'), 'utf8');
+	assert.equal(await readFile(path.join(dist, 'index.md'), 'utf8'), llms);
+	for (const {slug} of catalog) {
+		const html = await readFile(path.join(dist, `${slug}.html`), 'utf8');
+		assert.match(html, new RegExp(`<link rel="alternate" type="text/markdown" href="/${slug}.md"`));
+		const markdown = await readFile(path.join(dist, `${slug}.md`), 'utf8');
+		// Remotion's /remotion-elements skill installs from the page URL named near the top.
+		assert.ok(markdown.includes(`\nElement page: ${site}/${slug}\n`), slug);
+		assert.ok(markdown.includes(`npx remotion elements use ${site}/${slug} `), slug);
+		assert.ok(markdown.includes('| Prop | Type | Default |'), slug);
+		assert.ok(llms.includes(`](${site}/${slug}.md)`), `${slug}: listed in llms.txt`);
+	}
+	const guide = await readFile(path.join(dist, 'getting-started.md'), 'utf8');
+	assert.ok(guide.startsWith('# Getting started\n'));
+	assert.ok(!guide.includes('](/'), 'guide links are absolute');
+	// Every link to this site from the Markdown files resolves to a built file.
+	const markdownFiles = (await readdir(dist)).filter((name) => name.endsWith('.md'));
+	for (const file of [...markdownFiles, 'llms.txt']) {
+		const text = await readFile(path.join(dist, file), 'utf8');
+		for (const [, href] of text.matchAll(/\]\((https:\/\/banger-elements\.dev[^)\s#]*)/g)) {
+			let target = new URL(href!).pathname.slice(1) || 'index.html';
+			if (!path.extname(target)) target += '.html';
+			await access(path.join(dist, target));
+		}
+	}
 });

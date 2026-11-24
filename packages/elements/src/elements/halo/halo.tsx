@@ -36,19 +36,35 @@ type HaloOptions = {
 
 type HaloProps = InteractiveTransformProps & HaloOptions;
 
+const startColorField = {
+	type: 'color',
+	default: '#aa8bff',
+	description: 'Gradient start color',
+} as const;
+const endColorField = {
+	type: 'color',
+	default: '#51e8cc',
+	description: 'Gradient end color',
+} as const;
+const centerColorField = {
+	type: 'color',
+	default: '#2d2d2d',
+	description: 'Center base color; preserves shading and does not tint artwork',
+} as const;
+const artworkSrcField = {
+	type: 'asset',
+	assetType: 'image',
+	default: '',
+	description: 'Optional center artwork',
+	keyframable: false,
+} as const;
+
 const haloSchema = {
 	audioSrc: {
 		type: 'asset',
 		assetType: 'audio',
 		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 		description: 'Audio source',
-		keyframable: false,
-	},
-	artworkSrc: {
-		type: 'asset',
-		assetType: 'image',
-		default: '',
-		description: 'Optional center artwork',
 		keyframable: false,
 	},
 	audioOffsetInSeconds: {
@@ -89,19 +105,15 @@ const haloSchema = {
 	},
 	colorMode: {
 		type: 'enum',
-		variants: {rainbow: {}, gradient: {}},
+		variants: {
+			rainbow: {},
+			gradient: {
+				startColor: startColorField,
+				endColor: endColorField,
+			},
+		},
 		default: 'rainbow',
 		description: 'Rainbow palette or custom gradient',
-	},
-	startColor: {
-		type: 'color',
-		default: '#aa8bff',
-		description: 'Gradient start color',
-	},
-	endColor: {
-		type: 'color',
-		default: '#51e8cc',
-		description: 'Gradient end color',
 	},
 	leadingColor: {
 		type: 'color',
@@ -110,14 +122,15 @@ const haloSchema = {
 	},
 	centerMode: {
 		type: 'enum',
-		variants: {filled: {}, transparent: {}},
+		variants: {
+			filled: {
+				centerColor: centerColorField,
+				artworkSrc: artworkSrcField,
+			},
+			transparent: {},
+		},
 		default: 'filled',
 		description: 'Filled center or transparent cutout (ignores center color and artwork)',
-	},
-	centerColor: {
-		type: 'color',
-		default: '#2d2d2d',
-		description: 'Center base color; preserves shading and does not tint artwork',
 	},
 	inputGainDb: {
 		type: 'number',
@@ -597,10 +610,7 @@ function drawHalo(
 	gl.uniform3fv(uniforms.iStartColor, displayColor(frame.startColor));
 	gl.uniform3fv(uniforms.iEndColor, displayColor(frame.endColor));
 	gl.uniform3fv(uniforms.iLeadingColor, displayColor(resolveLeadingColor(frame)));
-	gl.uniform3fv(
-		uniforms.iCenterTint,
-		centerTint(frame.centerColor ?? haloSchema.centerColor.default),
-	);
+	gl.uniform3fv(uniforms.iCenterTint, centerTint(frame.centerColor ?? centerColorField.default));
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, historyTexture);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
@@ -858,8 +868,7 @@ function resolveLeadingColor({
 	leadingColor,
 }: Pick<HaloOptions, 'colorMode' | 'startColor' | 'leadingColor'>) {
 	return (
-		leadingColor ??
-		(colorMode === 'gradient' ? (startColor ?? haloSchema.startColor.default) : '#ffffff')
+		leadingColor ?? (colorMode === 'gradient' ? (startColor ?? startColorField.default) : '#ffffff')
 	);
 }
 
@@ -956,10 +965,10 @@ const HaloInner: React.FC<HaloProps> = ({
 	inputGainDb = haloSchema.inputGainDb.default,
 	intensity = haloSchema.intensity.default,
 	colorMode = haloSchema.colorMode.default,
-	startColor = haloSchema.startColor.default,
-	endColor = haloSchema.endColor.default,
+	startColor = startColorField.default,
+	endColor = endColorField.default,
 	leadingColor,
-	centerColor = haloSchema.centerColor.default,
+	centerColor = centerColorField.default,
 	centerMode = haloSchema.centerMode.default,
 	radius = haloSchema.radius.default,
 	trailDepth = haloSchema.trailDepth.default,
@@ -967,7 +976,7 @@ const HaloInner: React.FC<HaloProps> = ({
 	motionBlur = haloSchema.motionBlur.default,
 	glowBlur = haloSchema.glowBlur.default,
 	glowSpread = haloSchema.glowSpread.default,
-	artworkSrc = haloSchema.artworkSrc.default,
+	artworkSrc = artworkSrcField.default,
 	style,
 }) => {
 	return (

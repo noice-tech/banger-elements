@@ -47,6 +47,7 @@ export default defineConfig({
 				},
 			],
 			favicon: '/brand/banger-icon.png',
+			routeMiddleware: './src/route-data.ts',
 			customCss: [
 				'./src/styles/tokens.css',
 				'./src/styles/components.css',

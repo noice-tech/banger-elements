@@ -11,7 +11,6 @@ import {
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -33,7 +32,7 @@ type MoonOptions = {
 	readonly volume?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type MoonProps = InteractiveTransformProps & MoonOptions;
+type MoonProps = Omit<MoonOptions, 'width' | 'height'>;
 
 const moonSchema = {
 	audioSrc: {
@@ -128,26 +127,6 @@ const moonSchema = {
 		max: 86400,
 		step: 0.01,
 		description: 'Animation phase offset in seconds (independent of audio trim)',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -1006,10 +985,8 @@ const MoonInner: React.FC<MoonProps> = ({
 	speed = moonSchema.speed.default,
 	volume = moonSchema.volume.default,
 	timeOffsetInSeconds = moonSchema.timeOffsetInSeconds.default,
-	width = 1280,
-	height = 720,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
 		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -1020,7 +997,6 @@ const MoonInner: React.FC<MoonProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<MoonContent
@@ -1047,6 +1023,7 @@ const MoonInner: React.FC<MoonProps> = ({
 };
 export const Moon = Interactive.create({
 	Component: MoonInner,
+	layout: 'absolute-fill',
 	componentName: '<Moon>',
 	schema: moonSchema,
 });

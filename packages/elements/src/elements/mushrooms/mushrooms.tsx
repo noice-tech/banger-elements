@@ -11,7 +11,6 @@ import {
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -31,7 +30,7 @@ type MushroomsOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type MushroomsProps = InteractiveTransformProps & MushroomsOptions;
+type MushroomsProps = Omit<MushroomsOptions, 'width' | 'height'>;
 
 const mushroomsSchema = {
 	audioSrc: {
@@ -58,26 +57,6 @@ const mushroomsSchema = {
 		keyframable: false,
 	},
 
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
-		keyframable: false,
-	},
 	inputGainDb: {
 		type: 'number',
 		default: 0,
@@ -718,8 +697,6 @@ const MushroomsContent: React.FC<Required<MushroomsOptions>> = (props) => {
 };
 
 const MushroomsInner: React.FC<MushroomsProps> = ({
-	width = mushroomsSchema.width.default,
-	height = mushroomsSchema.height.default,
 	audioSrc = mushroomsSchema.audioSrc.default,
 	audioOffsetInSeconds = mushroomsSchema.audioOffsetInSeconds.default,
 	playAudio = mushroomsSchema.playAudio.default,
@@ -731,8 +708,8 @@ const MushroomsInner: React.FC<MushroomsProps> = ({
 	cubeScale = mushroomsSchema.cubeScale.default,
 	responsive = mushroomsSchema.responsive.default,
 	timeOffsetInSeconds = mushroomsSchema.timeOffsetInSeconds.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
 	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -743,7 +720,6 @@ const MushroomsInner: React.FC<MushroomsProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<MushroomsContent
@@ -768,6 +744,7 @@ const MushroomsInner: React.FC<MushroomsProps> = ({
 
 export const Mushrooms = Interactive.create({
 	Component: MushroomsInner,
+	layout: 'absolute-fill',
 	componentName: '<Mushrooms>',
 	schema: mushroomsSchema,
 });

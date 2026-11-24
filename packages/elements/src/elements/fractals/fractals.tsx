@@ -11,7 +11,6 @@ import {
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -31,7 +30,7 @@ type FractalsOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type FractalsProps = InteractiveTransformProps & FractalsOptions;
+type FractalsProps = Omit<FractalsOptions, 'width' | 'height'>;
 
 const fractalsSchema = {
 	audioSrc: {
@@ -58,26 +57,6 @@ const fractalsSchema = {
 		keyframable: false,
 	},
 
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
-		keyframable: false,
-	},
 	inputGainDb: {
 		type: 'number',
 		default: 0,
@@ -608,8 +587,6 @@ const FractalsContent: React.FC<Required<FractalsOptions>> = (props) => {
 };
 
 const FractalsInner: React.FC<FractalsProps> = ({
-	width = fractalsSchema.width.default,
-	height = fractalsSchema.height.default,
 	audioSrc = fractalsSchema.audioSrc.default,
 	audioOffsetInSeconds = fractalsSchema.audioOffsetInSeconds.default,
 	playAudio = fractalsSchema.playAudio.default,
@@ -621,8 +598,8 @@ const FractalsInner: React.FC<FractalsProps> = ({
 	pattern = fractalsSchema.pattern.default,
 	responsive = fractalsSchema.responsive.default,
 	timeOffsetInSeconds = fractalsSchema.timeOffsetInSeconds.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
 	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -633,7 +610,6 @@ const FractalsInner: React.FC<FractalsProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<FractalsContent
@@ -658,6 +634,7 @@ const FractalsInner: React.FC<FractalsProps> = ({
 
 export const Fractals = Interactive.create({
 	Component: FractalsInner,
+	layout: 'absolute-fill',
 	componentName: '<Fractals>',
 	schema: fractalsSchema,
 });

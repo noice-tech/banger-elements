@@ -42,6 +42,88 @@ type CircleOptions = {
 
 type CircleProps = InteractiveTransformProps & CircleOptions;
 
+const startColorField = {type: 'color', default: '#aa8bff', description: 'Start color'} as const;
+const endColorField = {type: 'color', default: '#51e8cc', description: 'End color'} as const;
+const middleColorField = {
+	type: 'color',
+	default: '#f567f5',
+	description: 'Middle color for three-stop gradients',
+} as const;
+const rainbowSpeedField = {
+	type: 'number',
+	default: 1,
+	min: 0,
+	max: 10,
+	step: 0.1,
+	hiddenFromList: false,
+} as const;
+const saturationField = {
+	type: 'number',
+	default: 0.85,
+	min: 0,
+	max: 1,
+	step: 0.01,
+	hiddenFromList: false,
+} as const;
+const brightnessField = {
+	type: 'number',
+	default: 0.85,
+	min: 0,
+	max: 1,
+	step: 0.01,
+	hiddenFromList: false,
+} as const;
+const countField = {
+	type: 'number',
+	default: 64,
+	min: 5,
+	max: 150,
+	step: 1,
+	description: 'Count',
+	hiddenFromList: false,
+} as const;
+const barWidthField = {
+	type: 'number',
+	default: 0.5,
+	min: 0.05,
+	max: 1,
+	step: 0.01,
+	description: 'Radial bar width',
+	hiddenFromList: false,
+} as const;
+const lineWidthField = {
+	type: 'number',
+	default: 3,
+	min: 0.5,
+	max: 10,
+	step: 0.5,
+	description: 'Line or dot width',
+	hiddenFromList: false,
+} as const;
+const showLinesField = {
+	type: 'boolean',
+	default: true,
+	description: 'Glow ring horizontal rays',
+} as const;
+const lineThicknessField = {
+	type: 'number',
+	default: 3,
+	min: 0.1,
+	max: 5,
+	step: 0.1,
+	description: 'Waveform ring thickness',
+	hiddenFromList: false,
+} as const;
+const dotSizeField = {
+	type: 'number',
+	default: 3,
+	min: 0.1,
+	max: 5,
+	step: 0.1,
+	description: 'Dotted ring size',
+	hiddenFromList: false,
+} as const;
+
 const circleSchema = {
 	audioSrc: {
 		type: 'asset',
@@ -87,59 +169,47 @@ const circleSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	startColor: {type: 'color', default: '#aa8bff', description: 'Start color'},
-	endColor: {type: 'color', default: '#51e8cc', description: 'End color'},
 	colorMode: {
 		type: 'enum',
 		default: 'gradient',
 		description: 'Color mode',
-		variants: {gradient: {}, 'gradient-3': {}, rainbow: {}},
+		variants: {
+			gradient: {
+				startColor: startColorField,
+				endColor: endColorField,
+			},
+			'gradient-3': {
+				startColor: startColorField,
+				middleColor: middleColorField,
+				endColor: endColorField,
+			},
+			rainbow: {
+				rainbowSpeed: rainbowSpeedField,
+				saturation: saturationField,
+				brightness: brightnessField,
+			},
+		},
 	},
-	middleColor: {
-		type: 'color',
-		default: '#f567f5',
-		description: 'Middle color for three-stop gradients',
-	},
-	rainbowSpeed: {type: 'number', default: 1, min: 0, max: 10, step: 0.1, hiddenFromList: false},
-	saturation: {type: 'number', default: 0.85, min: 0, max: 1, step: 0.01, hiddenFromList: false},
-	brightness: {type: 'number', default: 0.85, min: 0, max: 1, step: 0.01, hiddenFromList: false},
-	barWidth: {
-		type: 'number',
-		default: 0.5,
-		min: 0.05,
-		max: 1,
-		step: 0.01,
-		description: 'Radial bar width',
-		hiddenFromList: false,
-	},
-	lineThickness: {
-		type: 'number',
-		default: 3,
-		min: 0.1,
-		max: 5,
-		step: 0.1,
-		description: 'Waveform ring thickness',
-		hiddenFromList: false,
-	},
-	dotSize: {
-		type: 'number',
-		default: 3,
-		min: 0.1,
-		max: 5,
-		step: 0.1,
-		description: 'Dotted ring size',
-		hiddenFromList: false,
-	},
-	showLines: {type: 'boolean', default: true, description: 'Glow ring horizontal rays'},
 	circleVariant: {
 		type: 'enum',
 		default: 'radial-bars',
 		description: 'Treatment',
 		variants: {
-			'radial-bars': {},
-			'glow-ring': {},
-			'waveform-ring': {},
-			'dotted-ring': {},
+			'radial-bars': {
+				count: countField,
+				barWidth: barWidthField,
+			},
+			'glow-ring': {
+				lineWidth: lineWidthField,
+				showLines: showLinesField,
+			},
+			'waveform-ring': {
+				lineThickness: lineThicknessField,
+			},
+			'dotted-ring': {
+				count: countField,
+				dotSize: dotSizeField,
+			},
 		},
 	},
 	radius: {
@@ -149,24 +219,6 @@ const circleSchema = {
 		max: 0.8,
 		step: 0.01,
 		description: 'Radius',
-		hiddenFromList: false,
-	},
-	count: {
-		type: 'number',
-		default: 64,
-		min: 5,
-		max: 150,
-		step: 1,
-		description: 'Count',
-		hiddenFromList: false,
-	},
-	lineWidth: {
-		type: 'number',
-		default: 3,
-		min: 0.5,
-		max: 10,
-		step: 0.5,
-		description: 'Line or dot width',
 		hiddenFromList: false,
 	},
 	inputGainDb: {
@@ -1080,23 +1132,21 @@ const CircleInner: React.FC<CircleProps> = ({
 	playAudio = circleSchema.playAudio.default,
 	inputGainDb = circleSchema.inputGainDb.default,
 	intensity = circleSchema.intensity.default,
-	startColor = circleSchema.startColor.default,
-	endColor = circleSchema.endColor.default,
+	startColor = startColorField.default,
+	endColor = endColorField.default,
 	colorMode = circleSchema.colorMode.default,
 	radius = circleSchema.radius.default,
-	count = circleSchema.count.default,
-	lineWidth = circleSchema.lineWidth.default,
+	count = countField.default,
+	lineWidth = lineWidthField.default,
 	circleVariant = circleSchema.circleVariant.default,
-	middleColor = circleSchema.middleColor.default,
-	rainbowSpeed = circleSchema.rainbowSpeed.default,
-	saturation = circleSchema.saturation.default,
-	brightness = circleSchema.brightness.default,
-	barWidth = circleSchema.barWidth.default,
-	lineThickness = lineWidth === circleSchema.lineWidth.default
-		? circleSchema.lineThickness.default
-		: lineWidth,
-	dotSize = lineWidth === circleSchema.lineWidth.default ? circleSchema.dotSize.default : lineWidth,
-	showLines = circleSchema.showLines.default,
+	middleColor = middleColorField.default,
+	rainbowSpeed = rainbowSpeedField.default,
+	saturation = saturationField.default,
+	brightness = brightnessField.default,
+	barWidth = barWidthField.default,
+	lineThickness = lineWidth === lineWidthField.default ? lineThicknessField.default : lineWidth,
+	dotSize = lineWidth === lineWidthField.default ? dotSizeField.default : lineWidth,
+	showLines = showLinesField.default,
 	style,
 }) => {
 	return (

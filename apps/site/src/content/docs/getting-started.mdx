@@ -21,7 +21,7 @@ Studio can't open browser file URLs, so a local audio or image file needs a host
 
 Keep the Studio you want to use open and focused when you send the request. If the site still can't find it, check that:
 
-- Studio runs Remotion 4.0.536 or later, which supports `Interactive.create()`. We test with Remotion 4.0.546, React 19.3.1 and matching `@remotion/*` versions.
+- Studio runs Remotion 4.0.536 or later, which supports `Interactive.create()`. We test with Remotion 4.0.547, React 19.3.1 and matching `@remotion/*` versions.
 - Studio runs on a port between 3000 and 3009.
 - Your browser allows local network access when it asks.
 
@@ -37,6 +37,8 @@ npx remotion elements use https://banger-elements.dev/waveform --composition MyC
 
 Replace the URL with any Element page and `MyComposition` with your composition ID. The CLI shows what it will change before asking for confirmation. Add `--dry-run` to see the plan without writing any files. The CLI installs the Element with its original defaults, not settings from the website preview.
 
+Visualizers and shaders also copy the demo track to `public/banger-elements/`, so a new Element plays offline before you set your own audio. Every Element shares that one file.
+
 ## Add the collection to Studio
 
 Click **Add Library to Studio** in the desktop header or at the bottom of a page. Confirm in Studio, then restart Studio to see the collection in Browse Elements. The install appends a call to `remotion.config.ts`, so keep this import in that file:
@@ -45,12 +47,21 @@ Click **Add Library to Studio** in the desktop header or at the bottom of a page
 import { Config } from "@remotion/cli/config";
 ```
 
+With Remotion **4.0.547 or newer**, you can add the collection from your project instead:
+
+```bash
+npx remotion elements add-library https://banger-elements.dev
+```
+
+The command adds the same `Config.addElementLibrary()` call. If the collection is already in your config, it changes nothing.
+
 ## Visualizers, shaders and effects
 
 Visualizers draw your audio as shapes, spectra and particles. Shaders are full-frame procedural backgrounds, such as [Pulse](/pulse.html), [Cathedral](/cathedral.html), [Liquid](/liquid.html) and [Trip](/trip.html). The [shaders page](/shaders.html) lists them all.
 
 - Every shader takes `timeOffsetInSeconds`, which sets the animation phase separately from the audio trim. Motion follows the Element's local frame, so use this offset to line up instances that start at different times.
 - Shaders with a `bpm` prop use it as the animation tempo, 120 by default. It does not detect beats, and you can't keyframe it as a speed ramp.
+- Shaders fill the composition you place them in, at any size or aspect ratio. Pass `width` and `height` to draw one in a fixed box instead.
 - Shaders are opaque inside their bounds. Place them behind other Elements, and turn on audio playback for only one layer.
 - `inputGainDb` sets how strongly a shader responds to audio. Each shader page lists its other controls. On Trip, for example, `intensity` sets the raymarch iteration count, not the audio gain.
 - Shader motion continues through silence and after the audio ends.
@@ -78,7 +89,7 @@ The WebGL path uses Remotion's experimental HTML-in-canvas support to process th
 
 ## Audio setup
 
-Visualizers and shaders need no props. `audioSrc` defaults to Remotion's hosted example audio. To use your own track, choose an asset with the Studio control or pass an HTTPS URL that allows CORS. For a file in your project's `public/` directory:
+Visualizers and shaders need no props. `audioSrc` defaults to Remotion's hosted example audio. When you install from Studio or the command line, the installed Element points at a local copy in `public/banger-elements/` instead. To use your own track, choose an asset with the Studio control or pass an HTTPS URL that allows CORS. For a file in your project's `public/` directory:
 
 ```tsx
 import { staticFile } from "remotion";
@@ -107,7 +118,7 @@ Use only audio you have permission to use. This site does not distribute any aud
 
 Every Element has its own Sequence. Don't wrap an Element in an extra `<Sequence>`. If you do, selecting the outer Sequence in Studio shows the Sequence's controls instead of the Element's. Use the Element's own timing controls in Studio. Effects are the exception, because they contain child Elements that keep their own Sequences.
 
-Studio inserts an Element with a duration of 480 frames, so its length in seconds depends on the composition's frame rate. Site previews last 540 frames at 60 fps. Effect and Audio Particles previews last 960 frames to match the demo track. Use `width` and `height` to set the drawing bounds, and use Studio transforms to position or scale the Element.
+Studio inserts an Element with a duration of 480 frames, so its length in seconds depends on the composition's frame rate. Site previews last 540 frames at 60 fps. Effect and Audio Particles previews last 960 frames to match the demo track. Visualizers and effects draw in a 1280×720 box by default. Use `width` and `height` to change it, and use Studio transforms to position or scale the Element. Shaders fill the composition unless you pass `width` and `height`.
 
 ## Download instead
 
@@ -120,6 +131,12 @@ export const MyComposition = () => <Waveform width={900} height={300} />;
 ```
 
 The downloaded file imports only React, Remotion, `@remotion/media` and `@remotion/media-utils`. Install those packages in your project, and keep every `@remotion/*` package on the same version as Remotion.
+
+## Use with coding agents
+
+Every page on this site has a Markdown version for coding agents such as Claude Code, Codex and Cursor. Add `.md` to the page URL, for example [/halo.md](/halo.md). [/llms.txt](/llms.txt) lists the whole collection, with a one-line description and a link to each Element's Markdown page.
+
+Each Element's Markdown page lists its install command, its props with defaults and ranges, and what to check before you render. Remotion's [`/remotion-elements` skill](https://www.remotion.dev/docs/agents) reads these pages to pick an Element and install it with `npx remotion elements use`.
 
 ## Rendering with ANGLE
 

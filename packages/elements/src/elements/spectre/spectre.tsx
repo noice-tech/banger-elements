@@ -55,6 +55,54 @@ const DEFAULT_BAR_WIDTH = 3;
 const DEFAULT_BOTTOM = false;
 const DEFAULT_VARIANT = 'bars';
 
+const startColorField = {
+	type: 'color',
+	default: DEFAULT_START_COLOR,
+	description: 'Start color',
+} as const;
+const endColorField = {
+	type: 'color',
+	default: DEFAULT_END_COLOR,
+	description: 'End color',
+} as const;
+const middleColorField = {
+	type: 'color',
+	default: '#aa8bff',
+	description: 'Middle color for three-stop gradients',
+} as const;
+const rainbowSpeedField = {
+	type: 'number',
+	default: 1,
+	min: 0,
+	max: 10,
+	step: 0.1,
+	hiddenFromList: false,
+} as const;
+const saturationField = {
+	type: 'number',
+	default: 0.85,
+	min: 0,
+	max: 1,
+	step: 0.01,
+	hiddenFromList: false,
+} as const;
+const brightnessField = {
+	type: 'number',
+	default: 0.85,
+	min: 0,
+	max: 1,
+	step: 0.01,
+	hiddenFromList: false,
+} as const;
+const segmentGapField = {
+	type: 'number',
+	default: 0.4,
+	min: 0.1,
+	max: 1,
+	step: 0.01,
+	hiddenFromList: false,
+} as const;
+
 const spectreSchema = {
 	audioSrc: {
 		type: 'asset',
@@ -99,32 +147,28 @@ const spectreSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	startColor: {
-		type: 'color',
-		default: DEFAULT_START_COLOR,
-		description: 'Start color',
-	},
-	endColor: {
-		type: 'color',
-		default: DEFAULT_END_COLOR,
-		description: 'End color',
-	},
 	colorMode: {
 		type: 'enum',
 		default: DEFAULT_COLOR_MODE,
 		description: 'Color mode',
-		variants: {gradient: {}, 'gradient-3': {}, rainbow: {}},
+		variants: {
+			gradient: {
+				startColor: startColorField,
+				endColor: endColorField,
+			},
+			'gradient-3': {
+				startColor: startColorField,
+				middleColor: middleColorField,
+				endColor: endColorField,
+			},
+			rainbow: {
+				rainbowSpeed: rainbowSpeedField,
+				saturation: saturationField,
+				brightness: brightnessField,
+			},
+		},
 	},
-	middleColor: {
-		type: 'color',
-		default: '#aa8bff',
-		description: 'Middle color for three-stop gradients',
-	},
-	rainbowSpeed: {type: 'number', default: 1, min: 0, max: 10, step: 0.1, hiddenFromList: false},
-	saturation: {type: 'number', default: 0.85, min: 0, max: 1, step: 0.01, hiddenFromList: false},
-	brightness: {type: 'number', default: 0.85, min: 0, max: 1, step: 0.01, hiddenFromList: false},
 	gradientAngle: {type: 'number', default: 0, min: 0, max: 360, step: 1, hiddenFromList: false},
-	segmentGap: {type: 'number', default: 0.4, min: 0.1, max: 1, step: 0.01, hiddenFromList: false},
 	count: {
 		type: 'number',
 		default: DEFAULT_COUNT,
@@ -152,7 +196,12 @@ const spectreSchema = {
 		type: 'enum',
 		default: DEFAULT_VARIANT,
 		description: 'Treatment',
-		variants: {bars: {}, segmented: {}},
+		variants: {
+			bars: {},
+			segmented: {
+				segmentGap: segmentGapField,
+			},
+		},
 	},
 	inputGainDb: {
 		type: 'number',
@@ -817,12 +866,12 @@ const SpectreInner: React.FC<SpectreProps> = ({
 	barWidth = DEFAULT_BAR_WIDTH,
 	bottom = DEFAULT_BOTTOM,
 	spectreVariant = DEFAULT_VARIANT,
-	middleColor = spectreSchema.middleColor.default,
-	rainbowSpeed = spectreSchema.rainbowSpeed.default,
-	saturation = spectreSchema.saturation.default,
-	brightness = spectreSchema.brightness.default,
+	middleColor = middleColorField.default,
+	rainbowSpeed = rainbowSpeedField.default,
+	saturation = saturationField.default,
+	brightness = brightnessField.default,
 	gradientAngle = spectreSchema.gradientAngle.default,
-	segmentGap = spectreSchema.segmentGap.default,
+	segmentGap = segmentGapField.default,
 	style,
 }) => {
 	return (

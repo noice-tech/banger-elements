@@ -7,7 +7,6 @@ import {
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -31,7 +30,7 @@ type PulseOptions = {
 	readonly bpm?: number;
 	readonly timeOffsetInSeconds?: number;
 };
-type PulseProps = InteractiveTransformProps & PulseOptions;
+type PulseProps = Omit<PulseOptions, 'width' | 'height'>;
 const pulseSchema = {
 	audioSrc: {
 		type: 'asset',
@@ -156,26 +155,6 @@ const pulseSchema = {
 		step: 0.01,
 		hiddenFromList: false,
 		description: 'Animation phase offset (independent of audio trim)',
-		keyframable: false,
-	},
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
 		keyframable: false,
 	},
 } as const satisfies InteractivitySchema;
@@ -1056,10 +1035,8 @@ const PulseInner: React.FC<PulseProps> = ({
 	speed = pulseSchema.speed.default,
 	bpm = pulseSchema.bpm.default,
 	timeOffsetInSeconds = pulseSchema.timeOffsetInSeconds.default,
-	width = pulseSchema.width.default,
-	height = pulseSchema.height.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
 		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -1070,7 +1047,6 @@ const PulseInner: React.FC<PulseProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<PulseContent
@@ -1099,6 +1075,7 @@ const PulseInner: React.FC<PulseProps> = ({
 };
 export const Pulse = Interactive.create({
 	Component: PulseInner,
+	layout: 'absolute-fill',
 	componentName: '<Pulse>',
 	schema: pulseSchema,
 });

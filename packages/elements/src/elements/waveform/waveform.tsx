@@ -36,6 +36,8 @@ const DEFAULT_INTENSITY = 1;
 const DEFAULT_COLOR = '#aa8bff';
 const DEFAULT_WINDOW_SECONDS = 2;
 
+const colorField = {type: 'color', default: DEFAULT_COLOR, description: 'Waveform color'} as const;
+
 const waveformSchema = {
 	audioSrc: {
 		type: 'asset',
@@ -80,12 +82,16 @@ const waveformSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	color: {type: 'color', default: DEFAULT_COLOR, description: 'Waveform color'},
 	colorMode: {
 		type: 'enum',
 		default: 'solid',
 		description: 'Waveform colors',
-		variants: {solid: {}, frequency: {}},
+		variants: {
+			solid: {
+				color: colorField,
+			},
+			frequency: {},
+		},
 	},
 	resolution: {
 		type: 'number',

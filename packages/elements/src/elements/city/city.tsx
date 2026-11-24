@@ -11,7 +11,6 @@ import {
 	useCurrentFrame,
 	useDelayRender,
 	useVideoConfig,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -33,7 +32,7 @@ type CityOptions = {
 	readonly textureSrc?: string;
 	readonly timeOffsetInSeconds?: number;
 };
-type CityProps = InteractiveTransformProps & CityOptions;
+type CityProps = Omit<CityOptions, 'width' | 'height'>;
 
 const citySchema = {
 	audioSrc: {
@@ -126,26 +125,6 @@ const citySchema = {
 		max: 86400,
 		step: 0.01,
 		description: 'Animation phase offset in seconds (independent of audio trim)',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
 		hiddenFromList: false,
 		keyframable: false,
 	},
@@ -994,10 +973,8 @@ const CityInner: React.FC<CityProps> = ({
 	speed = citySchema.speed.default,
 	textureSrc = citySchema.textureSrc.default,
 	timeOffsetInSeconds = citySchema.timeOffsetInSeconds.default,
-	width = 1280,
-	height = 720,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280)),
 		drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -1008,7 +985,6 @@ const CityInner: React.FC<CityProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<CityContent
@@ -1035,6 +1011,7 @@ const CityInner: React.FC<CityProps> = ({
 };
 export const City = Interactive.create({
 	Component: CityInner,
+	layout: 'absolute-fill',
 	componentName: '<City>',
 	schema: citySchema,
 });

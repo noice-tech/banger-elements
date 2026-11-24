@@ -91,8 +91,53 @@ for (const entry of catalog) {
 				(dependency) => !dependency.name.startsWith('@remotion/') || dependency.version === null,
 			),
 		);
+		// Shaders fill whatever composition they are placed in; other Elements keep their box.
+		const fills = sourceCode.includes(`layout: 'absolute-fill'`);
+		assert.equal(fills, entry.category === 'shaders');
+		assert.deepEqual(
+			payload.element.dimensions,
+			fills ? null : {width: entry.width, height: entry.height},
+		);
+		// Audio Elements copy the demo track into public/ so a fresh install plays offline.
+		if (entry.category === 'effects') {
+			assert.deepEqual(payload.element.assets, []);
+			assert.equal(payload.element.initialProps, null);
+		} else {
+			assert.equal(payload.element.assets.length, 1);
+			StudioProtocolInternals.assertElementAssetReferences({
+				assets: payload.element.assets,
+				initialProps: payload.element.initialProps,
+			});
+			assert.deepEqual(Object.keys(payload.element.initialProps ?? {}), ['audioSrc']);
+		}
 	});
 }
+
+test('controls that only apply to one enum value are nested under that value', () => {
+	const fields = JSON.parse(fs.readFileSync('dist/fields.json', 'utf8')) as Record<
+		string,
+		{name: string; shownWhen: {control: string; values: string[]} | null}[]
+	>;
+	const shownWhen = (slug: string, name: string) =>
+		fields[slug]!.find((field) => field.name === name)?.shownWhen;
+	assert.deepEqual(shownWhen('halo', 'startColor'), {control: 'colorMode', values: ['gradient']});
+	assert.deepEqual(shownWhen('halo', 'artworkSrc'), {control: 'centerMode', values: ['filled']});
+	assert.deepEqual(shownWhen('spectre', 'startColor'), {
+		control: 'colorMode',
+		values: ['gradient', 'gradient-3'],
+	});
+	assert.deepEqual(shownWhen('circle', 'count'), {
+		control: 'circleVariant',
+		values: ['radial-bars', 'dotted-ring'],
+	});
+	assert.deepEqual(shownWhen('waveform', 'color'), {control: 'colorMode', values: ['solid']});
+	assert.deepEqual(shownWhen('oscilloscope', 'timeSpanMs'), {
+		control: 'displayMode',
+		values: ['pitch', 'free'],
+	});
+	assert.equal(shownWhen('circle', 'radius'), null);
+	for (const entry of catalog) assert.ok(fields[entry.slug]!.length > 0, entry.slug);
+});
 
 test('Fisheye SVG fallback produces a deterministic displacement bitmap', () => {
 	const {fisheyeDisplacementMap} = loadHelpers('fisheye', ['fisheyeDisplacementMap']) as {

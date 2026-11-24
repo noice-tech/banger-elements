@@ -11,7 +11,6 @@ import {
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -31,7 +30,7 @@ type SpaceOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type SpaceProps = InteractiveTransformProps & SpaceOptions;
+type SpaceProps = Omit<SpaceOptions, 'width' | 'height'>;
 
 const spaceSchema = {
 	audioSrc: {
@@ -58,26 +57,6 @@ const spaceSchema = {
 		keyframable: false,
 	},
 
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
-		keyframable: false,
-	},
 	inputGainDb: {
 		type: 'number',
 		default: 0,
@@ -667,8 +646,6 @@ const SpaceContent: React.FC<Required<SpaceOptions>> = (props) => {
 };
 
 const SpaceInner: React.FC<SpaceProps> = ({
-	width = spaceSchema.width.default,
-	height = spaceSchema.height.default,
 	audioSrc = spaceSchema.audioSrc.default,
 	audioOffsetInSeconds = spaceSchema.audioOffsetInSeconds.default,
 	playAudio = spaceSchema.playAudio.default,
@@ -680,8 +657,8 @@ const SpaceInner: React.FC<SpaceProps> = ({
 	speed = spaceSchema.speed.default,
 	responsive = spaceSchema.responsive.default,
 	timeOffsetInSeconds = spaceSchema.timeOffsetInSeconds.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
 	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -692,7 +669,6 @@ const SpaceInner: React.FC<SpaceProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<SpaceContent
@@ -717,6 +693,7 @@ const SpaceInner: React.FC<SpaceProps> = ({
 
 export const Space = Interactive.create({
 	Component: SpaceInner,
+	layout: 'absolute-fill',
 	componentName: '<Space>',
 	schema: spaceSchema,
 });

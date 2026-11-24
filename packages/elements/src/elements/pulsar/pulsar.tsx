@@ -33,6 +33,9 @@ type PulsarOptions = {
 
 type PulsarProps = InteractiveTransformProps & PulsarOptions;
 
+const startColorField = {type: 'color', default: '#592bb3', description: 'Start color'} as const;
+const endColorField = {type: 'color', default: '#195753', description: 'End color'} as const;
+
 const pulsarSchema = {
 	audioSrc: {
 		type: 'asset',
@@ -78,13 +81,17 @@ const pulsarSchema = {
 		hiddenFromList: false,
 		keyframable: false,
 	},
-	startColor: {type: 'color', default: '#592bb3', description: 'Start color'},
-	endColor: {type: 'color', default: '#195753', description: 'End color'},
 	colorMode: {
 		type: 'enum',
 		default: 'gradient',
 		description: 'Color mode (rainbow ignores start/end colors)',
-		variants: {gradient: {}, rainbow: {}},
+		variants: {
+			gradient: {
+				startColor: startColorField,
+				endColor: endColorField,
+			},
+			rainbow: {},
+		},
 	},
 	inputGainDb: {
 		type: 'number',
@@ -382,12 +389,9 @@ function drawPulsar({gl, program, texture, uniforms}: PulsarState, frame: Pulsar
 	// Rainbow uses the default palette only as a lighting/opacity reference.
 	gl.uniform3fv(
 		uniforms.startColor,
-		linearColor(rainbow ? pulsarSchema.startColor.default : frame.startColor),
+		linearColor(rainbow ? startColorField.default : frame.startColor),
 	);
-	gl.uniform3fv(
-		uniforms.endColor,
-		linearColor(rainbow ? pulsarSchema.endColor.default : frame.endColor),
-	);
+	gl.uniform3fv(uniforms.endColor, linearColor(rainbow ? endColorField.default : frame.endColor));
 	gl.uniform1i(uniforms.colorMode, rainbow ? 1 : 0);
 	gl.uniform1f(uniforms.density, frame.density);
 	gl.uniform1f(uniforms.pattern, frame.pattern);
@@ -677,8 +681,8 @@ const PulsarInner: React.FC<PulsarProps> = ({
 	playAudio = pulsarSchema.playAudio.default,
 	inputGainDb = pulsarSchema.inputGainDb.default,
 	intensity = pulsarSchema.intensity.default,
-	startColor = pulsarSchema.startColor.default,
-	endColor = pulsarSchema.endColor.default,
+	startColor = startColorField.default,
+	endColor = endColorField.default,
 	colorMode = pulsarSchema.colorMode.default,
 	density = pulsarSchema.density.default,
 	pattern = pulsarSchema.pattern.default,

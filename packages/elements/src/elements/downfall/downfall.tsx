@@ -11,7 +11,6 @@ import {
 	useVideoConfig,
 	useDelayRender,
 	cancelRender,
-	type InteractiveTransformProps,
 	type InteractivitySchema,
 } from 'remotion';
 
@@ -34,7 +33,7 @@ type DownfallOptions = {
 	readonly timeOffsetInSeconds?: number;
 };
 
-type DownfallProps = InteractiveTransformProps & DownfallOptions;
+type DownfallProps = Omit<DownfallOptions, 'width' | 'height'>;
 
 const downfallSchema = {
 	audioSrc: {
@@ -61,26 +60,6 @@ const downfallSchema = {
 		keyframable: false,
 	},
 
-	width: {
-		type: 'number',
-		default: 1280,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Width',
-		hiddenFromList: false,
-		keyframable: false,
-	},
-	height: {
-		type: 'number',
-		default: 720,
-		min: 16,
-		max: 3840,
-		step: 1,
-		description: 'Height',
-		hiddenFromList: false,
-		keyframable: false,
-	},
 	inputGainDb: {
 		type: 'number',
 		default: 0,
@@ -937,8 +916,6 @@ const DownfallContent: React.FC<Required<DownfallOptions>> = (props) => {
 };
 
 const DownfallInner: React.FC<DownfallProps> = ({
-	width = downfallSchema.width.default,
-	height = downfallSchema.height.default,
 	audioSrc = downfallSchema.audioSrc.default,
 	audioOffsetInSeconds = downfallSchema.audioOffsetInSeconds.default,
 	playAudio = downfallSchema.playAudio.default,
@@ -953,8 +930,8 @@ const DownfallInner: React.FC<DownfallProps> = ({
 	intensity = downfallSchema.intensity.default,
 	bpm = downfallSchema.bpm.default,
 	timeOffsetInSeconds = downfallSchema.timeOffsetInSeconds.default,
-	style,
 }) => {
+	const {width, height} = useVideoConfig();
 	const drawingWidth = Math.round(bounded(width, 16, 3840, 1280));
 	const drawingHeight = Math.round(bounded(height, 16, 3840, 720));
 	return (
@@ -965,7 +942,6 @@ const DownfallInner: React.FC<DownfallProps> = ({
 				width: drawingWidth,
 				height: drawingHeight,
 				overflow: 'hidden',
-				...style,
 			}}
 		>
 			<DownfallContent
@@ -993,6 +969,7 @@ const DownfallInner: React.FC<DownfallProps> = ({
 
 export const Downfall = Interactive.create({
 	Component: DownfallInner,
+	layout: 'absolute-fill',
 	componentName: '<Downfall>',
 	schema: downfallSchema,
 });

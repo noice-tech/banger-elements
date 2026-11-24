@@ -10,7 +10,7 @@ const category = elementCategories.find((entry) => entry.id === Astro.props.cate
 const count = elements.filter((entry) => entry.category === category.id).length;
 const description = `${category.description} Explore open-source ${category.title.toLowerCase()} for Remotion, preview and customize each element, and use the source in your project.`;
 ---
-<Showcase title={`${category.title} for Remotion`} description={description} pageClass="page-category">
+<Showcase title={`${category.title} for Remotion`} description={description} pageClass="page-category" image={`/share/${category.id}.jpg`} imageAlt={`A grid of Banger Elements ${category.title.toLowerCase()}`} markdown={`/${category.id}.md`}>
 	<div class="wrap">
 		<header class="page-hero">
 			<nav class="kicker" aria-label="Breadcrumb"><a href="/#collection">Collection</a><span aria-hidden="true">/</span><span aria-current="page">{category.title}</span><span class="kicker-count">{count}</span></nav>
