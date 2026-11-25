@@ -23,6 +23,8 @@ Open http://localhost:3300.
 - `src/content/docs/` — Getting started
 - `static/` — branding, fonts, posters, and preview videos
 
+`bun run --filter @banger-elements/site posters` converts the `bun run smoke` renders in `out/` into `static/posters/`, so run smoke first. Those fixtures use only the hosted demo audio and no artwork; never make these posters from local media.
+
 Each example lists the dimensions, frame count, and frame rate to use when registering its TSX as a Remotion composition. The Studio render fixture loads the display fonts from `static/fonts/`; load Geist, Geist Mono, Syncopate, and Newsreader in your own composition to match the typography where used.
 
 The downloadable `static/recipes/episode.mp3` is an original demo script synthesized with [Piper’s LJSpeech voice](https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/ljspeech/high/MODEL_CARD). Caption cue times in `src/components/recipes/episode-clip.tsx` are relative to the start of the excerpt.

@@ -5,10 +5,6 @@ import {Logo} from './logo';
 import {fill, layer, type Part} from './parts';
 import {BAR, BEAT, TICK} from './scenes';
 
-/**
- * The riser lands on a fresh kick and the lights come back on a Pulsar. The mark hits, slides home, the name
- * stamps in on the next kicks, and the whole lockup ignites on the downbeat of bar two.
- */
 export const Outro: Part = ({from, length}) => {
 	const frame = useReelFrame(from);
 	const o = frame - from;

@@ -3,7 +3,6 @@ import type {SceneElementSlug} from './elements';
 
 type AnyElement = ComponentType<Record<string, unknown>>;
 
-// One chunk per element, so a visitor downloads only the shaders the scene on screen needs.
 const loaders: Record<SceneElementSlug, () => Promise<AnyElement>> = {
 	'audio-particles': () =>
 		import('../../../../../packages/elements/dist/elements/audio-particles').then(
@@ -72,7 +71,6 @@ export const loadSceneElements = (slugs: readonly string[]): Promise<void> =>
 						loadedElements[slug] = component;
 					},
 					(error: unknown) => {
-						// Let the next attempt try again instead of caching a failure.
 						pending.delete(slug);
 						throw error;
 					},

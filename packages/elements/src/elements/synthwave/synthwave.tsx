@@ -169,7 +169,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId; distinguish decoded buffer revisions.
 	const instanceId = useId();
 	const revision = useRef(0);
 	const audioData = useMemo(
@@ -182,7 +181,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 				: null,
 		[result.audioData, instanceId],
 	);
-	// The current chunk can arrive before its retained neighbors.
 	const complete =
 		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
 	const {delayRender, continueRender} = useDelayRender();
@@ -249,7 +247,6 @@ function spectrumBars(input: AudioInput, count = 308) {
 	});
 }
 
-// All numeric entry points are bounded, including direct JSX and non-finite values.
 function bounded(value: number, min: number, max: number, fallback: number) {
 	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
@@ -271,8 +268,6 @@ function synthwaveBands(bars: readonly number[], inputGainDb: number) {
 	});
 }
 
-// Match the source's 32 × 32 environment sphere rather than stretching its UVs
-// across a quad. The default camera is at (0, 0, 5), with a 75-degree vertical FOV.
 function synthwaveGeometry() {
 	const vertices: number[] = [];
 	const vertex = (x: number, y: number) => {
@@ -457,7 +452,6 @@ function drawSynthwave(
 	gl.uniform1f(uniforms.iLowFreq, frame.bands[0] ?? 0);
 	gl.uniform1f(uniforms.iMidFreq, frame.bands[1] ?? 0);
 	gl.uniform1f(uniforms.iHighFreq, frame.bands[2] ?? 0);
-	// Match the source's linear Three.js color uniforms; output is display RGB.
 	gl.uniform3fv(uniforms.iStartColor, linearColor(frame.startColor));
 	gl.uniform3fv(uniforms.iEndColor, linearColor(frame.endColor));
 	gl.uniform3fv(uniforms.iSphereColor, linearColor(frame.sphereColor));
@@ -557,7 +551,6 @@ out vec4 outColor;
 
 vec3 iResolution = vec3(1920., 1080., 1.);
 
-// #define THAT_CRT_FEELING
 #define TIME        iGlobalTime * (iBpm / 60.0)
 #define RESOLUTION  iResolution
 #define PI          3.141592654
@@ -572,7 +565,6 @@ vec3 hsv2rgb(vec3 c) {
   vec3 p = abs(fract(c.xxx + hsv2rgb_K.xyz) * 6.0 - hsv2rgb_K.www);
   return c.z * mix(hsv2rgb_K.xxx, clamp(p - hsv2rgb_K.xxx, 0.0, 1.0), c.y);
 }
-//  Macro version of above to enable compile-time constants
 #define HSV2RGB(c)  (c.z * mix(hsv2rgb_K.xxx, clamp(abs(fract(c.xxx + hsv2rgb_K.xyz) * 6.0 - hsv2rgb_K.www) - hsv2rgb_K.xxx, 0.0, 1.0), c.y))
 vec3 rgb2hsv(vec3 c) {
   const vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -602,8 +594,6 @@ float atan_approx(float y, float x) {
 }
 
 float tanh_approx(float x) {
-  //  Found this somewhere on the interwebs
-  //  return tanh(x);
   float x2 = x*x;
   return clamp(x*(27.0 + x2)/(27.0+9.0*x2), -1.0, 1.0);
 }
@@ -620,7 +610,6 @@ vec3 sRGB(vec3 t) {
   return mix(1.055*pow(t, vec3(1./2.4)) - 0.055, 12.92*t, step(t, vec3(0.0031308)));
 }
 
-// Inverse sRGB: convert from sRGB to linear
 vec3 sRGBToLinear(vec3 t) {
   t = max(t, vec3(0.0));
   return mix(pow((t + 0.055) / 1.055, vec3(2.4)), t / 12.92, step(t, vec3(0.04045)));
@@ -705,7 +694,7 @@ vec2 raySphere(vec3 ro, vec3 rd, vec4 dim) {
   float b = dot( oc, rd );
   float c = dot( oc, oc ) - ra*ra;
   float h = b*b - c;
-  if( h<0.0 ) return vec2(-1.0); // no intersection
+  if( h<0.0 ) return vec2(-1.0);
   h = sqrt( h );
   return vec2( -b-h, -b+h );
 }
@@ -716,7 +705,6 @@ vec3 skyRender(vec3 ro, vec3 rd) {
 
   vec3 col = vec3(0.0);
   col += 0.025*dcol;
-  // col += skyCol*0.0093/pow((1.001+((dot(sunDir2, rd)))), 10.0);
   col += dcol*0.0033/pow((1.001+((dot(sunDir2, rd)))), 2.0);
 
   float tp0  = rayPlane(ro, rd, vec4(vec3(0.0, 1.0, 0.0), 4.0));
@@ -780,14 +768,14 @@ vec4 sphere(vec3 ro, vec3 rd, vec4 sdim) {
 
 
   vec3 hsv2 = rgb2hsv(iSphereColor);
-  hsv2.y = clamp(hsv.y * 2.5, 1.0, 1.5); // Increase saturation by 50%
+  hsv2.y = clamp(hsv.y * 2.5, 1.0, 1.5);
   vec3 ySaturatedColor = hsv2rgb(hsv2);
 
   vec3 scol = vec3(0.0);
   scol += nsky*mix(iSphereColor, saturatedColor + 0.05, 1.25);
   scol += iSphereColor*ndif1;
-  scol += diffCol2*ndif2; // todo
-  scol += nspe1; // todo
+  scol += diffCol2*ndif2;
+  scol += nspe1;
   scol += ySaturatedColor;
 
   float t = tanh_approx(2.0*(si.y-si.x)/sdim.w);
@@ -802,7 +790,6 @@ vec3 sphereRender(vec3 ro, vec3 rd) {
 
   float blackAmount = 0.7;
   mcol = mix(mcol, vec3(0.0), blackAmount);
-  // vec3 col = mcol;
   vec3 col = skyCol;
 
   const vec4 sdim0 = vec4(vec3(0.0), 2.0);
@@ -905,11 +892,9 @@ vec3 outerSkyRender(vec3 ro, vec3 rd) {
   float rb = 1.55*sdim.w;
   float re = 2.45*sdim.w;
   float rw = 0.1*sdim.w;
-  //
-//   vec3 rcol = hsv2rgb(vec3(clamp((0.005*(rl+32.0)), 0.6, 0.8), 0.9, 1.0));
     vec3 rcol = mix(iStartColor, iEndColor, clamp((0.0012*(rl+32.0)), 0., 1.0)) * 2.0;
     vec3 hsv = rgb2hsv(rcol);
-    hsv.y = clamp(hsv.y * 5.5, 1.0, 1.0); // Increase saturation by 50%
+    hsv.y = clamp(hsv.y * 5.5, 1.0, 1.0);
     rcol = hsv2rgb(hsv);
   gcol = rcol*(0.025 + iHighFreq / 2.);
   if (ri > 0.0 && (pi.x == -1.0 || ri < pi.x)) {
@@ -951,19 +936,17 @@ vec3 triRender(vec3 col, vec3 ro, vec3 rd, inout float maxt) {
     const vec2 n = SCA(-PI/3.0);
     vec2 gp = p;
     float hoff = 0.15*dot(n, p);
-    // vec3 gcol = hsv2rgb(vec3(clamp(0.7+hoff, 0.6, 0.8), 0.90, 0.02));
     vec3 gcol = mix(iStartColor, iEndColor, clamp(sin(hoff * 2.0 * 3.14159), 0.0, 1.0)) / 60.;
     vec3 hsv = rgb2hsv(gcol);
-    hsv.y = clamp(hsv.y * 5.5, 5.0, 1.0); // Increase saturation by 50%
+    hsv.y = clamp(hsv.y * 5.5, 5.0, 1.0);
     gcol = hsv2rgb(hsv);
     vec2 pt = p;
     pt.y = -pt.y;
     const float zt = 1.0;
     float dt = equilateralTriangle(pt/zt)*zt;
-    float roundness = 0.15; // Adjust this value to change the roundness
+    float roundness = 0.15;
     float dt_rounded = mix(dt, circle(pt/zt, zt), roundness);
 
-    // Replace dt with dt_rounded in the rest of your code
     col = dt_rounded < 0.0 ? sphereEffect(1.5*(p)) : col;
     col += (gcol/max(abs(dt_rounded), 0.001))*smoothstep(0.25, 0.0, dt_rounded);
     if (dt_rounded < 0.0) {
@@ -977,7 +960,7 @@ float heightFactor(vec2 p) {
 }
 
 float hifbm(vec2 p) {
-  p *= 0.25; // todo
+  p *= 0.25;
   float hf = heightFactor(p);
   float aa = 0.5;
   float pp = 2.0 -0. + iMountainsPattern;
@@ -1064,8 +1047,6 @@ vec3 mountainRender(vec3 col, vec3 ro, vec3 rd, bool flip, inout float maxt) {
         d = min(d, dd);
     }
 
-    // vec3 rcol = hsv2rgb(vec3(clamp(.7+(0.5*(rd.x)), 0.6, 0.8), 0.95, 0.125));
-
     vec3 rcol = mix(iStartColor, iEndColor, clamp(rd.x, 0.0, 1.0));
 
     float sd = 1.0001-((dot(sunDir, rd)));
@@ -1117,7 +1098,6 @@ vec3 groundRender(vec3 col, vec3 ro, vec3 rd, inout float maxt) {
   vec2 ggn    = mod2(ggp, vec2(1.0));
   float ggd   = min(abs(ggp.x), abs(ggp.y));
 
-//   vec3 gcol = hsv2rgb(vec3(0.7+0.1*gcf, 0.90, 0.02));
   vec3 gcol = mix(iStartColor, iEndColor, clamp(gcf + iLowFreq * 3., 0.0, 1.0)) / 55.;
 
   float rmaxt = 1E6;
@@ -1125,9 +1105,8 @@ vec3 groundRender(vec3 col, vec3 ro, vec3 rd, inout float maxt) {
   rcol = mountainRender(rcol, gp, grr, true, rmaxt) / 1.25;
   rcol = triRender(rcol, gp, grr, rmaxt);
 
-  // TODO enhance this with low freqs
   col = gcol/max(max(ggd, 0.01*dfy), 0.001)*exp((-0.15 - iLowFreq * 2.)*gpd);
-  rcol += HSV2RGB(vec3(0.65, 0.85, 1.0))*gpfre; // todo
+  rcol += HSV2RGB(vec3(0.65, 0.85, 1.0))*gpfre;
   rcol = (2.0 + iHighFreq) *tanh(rcol*0.25);
   col += rcol*gpfre;
 
@@ -1177,12 +1156,8 @@ void main() {
   p.x *= 1.9;
   vec3 col = effect(p, pp);
 
-  // Apply tonemapping and gamma correction
   col = aces_approx(col);
   col = sRGB(col);
-
-  // When post-processing is active, darken the output to compensate
-  // for EffectComposer's brightness boost
 
   outColor = vec4(col, 1.0);
 }

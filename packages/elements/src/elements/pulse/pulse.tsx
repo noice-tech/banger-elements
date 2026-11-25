@@ -263,11 +263,6 @@ function getPlan(size: number): RealFftPlan {
 	return plan;
 }
 
-/**
- * Hann-windowed amplitude spectrum of `size` samples centered on `center`.
- * Samples outside `samples` count as silence. Bin `k` is `k * sampleRate / size`
- * Hz; a full-scale sine centered on a bin reads 1.
- */
 function computeAmplitudeSpectrum({
 	samples,
 	center,
@@ -427,11 +422,6 @@ function getBandPlan(sampleRate: number, fftSize: number, count: number): BandPl
 	return plan;
 }
 
-/**
- * Resamples an amplitude spectrum onto `outputBarsCount` log-spaced bands from
- * 20 Hz to 22 kHz. Each band reads the loudest bin it covers, so a tone keeps
- * its level and position regardless of band width or sample rate.
- */
 function computeBars({
 	amplitudes,
 	sampleRate,
@@ -624,7 +614,6 @@ vec3 palette(float t, vec3 a, vec3 b) {
 }
 
 void main() {
-  // Center UV and scale to maintain circular shape on sphere
   vec2 uv = (vUv - vec2(0.5, 0.5)) / vec2(0.25, 0.25);
   uv.y *= iResolution.y / iResolution.x;
 
@@ -633,21 +622,17 @@ void main() {
   float midLevel = iMidFreq * iResponsive;
   float highLevel = iHighFreq * iResponsive;
 
-  // Polar coordinates for tunnel
   float dist = length(uv);
   float angle = atan(uv.y, uv.x);
 
-  // Tunnel depth with audio warp
   float tunnelZ = iTunnelDepth / (dist + 0.1);
   tunnelZ += bassLevel * 2.0;
 
-  // Twist the tunnel
   float twist = angle + tunnelZ * iTwist * 0.1 + time * 0.5;
   twist += sin(tunnelZ * 0.5 + time) * iWarp * (0.5 + bassLevel);
 
   vec3 col = vec3(0.0);
 
-  // Multiple tunnel layers
   float layers = iLayers;
   for (float i = 0.0; i < 12.0; i++) {
     if (i >= layers) break;
@@ -655,33 +640,26 @@ void main() {
     float layerOffset = i * 0.3;
     float z = tunnelZ + layerOffset + time * 2.0;
 
-    // Audio sample for this layer
     float audioSample = getLevel(mod(i / layers, 1.0)) * iResponsive;
 
-    // Hexagonal tunnel pattern
     float hexAngle = mod(twist + i * PI / 6.0, PI / 3.0) - PI / 6.0;
     float hexDist = cos(hexAngle) * dist;
 
-    // Ring pattern
     float ring = fract(z * 0.3);
     float ringEdge = smoothstep(0.02 + audioSample * 0.02, 0.0, abs(ring - 0.5) - 0.4);
 
-    // Edge glow
     float edge = 1.0 / (1.0 + pow(abs(hexDist - 0.3 - audioSample * 0.1) * 10.0, 2.0));
     edge *= smoothstep(2.0, 0.5, dist);
 
-    // Color based on depth and audio
     float colorShift = z * 0.05 + i * 0.1 + midLevel * 0.5;
     vec3 layerColor = palette(colorShift, iStartColor, iEndColor);
 
-    // Brightness modulation
     float brightness = (1.0 + audioSample * 3.0) * (1.0 - i / layers * 0.5);
 
     col += layerColor * edge * iGlow * brightness * 0.3;
     col += layerColor * ringEdge * brightness * 0.2;
   }
 
-  // Energy particles
   float particles = iParticles;
   for (float i = 0.0; i < 50.0; i++) {
     if (i >= particles) break;
@@ -692,14 +670,12 @@ void main() {
     float pRadius = 0.1 + hash(vec2(seed, 2.0)) * 0.8;
     float pZ = mod(hash(vec2(seed, 3.0)) * 20.0 + time * pSpeed * 3.0, 20.0);
 
-    // Spiral path
     float spiralAngle = pAngle + pZ * iTwist * 0.2 + time;
     float currentRadius = pRadius * (1.0 + sin(pZ + time) * 0.3);
     currentRadius += bassLevel * 0.2;
 
     vec2 pPos = vec2(cos(spiralAngle), sin(spiralAngle)) * currentRadius;
 
-    // Project into tunnel
     float pDist = iTunnelDepth / (pZ + 0.5);
     pPos *= pDist;
 
@@ -717,18 +693,15 @@ void main() {
     }
   }
 
-  // Central energy core
   float coreGlow = exp(-dist * 4.0) * (1.0 + bassLevel * 2.0);
   float corePulse = 0.5 + 0.5 * sin(time * TAU * iBpm / 60.0);
   vec3 coreColor = mix(iStartColor, iEndColor, corePulse);
   col += coreColor * coreGlow * iGlow * 0.5;
 
-  // Outer vortex streaks
   float streaks = fbm(vec2(angle * 3.0, tunnelZ * 0.5 + time));
   streaks = pow(streaks, 2.0) * (1.0 + midLevel);
   col += palette(angle / TAU + time * 0.1, iStartColor, iEndColor) * streaks * 0.3 * smoothstep(1.5, 0.3, dist);
 
-  // Vignette
   float vignette = 1.0 - smoothstep(0.5, 1.5, dist);
   col *= vignette;
 

@@ -17,7 +17,6 @@ type AudioParticlesOptions = {
 	readonly audioSrc?: string;
 	readonly audioOffsetInSeconds?: number;
 	readonly playAudio?: boolean;
-	/** Emission start relative to the element; negative values pre-fill the field. */
 	readonly startTimeInSeconds?: number;
 	readonly inputGainDb?: number;
 	readonly intensity?: number;
@@ -161,8 +160,6 @@ function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, 
 }
 
 function useVisualizerAudio(src: string, time: number, fps: number) {
-	// Preserve five seconds of bass history after EOF, including on direct seeks.
-	// Include one analysis frame for rounding at the history boundary.
 	const analysisTime = Math.max(0, time - (BASS_HISTORY_FRAMES + 1) / fps);
 	const result = useWindowedAudioData({
 		src,
@@ -170,7 +167,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId; distinguish decoded buffer revisions.
 	const instanceId = useId();
 	const revision = useRef(0);
 	const audioData = useMemo(
@@ -180,7 +176,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 				: null,
 		[result.audioData, instanceId],
 	);
-	// The current chunk can arrive before its retained neighbors.
 	const complete =
 		audioData === null ||
 		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, analysisTime);
@@ -238,7 +233,6 @@ const bitReversedIndices = Uint16Array.from({length: FFT_SIZE}, (_, index) => {
 	return reversed;
 });
 
-// Web Audio mono downmix, shared with Halo's analysis.
 function monoSample(channels: Float32Array[], index: number) {
 	const sample = (channel: number) => channels[channel]?.[index] ?? 0;
 	if (channels.length === 1) return sample(0);
@@ -334,7 +328,6 @@ function getSmoothedMagnitudes({audioData, dataOffsetInSeconds, frame, fps}: Ana
 	const cached = smoothedMagnitudeCache.get(smoothedCacheKey);
 	if (cached) return cached;
 	const smoothedMagnitudes = new Float32Array(FREQUENCY_BIN_COUNT);
-	// Always evaluate the same finite window, regardless of cache/render order.
 	{
 		const firstFrame = Math.max(0, frame - SMOOTHING_LOOKBACK_FRAMES);
 		for (let analysisFrame = firstFrame; analysisFrame <= frame; analysisFrame++) {
@@ -438,7 +431,6 @@ function createParticleHistory({
 	reactiveSpeed,
 	...input
 }: AudioInput & Pick<Required<AudioParticlesOptions>, 'maskHalo' | 'reactiveSpeed'>) {
-	// Sample current and historical audio on the composition's frame grid.
 	const sample = (time: number) => ({
 		audioData: input.audioData,
 		dataOffsetInSeconds: input.dataOffsetInSeconds,
@@ -450,7 +442,6 @@ function createParticleHistory({
 		time < 0 || time >= input.audioData.durationInSeconds ? 0 : getSourceBass(sample(time));
 	const bass = bassAt(input.sourceTime);
 	const history = new Uint8Array(200 * 9 * 4);
-	// Only build the matching Halo edge when explicit masking is enabled.
 	if (maskHalo)
 		for (let row = 0; row < MASK_TRAIL_DEPTH; row++) {
 			const time = input.sourceTime - row / input.fps;
@@ -511,7 +502,6 @@ function createParticleHistory({
 	};
 }
 
-// Normalize shader syntax and output for WebGL2.
 function shaderSource(source: string, fragment: boolean) {
 	let code = source
 		.replace(/\bvarying\b/g, fragment ? 'in' : 'out')
@@ -1017,7 +1007,6 @@ void main() {
   }
 
   float distanceFromCenter = length(projected);
-  // Conservative padding covers Halo's independent shake and temporal edges.
   float ringVisibility = iMaskHalo ? smoothstep(
     outerRadius + 0.012,
     outerRadius + 0.04,

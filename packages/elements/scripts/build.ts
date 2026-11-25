@@ -10,8 +10,6 @@ import {sourceSettings} from './source-settings';
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(workspace, 'dist');
 
-// Remotion's hosted example track. Studio copies it into the user's public/ folder on
-// install, so a fresh Element plays offline. Every install shares one file.
 const demoAudio = {
 	path: 'banger-elements/remotion-made-this-picture-move.mp3',
 	type: 'url',
@@ -29,7 +27,6 @@ for (const entry of catalog) {
 		'utf8',
 	);
 	const settings = sourceSettings(sourceCode);
-	// Shaders use layout 'absolute-fill' and size themselves to the composition.
 	const fillsComposition = sourceCode.includes(`layout: 'absolute-fill'`);
 	const usesDemoAudio = settings.audioSrc?.value === demoAudio.url;
 	const payload = createElementPayload({

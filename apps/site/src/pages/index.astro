@@ -12,7 +12,6 @@ import {shaderDetails} from '../data/shader-updates';
 import {version} from '../../../../packages/elements/package.json';
 
 const byCategory = elementCategories.map((category) => elements.filter((entry) => entry.category === category.id));
-// Interleave the categories so the filmstrip alternates looks instead of running in blocks.
 const filmstrip = Array.from({length: Math.max(...byCategory.map((list) => list.length))}).flatMap((_, index) =>
 	byCategory.map((list) => list[index]).filter((entry) => entry !== undefined),
 );
@@ -27,13 +26,11 @@ const wraps = wrapDemos.map((demo) => {
 	const entry = elements.find((element) => element.slug === demo.slug)!;
 	return {...demo, title: entry.title, name: entry.name};
 });
-// The home page plays one example and stacks the others in a link to all of them.
 const featuredExample = recipes.find((recipe) => recipe.id === 'release-reel')!;
 const otherExamples = recipes.filter((recipe) => recipe !== featuredExample);
 const divisor = (a: number, b: number): number => (b === 0 ? a : divisor(b, a % b));
 const shape = divisor(featuredExample.width, featuredExample.height);
 const featuredRatio = `${featuredExample.width / shape}:${featuredExample.height / shape}`;
-// The release line above the headline: the newest elements, and what shipped in this minor version.
 const release = {
 	version: version.split('.').slice(0, 2).join('.'),
 	added: ['wet-glass', ...Object.keys(shaderDetails)].map((slug) => elements.find((entry) => entry.slug === slug)!),
@@ -269,7 +266,6 @@ const release = {
 	</section>
 </Showcase>
 <script>
-	// Keep the plain headline until the video actually plays.
 	const glow = document.querySelector<HTMLVideoElement>('.halo-word-glow video');
 	glow?.addEventListener('playing', () => glow.toggleAttribute('data-playing', true), {once: true});
 
@@ -306,7 +302,6 @@ const release = {
 		sound.addEventListener('click', () => {
 			reelVideo.muted = !reelVideo.muted;
 			sound.setAttribute('aria-pressed', String(!reelVideo.muted));
-			// Turning sound on is a request to hear it, even under reduced motion.
 			if (!reelVideo.muted && reelVideo.paused) void reelVideo.play().catch(() => {});
 		});
 		for (const button of seekers) {
@@ -318,7 +313,6 @@ const release = {
 		}
 	}
 
-	// Paint the plain half from the same frame so both sides stay in sync.
 	const compare = document.querySelector<HTMLElement>('[data-compare]');
 	const compareVideo = compare?.querySelector('video');
 	const canvas = compare?.querySelector('canvas');

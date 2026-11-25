@@ -245,11 +245,6 @@ function getPlan(size: number): RealFftPlan {
 	return plan;
 }
 
-/**
- * Hann-windowed amplitude spectrum of `size` samples centered on `center`.
- * Samples outside `samples` count as silence. Bin `k` is `k * sampleRate / size`
- * Hz; a full-scale sine centered on a bin reads 1.
- */
 function computeAmplitudeSpectrum({
 	samples,
 	center,
@@ -409,11 +404,6 @@ function getBandPlan(sampleRate: number, fftSize: number, count: number): BandPl
 	return plan;
 }
 
-/**
- * Resamples an amplitude spectrum onto `outputBarsCount` log-spaced bands from
- * 20 Hz to 22 kHz. Each band reads the loudest bin it covers, so a tone keeps
- * its level and position regardless of band width or sample rate.
- */
 function computeBars({
 	amplitudes,
 	sampleRate,
@@ -567,21 +557,18 @@ out vec4 outColor;
 
 vec2 iResolution = vec2(1920.0, 1080.0);
 
-// Spiral transform
 vec2 spiralWarp(vec2 pt, float theta) {
   float c = cos(theta);
   float s = sin(theta);
   return vec2(pt.x * c - pt.y * s, pt.x * s + pt.y * c);
 }
 
-// Filmic contrast curve
 vec3 filmicCurve(vec3 col) {
   vec3 x = col * (col + 0.028) - 0.00012;
   vec3 y = col * (0.97 * col + 0.45) + 0.25;
   return x / y;
 }
 
-// Turbulent field for liquid distortion
 float turbulentField(vec3 q) {
   const float EULER = 2.718281828;
   vec3 q1 = vec3(
@@ -592,59 +579,46 @@ float turbulentField(vec3 q) {
   return dot(cos(q1 * 1.1), sin(EULER * q * 1.3));
 }
 
-// Sample spectrum as a ribbon pattern - radial bands colored by frequency
 vec3 spectrumRibbons(vec3 p, float time) {
-  // Radial angle determines which frequency band we sample
   float angle = atan(p.y, p.x);
-  float normalizedAngle = (angle + 3.14159) / 6.28318; // 0-1
+  float normalizedAngle = (angle + 3.14159) / 6.28318;
 
-  // Flow the ribbons through the tunnel - FASTER
   float flowOffset = p.z * 0.15 + time * 0.1;
   float ribbonDist = abs(fract(normalizedAngle * 16.0 + flowOffset * 3.0) - 0.5);
 
-  // Sample MORE ribbon bands for richer effect
   vec3 ribbonCol = vec3(0.0);
   for (float i = 0.0; i < 16.0; i++) {
     float bandAngle = fract(normalizedAngle + i / 16.0 + flowOffset);
 
-    // Sample raw sound texture - CRANKED
     float amplitude = texture(iSoundTexture, vec2(bandAngle, 0.5)).r * iResponsive * 2.5;
 
-    // Lower threshold to show more
     if (amplitude < 0.08) continue;
 
-    // Wider ribbons based on amplitude
     float ribbonWidth = 0.05 + amplitude * 0.15;
     if (ribbonDist >= ribbonWidth) continue;
     float ribbon = smoothstep(ribbonWidth, 0.0, ribbonDist);
 
-    // More vibrant colors
     vec3 bandColor = mix(iColor1, iColor2, bandAngle);
     bandColor = mix(bandColor, iGlowColor, amplitude * 0.8);
-    bandColor = mix(bandColor, vec3(1.0, 0.2, 0.5), i / 16.0 * 0.3); // Pink tint
+    bandColor = mix(bandColor, vec3(1.0, 0.2, 0.5), i / 16.0 * 0.3);
 
-    // Square amplitude for punch
     ribbonCol += bandColor * ribbon * amplitude * amplitude * 4.0;
   }
 
   return ribbonCol;
 }
 
-// Spectrum-driven distortion field - samples texture to modulate turbulence
 float spectrumDistortion(vec3 p, float time, float radius) {
-  // Sample spectrum at MULTIPLE positions for richer effect
   float depthSample = fract(p.z * 0.08 + time * 0.04);
   float radialSample = fract(radius * 0.5);
   float angleSample = fract(atan(p.y, p.x) / 6.28318 + time * 0.02);
 
-  // Get raw amplitudes from different parts of the spectrum - CRANKED
   float depthAmp = texture(iSoundTexture, vec2(depthSample, 0.5)).r;
   float radialAmp = texture(iSoundTexture, vec2(radialSample, 0.5)).r;
   float angleAmp = texture(iSoundTexture, vec2(angleSample, 0.5)).r;
 
-  // Combine for complex distortion pattern - stronger effect
   float combined = (depthAmp + radialAmp + angleAmp) / 3.0;
-  return combined * combined * iResponsive * 2.5; // Squared for punch
+  return combined * combined * iResponsive * 2.5;
 }
 
 void main() {
@@ -656,114 +630,85 @@ void main() {
   float mids = iMidFreq * iResponsive;
   float highs = iHighFreq * iResponsive;
 
-  // March origin through the void
   vec3 marchPos = vec3(0.0, 0.0, t);
   vec3 marchDir = normalize(vec3(uv, 1.0));
 
-  // Light accumulation
   vec3 glow = vec3(0.0);
 
-  // Swirl and distortion (no audio reactivity on movement)
   float swirlAmount = iSwirl;
   float distortAmount = iDistortion;
 
-  // 12-step march through liquid space
   for (float step = 0.0; step < 12.0; step += 1.0) {
     vec3 p = marchPos;
     float radius = length(p.xy);
 
-    // Get spectrum-driven distortion at this position - MORE INTENSE
     float specDist = spectrumDistortion(p, t, radius);
 
-    // Liquid spiral warp - swirl CRANKED with spectrum
     vec2 warped = p.xy;
     float swirlAngle = t * 1.4 * swirlAmount + p.z * 2.8 * swirlAmount;
-    swirlAngle += specDist * 3.0; // DOUBLED spectrum swirl effect
+    swirlAngle += specDist * 3.0;
     warped = spiralWarp(sin(warped), swirlAngle);
     vec3 sampleP = vec3(warped, p.z);
 
-    // Dual-layer turbulence - STRONGER spectrum modulation
     float turbMod = distortAmount * (1.0 + specDist * 1.5);
     float turb1 = turbulentField(sampleP * 11.0 * turbMod) / 11.0;
     float turb2 = turbulentField(sampleP * turbMod * 0.9);
     float separation = 0.0015 + abs(turb1 - turb2 * 0.35);
 
-    // Void boundary - spectrum PULSES the tunnel radius more
     float dynamicRadius = iTunnelRadius * (1.0 + specDist * 0.6);
     separation = max(separation, dynamicRadius - radius);
 
-    // Undulating wave - spectrum adds BIGGER ripples
     float waveAmp = 0.18 + specDist * 0.3;
     separation += abs(p.y * 0.7 + sin(p.z + t * 0.12 + p.x * 1.4)) * waveAmp;
 
-    // Step forward
     marchPos += marchDir * separation;
 
-    // === SPECTRUM RIBBONS - CRANKED ===
     vec3 ribbons = spectrumRibbons(p, t);
 
-    // Chromatic layering with STRONGER spectrum influence
     float angle = step * 0.5 + p.z * 0.3 + radius * 2.0 + bass * 0.5;
 
-    // Sample spectrum at MULTIPLE depths for color modulation
     float depthFreq = texture(iSoundTexture, vec2(fract(p.z * 0.08), 0.5)).r * iResponsive;
     float depthFreq2 = texture(iSoundTexture, vec2(fract(p.z * 0.12 + 0.3), 0.5)).r * iResponsive;
     float radialFreq = texture(iSoundTexture, vec2(fract(radius * 0.2), 0.5)).r * iResponsive;
 
-    // Combined frequency effect - CRANKED
     float totalFreq = (depthFreq + depthFreq2 + radialFreq) * 1.2;
 
-    // Three-way blend weights - spectrum DOMINATES the phase
     float w1 = max(0.0, sin(angle + totalFreq * 4.0));
     float w2 = max(0.0, sin(angle + 2.094 + totalFreq * 2.0));
     float w3 = max(0.0, sin(angle + 4.188 - totalFreq));
     float wSum = w1 + w2 + w3 + 0.001;
 
-    // Normalize and mix all three colors
     vec3 tint = (iColor1 * w1 + iColor2 * w2 + iGlowColor * w3) / wSum;
 
-    // STRONGER spectrum brightness boost
     tint *= 1.0 + totalFreq * 1.0;
 
-    // Bass boosts glow color intensity MORE
     tint = mix(tint, iGlowColor, bass * 0.2);
 
-    // High frequency shimmer - CRANKED
     tint += iGlowColor * highs * 0.15;
 
-    // Add spectrum ribbons - MORE INTENSE
     tint += ribbons * 0.8;
 
-    // Inverse-distance glow buildup
     glow += tint / separation;
   }
 
-  // Normalize intensity with filmic response
   vec3 result = filmicCurve(glow * glow / 850.0);
 
-  // Contrast lift
   result = pow(result, vec3(1.08));
 
-  // === SPECTRUM WAVEFORM OVERLAY - CRANKED ===
-  // Draw the actual waveform as INTENSE glowing lines across the screen
   float waveformY = uv.y;
   for (float i = 0.0; i < 64.0; i++) {
     float freqX = i / 64.0;
     float amplitude = texture(iSoundTexture, vec2(freqX, 0.5)).r * iResponsive * 2.0;
 
-    // Map frequency position to screen x - FULL WIDTH
     float screenX = freqX * 5.0 - 2.5;
     float distToLine = abs(uv.x - screenX);
 
-    // Waveform displacement - amplitude pushes the line up/down MORE
     float waveY = amplitude * 2.0 - 1.0;
     float distToWave = abs(waveformY - waveY);
 
-    // BIGGER glow around the waveform point
     float waveGlow = exp(-distToLine * 15.0 - distToWave * 5.0);
     waveGlow *= amplitude * amplitude * 5.0;
 
-    // Color based on frequency with more variation
     vec3 waveColor = mix(iColor1, iGlowColor, freqX);
     waveColor = mix(waveColor, iColor2, sin(freqX * 6.28) * 0.5 + 0.5);
     waveColor = mix(waveColor, vec3(1.0, 0.3, 0.6), amplitude * 0.3);
@@ -771,8 +716,6 @@ void main() {
     result += waveColor * waveGlow * 0.25;
   }
 
-  // === RADIAL SPECTRUM BURST ===
-  // Spectrum as rays emanating from center
   float screenAngle = atan(uv.y, uv.x);
   float normalizedScreenAngle = (screenAngle + 3.14159) / 6.28318;
   float screenRadius = length(uv);
@@ -781,31 +724,25 @@ void main() {
     float rayAngle = ray / 24.0;
     float rayAmp = texture(iSoundTexture, vec2(rayAngle, 0.5)).r * iResponsive * 2.0;
 
-    // Ray direction
     float angleDiff = abs(fract(normalizedScreenAngle - rayAngle + 0.5) - 0.5);
     float rayWidth = 0.02 + rayAmp * 0.03;
     float inRay = smoothstep(rayWidth, 0.0, angleDiff);
 
-    // Ray length based on amplitude
     float rayLength = rayAmp * 1.5;
     float inLength = smoothstep(rayLength, 0.0, screenRadius - 0.3);
 
-    // Color
     vec3 rayColor = mix(iColor2, iGlowColor, rayAngle);
     rayColor = mix(rayColor, vec3(1.0, 0.5, 0.2), rayAmp * 0.4);
 
     result += rayColor * inRay * inLength * rayAmp * 0.3;
   }
 
-  // Depth haze
   float haze = 1.0 - exp(-length(marchPos - vec3(0.0, 0.0, t)) * iFog * 0.012);
   vec3 hazeCol = mix(iColor1, iColor2, 0.5) * 0.04;
   result = mix(result, hazeCol, haze * 0.28);
 
-  // Bass brightness surge - CRANKED
   result *= 1.0 + bass * 0.25;
 
-  // Saturation enhancement - MORE VIBRANT
   float luma = dot(result, vec3(0.299, 0.587, 0.114));
   result = mix(vec3(luma), result, 1.5);
 

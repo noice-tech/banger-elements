@@ -1,7 +1,3 @@
-// Cut the short audio excerpts the home page plays live. Usage: node scripts/clips.mjs [id,...]
-// Needs ffmpeg with libmp3lame and aac. Reads the full tracks from their hosted URLs.
-// Scene excerpts are AAC in MP4 with silence in front: AAC stores silence in a few bytes, and
-// MP4 has a seek index, so a time in the excerpt is the same time in the full track.
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, statSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
@@ -34,7 +30,6 @@ for (const timing of sceneTimings) {
 	);
 }
 
-// The tuner loops the first TUNER_SECONDS of the demo song and draws its loudness.
 const TUNER_SECONDS = 50;
 const TUNER_TAIL_SECONDS = 2;
 const TUNER_SLICES = 512;

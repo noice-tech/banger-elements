@@ -1,6 +1,3 @@
-// Markdown versions of the site for coding agents: /llms.txt indexes the collection, and
-// each page has a .md twin. Remotion's /remotion-elements skill reads these to pick and
-// install Elements, so every Element document names its page URL near the top.
 import fields from '../../../../packages/elements/dist/fields.json';
 import {elementCategories, elements} from './elements';
 
@@ -28,7 +25,6 @@ const or = (values: readonly string[]) =>
 		? values.join('')
 		: `${values.slice(0, -1).join(', ')} or ${values[values.length - 1]}`;
 
-// Absolute links, so the documents work when an agent reads them out of context.
 export const absoluteLinks = (markdown: string) =>
 	markdown.replace(/\]\((\/[^)\s]*)\)/g, (_, href: string) => {
 		const [pathname, hash = ''] = href.split('#');

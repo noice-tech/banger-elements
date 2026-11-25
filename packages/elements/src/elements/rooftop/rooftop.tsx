@@ -247,11 +247,6 @@ function getPlan(size: number): RealFftPlan {
 	return plan;
 }
 
-/**
- * Hann-windowed amplitude spectrum of `size` samples centered on `center`.
- * Samples outside `samples` count as silence. Bin `k` is `k * sampleRate / size`
- * Hz; a full-scale sine centered on a bin reads 1.
- */
 function computeAmplitudeSpectrum({
 	samples,
 	center,
@@ -411,11 +406,6 @@ function getBandPlan(sampleRate: number, fftSize: number, count: number): BandPl
 	return plan;
 }
 
-/**
- * Resamples an amplitude spectrum onto `outputBarsCount` log-spaced bands from
- * 20 Hz to 22 kHz. Each band reads the loudest bin it covers, so a tone keeps
- * its level and position regardless of band width or sample rate.
- */
 function computeBars({
 	amplitudes,
 	sampleRate,
@@ -631,26 +621,20 @@ float rooftopDetail(vec2 uv, vec2 clipId) {
   return detail;
 }
 
-// Street wet reflection of sound texture
 vec3 streetSpectrumReflection(vec2 streetUV, float time) {
   vec3 col = vec3(0.0);
 
-  // Sample multiple points across the spectrum for richer effect
   for (float i = 0.0; i < 8.0; i++) {
     float offset = i / 8.0;
     float sampleX = fract(streetUV.x * 0.3 + offset + time * 0.1);
 
-    // Get raw amplitude - cranked up
     float amplitude = texture(iSoundTexture, vec2(sampleX, 0.5)).r * iResponsive * 3.0;
 
-    // Color varies across spectrum bands
     vec3 bandColor = mix(iStreetColor, iLightColor, sampleX);
     bandColor = mix(bandColor, vec3(1.0, 0.3, 0.5), offset * 0.3);
 
-    // Intensity based on amplitude
     float intensity = amplitude * 1.5;
 
-    // Shimmer effect
     float shimmer = sin(streetUV.y * 80.0 + time * 5.0 + i * 2.0) * 0.5 + 0.5;
     intensity *= 0.5 + shimmer * 0.5;
 
@@ -677,10 +661,8 @@ vec3 cityGrid(vec2 uv, float time, float bassLevel, float globalTime) {
   if (isStreet) {
     col = iStreetColor * 0.3;
 
-    // Add spectrum reflection on streets (wet pavement effect)
     col += streetSpectrumReflection(uv, globalTime);
 
-    // Street line markings - glow on bass
     float lineGlow = 0.3 + bassLevel * 0.7;
     if (isStreetX && !isStreetY) {
       float lineY = mod(blockUV.y * 10.0 + time * 0.5, 1.0);
@@ -695,7 +677,6 @@ vec3 cityGrid(vec2 uv, float time, float bassLevel, float globalTime) {
       }
     }
 
-    // Street edge strokes - highlight on bass
     float edgeStroke = 0.0;
     if (isStreetX) {
       float distFromEdge = min(blockUV.x, 1.0 - blockUV.x);
@@ -805,7 +786,6 @@ vec3 carLights(vec2 uv, float time, float bassLevel, float midLevel, float highL
     vec2 toLight = uv - carPos;
     float carDist = length(toLight);
 
-    // Trail effect on bass - elongate glow in direction of travel
     float trailStretch = 1.0 + bassLevel * 2.0;
     vec2 stretchedPos = toLight;
     float alongDir = dot(toLight, -carDir);
@@ -814,17 +794,15 @@ vec3 carLights(vec2 uv, float time, float bassLevel, float midLevel, float highL
     }
     float trailDist = length(stretchedPos);
 
-    // Colors with audio reactivity
     vec3 headlight = vec3(1.0, 0.95, 0.8);
-    headlight = mix(headlight, vec3(0.8, 0.9, 1.0), highLevel * 0.3); // Blue shift on highs
+    headlight = mix(headlight, vec3(0.8, 0.9, 1.0), highLevel * 0.3);
 
     vec3 taillight = vec3(1.0, 0.1, 0.05);
-    taillight *= (1.0 + midLevel * 0.5); // Brighter on mids
+    taillight *= (1.0 + midLevel * 0.5);
 
     bool isHeadlight = horizontal ? (fract(r.y * 3.0) < 0.5) : (fract(r.y * 5.0) < 0.5);
     vec3 lightCol = isHeadlight ? headlight : taillight;
 
-    // Glow size pulses with bass
     float glowFactor = 150.0 - bassLevel * 30.0;
     float glow = exp(-trailDist * glowFactor) * (1.0 + midLevel * 0.3);
     col += lightCol * glow * 0.6;
@@ -839,44 +817,34 @@ vec3 atmosphere(vec2 uv, float dist) {
   return fogColor * fogAmount;
 }
 
-// Aurora sky effect - uses raw sound texture as light bands
 vec3 spectrumAurora(vec2 uv, float time) {
   vec3 col = vec3(0.0);
 
-  // Wider horizon mask - more visible area
   float horizonMask = smoothstep(0.0, -1.2, uv.y);
   if (horizonMask < 0.01) return col;
 
   float flow = time * 0.2;
 
-  // More layers, more intensity
   for (float layer = 0.0; layer < 6.0; layer++) {
     float layerOffset = layer * 0.1;
     float layerSpeed = 1.0 + layer * 0.5;
 
-    // Sample multiple frequency bands per layer
     for (float band = 0.0; band < 16.0; band++) {
       float bandOffset = band / 16.0;
 
-      // Map to texture coordinate
       float sampleX = fract(uv.x * 0.5 + 0.5 + bandOffset + sin(uv.y * 4.0 + flow * layerSpeed + layer) * 0.2);
       sampleX = fract(sampleX + flow * 0.1 * layerSpeed);
 
-      // Sample raw sound texture - CRANKED
       float amplitude = texture(iSoundTexture, vec2(sampleX, 0.5)).r * iResponsive * 2.5;
 
-      // Skip low amplitude
       if (amplitude < 0.1) continue;
 
-      // Band position varies with frequency
       float bandY = -0.4 - layerOffset - bandOffset * 0.3;
       float bandHeight = amplitude * 0.8;
 
-      // Sharp band shape
       float bandMask = smoothstep(bandHeight, 0.0, abs(uv.y - bandY));
-      bandMask *= amplitude * amplitude; // Square for more punch
+      bandMask *= amplitude * amplitude;
 
-      // Vibrant color per band
       vec3 auroraColor = mix(iSkyColor, iLightColor, sampleX);
       auroraColor = mix(auroraColor, iStreetColor, layer / 6.0);
       auroraColor = mix(auroraColor, vec3(1.0, 0.2, 0.6), bandOffset * 0.4);
@@ -909,7 +877,6 @@ void main() {
 
   vec3 col = iSkyColor * 0.1;
 
-  // Add spectrum aurora to sky
   col += spectrumAurora(uv, globalTime);
 
   if (groundDist > 0.0) {

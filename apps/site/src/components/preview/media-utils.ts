@@ -1,5 +1,4 @@
-// Stands in for `@remotion/media-utils` in the site's bundle (see `astro.config.mjs`).
-// The package is re-exported untouched except for a cache around `visualizeAudio`.
+// EXTERNAL: astro.config.mjs aliases @remotion/media-utils to this file to cache visualizeAudio.
 import {visualizeAudio as original} from '@banger/media-utils-original';
 import {cacheVisualizer} from './visualizer-cache';
 

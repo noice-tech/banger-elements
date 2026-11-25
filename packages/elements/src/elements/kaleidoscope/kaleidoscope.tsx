@@ -298,12 +298,11 @@ void main()
 			uv = vec2(dot(dir, uv), dot(codir, uv));
 
 			if (!iStill) {
-				uv.xy += vec2(sin(iGlobalTime),cos(iGlobalTime*1.1)) * scaleFactor * (0.035); // pattern 2 also if commented out then more static movement could be as option
+				uv.xy += vec2(sin(iGlobalTime),cos(iGlobalTime*1.1)) * scaleFactor * (0.035);
 			}
 			
 			uv = abs(fract(uv+0.5)*2.0-1.0)*0.7;
 			vec3 p = vec3(1,5,9);
-			// outColor.rgb += exp(-min(uv.x + (iLowFreq * iIntensity * 0.25) , uv.y - (iLowFreq * iIntensity * 0.05)) * 16.) * (cos(p*float(i)+iGlobalTime*(iLowFreq * iIntensity))*.5+.5)*m ;
 			outColor.rgb += exp(-min(uv.x, uv.y) * 16.) * (cos(p*float(i)+iGlobalTime*(iLowFreq * iIntensity))*.5+.5)*m ;
 
 			if (!iRandomColor) {

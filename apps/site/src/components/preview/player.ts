@@ -3,7 +3,6 @@ import type {PlayerRef} from '@remotion/player';
 import type {PreviewKind} from './examples';
 import {isWrapper} from '../preview-config';
 
-// Match the track length so previews don't loop through silence.
 const LONG_PREVIEWS: readonly string[] = ['audio-particles', 'combined'];
 
 export const previewDurationInSeconds = (kind: PreviewKind) =>
@@ -11,7 +10,6 @@ export const previewDurationInSeconds = (kind: PreviewKind) =>
 
 const alwaysReady = () => true;
 
-// Wait for two settled frames to avoid flashing a half-loaded preview.
 export function usePlayerReady<K extends string>(
 	playerRef: RefObject<PlayerRef | null>,
 	kind: K,
@@ -23,7 +21,6 @@ export function usePlayerReady<K extends string>(
 	useEffect(() => {
 		const player = playerRef.current;
 		if (!player) return;
-		// A remounted Player shows its first frames again, so wait for them to settle.
 		setReadyKind(null);
 		let frame = 0;
 		let settledFrames = 0;

@@ -406,7 +406,6 @@ export function PreviewControls({
 				</p>
 				<pre tabIndex={0} aria-label="Configured JSX">
 					<code
-						// highlightCode escapes the source before adding its token spans.
 						dangerouslySetInnerHTML={{
 							__html: highlightCode(configuredJsx(slug, inputProps, Boolean(localAudio))),
 						}}

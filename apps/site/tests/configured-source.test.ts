@@ -26,7 +26,6 @@ test('each element generates source defaults directly from its preview settings'
 						playAudio: false,
 					}),
 		};
-		// Shaders fill the composition, so their size is not a source default.
 		const fills = category === 'shaders';
 		const sourceProps = Object.fromEntries(
 			Object.entries(props).filter(([key]) => !fills || (key !== 'width' && key !== 'height')),

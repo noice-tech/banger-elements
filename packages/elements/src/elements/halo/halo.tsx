@@ -229,7 +229,6 @@ function useArtwork(src: string) {
 	return loaded?.src === src ? loaded.image : null;
 }
 
-// Fixed frequency bins keep results independent of the audio device.
 const ANALYSIS_SAMPLE_RATE = 44100;
 const FFT_SIZE = 2048;
 const FREQUENCY_BIN_COUNT = 512;
@@ -237,7 +236,6 @@ const TEMPORAL_SMOOTHING = 0.8;
 const MIN_DECIBELS = -100;
 const MAX_DECIBELS = -30;
 const SPECTRUM_SCALE = 0.08;
-// Retain only the low-frequency bins used by the ring (~10 KB/sec).
 const RETAINED_BINS = Math.ceil(SPECTRUM_SCALE * FREQUENCY_BIN_COUNT) + 1;
 const BLUR_SAMPLES = 6;
 const HISTORY_ROWS = 9 + BLUR_SAMPLES - 1;
@@ -267,7 +265,6 @@ type AnalysisParameters = {
 	inputGainDb: number;
 };
 
-// Web Audio's speakers downmix to mono, including the defined quad/5.1 layouts.
 function monoSample(channels: Float32Array[], index: number) {
 	const sample = (channel: number) => channels[channel]?.[index] ?? 0;
 	if (channels.length === 1) return sample(0);
@@ -275,7 +272,7 @@ function monoSample(channels: Float32Array[], index: number) {
 	if (channels.length === 4) return (sample(0) + sample(1) + sample(2) + sample(3)) * 0.25;
 	if (channels.length === 6)
 		return Math.SQRT1_2 * (sample(0) + sample(1)) + sample(2) + 0.5 * (sample(4) + sample(5));
-	return sample(0); // Web Audio's discrete fallback for other layouts.
+	return sample(0);
 }
 
 function getRawMagnitudes({
@@ -330,8 +327,6 @@ type AnalysisTrace = {
 	magnitudes: Float32Array[];
 	gains: Map<number, number[]>;
 };
-// Owned by the decoded audio, not by playback. Seeking can only extend a trace;
-// it never changes previously computed values. No finite-window smoothing reset.
 const analysisCache = new WeakMap<MediaUtilsAudioData, Map<string, AnalysisTrace>>();
 
 function getAnalysisTrace(parameters: AnalysisParameters) {
@@ -363,14 +358,12 @@ function getAnalysisTrace(parameters: AnalysisParameters) {
 
 function normalizeMagnitude(magnitude: number, inputGainDb: number) {
 	const decibels = 20 * Math.log10(Math.max(magnitude, 1e-12)) + inputGainDb;
-	// getByteFrequencyData quantizes BEFORE texture interpolation and thresholds.
 	return (
 		Math.floor(clamp((decibels - MIN_DECIBELS) / (MAX_DECIBELS - MIN_DECIBELS), 0, 1) * 255) / 255
 	);
 }
 
 function sampleFrequency(values: Float32Array, x: number) {
-	// Normalized GL coordinates address texel CENTERS, not x * (width - 1).
 	const position = clamp(x * FREQUENCY_BIN_COUNT - 0.5, 0, values.length - 1);
 	const left = Math.floor(position);
 	const mix = position - left;
@@ -404,7 +397,6 @@ function getBassPhase(parameters: AnalysisParameters) {
 		const bass = bassFromSpectrum(
 			normalizedSpectrum(trace.magnitudes[next], parameters.inputGainDb),
 		);
-		// Accumulate previous-frame bass in Float32 for stable GPU phase values.
 		gainTrace.push(Math.fround(gainTrace[next] + bass));
 	}
 	return gainTrace[endFrame];
@@ -431,7 +423,6 @@ function createHaloHistory(input: HistoryInput) {
 		fps: input.fps,
 		inputGainDb: input.inputGainDb,
 	});
-	// Build from the latest frame once, then read older rows without replaying FFTs.
 	const trace = getAnalysisTrace(parameters(Math.max(0, headFrame)));
 	for (let row = 0; row < HISTORY_ROWS; row++) {
 		const frame = headFrame - row;
@@ -696,7 +687,7 @@ function HaloCanvas(frame: HaloFrame) {
 
 // prettier-ignore
 const haloFragment = `#version 300 es
-/*
+/* SPDX-License-Identifier: 0BSD
 
   Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted.
 
@@ -737,13 +728,11 @@ vec2 rotatePoint(vec2 point, float angle) {
   return point * mat2(cosine, sine, -sine, cosine);
 }
 
-// The visible radius is twice the radius parameter.
 float sourceCircle(float distanceFromCenter, float radius, float smoothness) {
   float halfSmoothness = smoothness * 0.5;
   return 1.0 - smoothstep(radius - halfSmoothness, radius + halfSmoothness, distanceFromCenter - radius);
 }
 
-// Premultiplied alpha keeps layered colors and afterglow compositable.
 vec4 over(vec4 back, vec4 front) {
   return vec4(front.rgb * front.a + back.rgb * (1.0 - front.a), front.a + back.a * (1.0 - front.a));
 }
@@ -814,7 +803,6 @@ vec4 renderHalo(vec2 uv, int sampleAge, out float innerMask) {
   float innerRadius = max(0.02, iRadius + bassGrowth - CIRCLE_BORDER_SIZE);
   innerMask = sourceCircle(distanceFromCenter, innerRadius, 0.004);
   if (iTransparentCenter) {
-    // Cut ALL premultiplied channels, including the spectrum discs and glow.
     result *= 1.0 - innerMask;
   } else if (innerMask > 0.0) {
     result = over(result, vec4(innerCircle(point / innerRadius, time), innerMask));
@@ -830,8 +818,6 @@ vec4 renderHalo(vec2 uv, int sampleAge, out float innerMask) {
 }
 
 void main() {
-  // Evaluate 0.8*current + 0.2*previous without persistent GPU state.
-  // Six shifted samples approximate temporal blur; discarded weight is 0.2^6.
   vec4 result = vec4(0.0);
   vec2 uv = vUv;
   float weight = 1.0;
@@ -846,9 +832,7 @@ void main() {
     uv += shakeAt(time);
     weight *= 0.2;
   }
-  // Old, smaller rings must not leave ghosts inside the current bass-expanded hole.
   if (iTransparentCenter && iMotionBlur > 0.5) result *= 1.0 - currentInnerMask;
-  // Colors are already in display RGB; no additional color-space conversion.
   outColor = clamp(result, 0.0, 1.0);
 }
 `;
@@ -873,8 +857,6 @@ function resolveLeadingColor({
 }
 
 function centerTint(color: string) {
-	// Neutral charcoal maps to exactly 1, preserving the default shading.
-	// Scale the existing lighting/lines, not the artwork sampled above the disc.
 	return displayColor(color).map((channel) => channel / (45 / 255));
 }
 
@@ -921,8 +903,6 @@ const HaloContent: React.FC<Required<HaloOptions>> = (props) => {
 	const {fps} = useVideoConfig();
 	const offsetFrames = Math.round(props.audioOffsetInSeconds * fps);
 	const sourceTime = (frame + offsetFrames) / fps;
-	// Full audio is required for source-start bass accumulation when seeking.
-	// useAudioData holds rendering until decoding completes; FFT traces grow lazily.
 	const audioData = useAudioData(props.audioSrc, {
 		sampleRate: ANALYSIS_SAMPLE_RATE,
 	});

@@ -2,7 +2,6 @@ import type {APIRoute, GetStaticPaths} from 'astro';
 import {elementCategories, elements} from '../data/elements';
 import {categoryMarkdown, elementMarkdown} from '../data/markdown';
 
-// A Markdown twin of every Element and category page: append .md to the page URL.
 export const getStaticPaths = (() => [
 	...elements.map((element) => ({params: {element: element.slug}})),
 	...elementCategories.map((category) => ({params: {element: category.id}})),

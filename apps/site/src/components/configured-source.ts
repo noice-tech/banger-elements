@@ -5,8 +5,6 @@ export type SourcePayload = StudioElementPayload & {
 	sourceSettings: Record<string, {start: number; end: number; value: unknown}>;
 };
 
-// Shaders fill their composition (payload dimensions are null). The preview stage is
-// 1280x720, so only a size the user changed is installed as an explicit size.
 const FILL_PREVIEW_SIZE = {width: 1280, height: 720};
 
 export function configuredPayload(
@@ -27,7 +25,6 @@ export function configuredPayload(
 		sourceCode = sourceCode.slice(0, edit.start) + edit.text + sourceCode.slice(edit.end);
 	}
 
-	// The demo track is copied into the project only while the source still uses it.
 	const ownAudio =
 		'audioSrc' in props && props.audioSrc !== template.sourceSettings.audioSrc?.value;
 	const initialProps: Record<string, unknown> = {...template.element.initialProps};

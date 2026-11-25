@@ -1,4 +1,3 @@
-// The page and render script share this data without importing the elements.
 export const WRAP_FPS = 30;
 export const WRAP_FRAMES = 180;
 export const WRAP_WIDTH = 1280;
@@ -9,9 +8,7 @@ export type WrapEffect = 'wet-glass' | 'vhs' | 'fisheye';
 export type WrapDemo = {
 	readonly slug: WrapEffect;
 	readonly inside: string;
-	/** The effect's props, as the render and the snippet use them. */
 	readonly props: Readonly<Record<string, number>>;
-	/** The components inside, as the snippet names them. */
 	readonly children: readonly string[];
 };
 

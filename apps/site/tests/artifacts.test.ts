@@ -48,7 +48,6 @@ test('each element page embeds only its own Studio payload, so `remotion element
 		assert.ok(sourceSettings, `${slug}: staged payload keeps site-only source settings`);
 		assert.deepEqual(JSON.parse(scripts[0]![1]!), protocol, `${slug}: matches the staged payload`);
 	}
-	// Galleries link to element pages instead of embedding every payload.
 	for (const page of ['index', 'visualizers', 'shaders', 'effects']) {
 		const html = await readFile(path.join(dist, `${page}.html`), 'utf8');
 		assert.ok(!html.includes(ELEMENT_PAYLOAD_MIME_TYPE), `${page}: no embedded payloads`);
@@ -56,7 +55,6 @@ test('each element page embeds only its own Studio payload, so `remotion element
 });
 
 test('every catalog entry has a downloadable detail page, poster and gallery preview', async () => {
-	// The category pages are the complete galleries; the home overview only features some.
 	const galleries = (
 		await Promise.all(
 			['visualizers', 'shaders', 'effects'].map((category) =>
@@ -110,11 +108,9 @@ test('categories: gallery and navigation group all elements without changing the
 		)?.[1];
 	for (const category of ['visualizers', 'shaders', 'effects']) {
 		assert.ok(overview.includes(`href="/${category}"`), `${category}: missing category link`);
-		// The overview features a few of each category and never lists another category's elements.
 		const featured = sectionOf(overview, category);
 		assert.ok(featured, `${category}: missing overview section`);
 		assert.ok(featured.includes('href="/'), `${category}: features something`);
-		// The category page lists exactly its elements.
 		const page = sectionOf(await readFile(path.join(dist, `${category}.html`), 'utf8'), category);
 		assert.ok(page, `${category}: missing gallery section`);
 		for (const entry of catalog) {
@@ -227,7 +223,6 @@ test('coding agents get a Markdown index and a Markdown twin of every page', asy
 		const html = await readFile(path.join(dist, `${slug}.html`), 'utf8');
 		assert.match(html, new RegExp(`<link rel="alternate" type="text/markdown" href="/${slug}.md"`));
 		const markdown = await readFile(path.join(dist, `${slug}.md`), 'utf8');
-		// Remotion's /remotion-elements skill installs from the page URL named near the top.
 		assert.ok(markdown.includes(`\nElement page: ${site}/${slug}\n`), slug);
 		assert.ok(markdown.includes(`npx remotion elements use ${site}/${slug} `), slug);
 		assert.ok(markdown.includes('| Prop | Type | Default |'), slug);
@@ -236,7 +231,6 @@ test('coding agents get a Markdown index and a Markdown twin of every page', asy
 	const guide = await readFile(path.join(dist, 'getting-started.md'), 'utf8');
 	assert.ok(guide.startsWith('# Getting started\n'));
 	assert.ok(!guide.includes('](/'), 'guide links are absolute');
-	// Every link to this site from the Markdown files resolves to a built file.
 	const markdownFiles = (await readdir(dist)).filter((name) => name.endsWith('.md'));
 	for (const file of [...markdownFiles, 'llms.txt']) {
 		const text = await readFile(path.join(dist, file), 'utf8');

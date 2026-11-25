@@ -132,7 +132,6 @@ const waveformSchema = {
 	},
 } as const satisfies InteractivitySchema;
 
-// Fixed decode chunks are independent of the visible waveform window.
 const decodeWindowSeconds = 20;
 
 function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, time: number) {
@@ -147,9 +146,6 @@ function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, 
 }
 
 function useVisualizerAudio(src: string, time: number, fps: number, windowInSeconds: number) {
-	// media-utils returns null once its requested time reaches the audio end.
-	// Keep requesting the visible history until the tail has left the viewport.
-	// Unlike retaining the last buffer, this also works on a direct seek.
 	const analysisTime = Math.max(0, time - windowInSeconds / 2);
 	const result = useWindowedAudioData({
 		src,
@@ -158,7 +154,6 @@ function useVisualizerAudio(src: string, time: number, fps: number, windowInSeco
 		windowInSeconds: decodeWindowSeconds,
 	});
 	const {audioData} = result;
-	// The hook can publish the current chunk before its retained neighbors.
 	const complete =
 		audioData === null ||
 		hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, analysisTime);
@@ -197,9 +192,6 @@ function waveformPath({
 	const waveform = audioData.channelWaveforms[0];
 	const startSample = (sourceTime - windowInSeconds / 2) * sampleRate;
 	const windowSamples = windowInSeconds * sampleRate;
-	// Anchor complete bins to the source timeline, not the moving viewport.
-	// Only their x coordinates change during playback. Include an extra point
-	// on either side so SVG clipping preserves smooth motion at the edges.
 	const binSize = Math.max(
 		1,
 		Math.floor(windowSamples / (2048 * Math.max(1, Math.min(16, resolution)))),
@@ -238,8 +230,6 @@ function waveformPath({
 	return `M${upper.join(' L')} L${lower.join(' L')} Z`;
 }
 
-// Biquad band energies: bass below 200 Hz is red, mids to 2 kHz green, treble blue.
-// Each cached second has its own 100 ms warm-up, so seeking never depends on playback order.
 function createFrequencyColors(waveform: Float32Array, sampleRate: number, offset: number) {
 	const cache = new Map<number, Float32Array>();
 	return (time: number) => {

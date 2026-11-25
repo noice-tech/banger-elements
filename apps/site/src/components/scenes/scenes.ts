@@ -19,10 +19,6 @@ const layer = (spec: LayerFor): LayerSpec => spec as unknown as LayerSpec;
 
 const timing = (id: string) => sceneTimings.find((entry) => entry.id === id)!;
 
-/**
- * Shaders lay out against the frame height, so a size picked for 16:9 is
- * scaled down on a tall frame to keep the same share of its width.
- */
 const span = ({W, H}: SceneContext, size: number) =>
 	Math.round(((size * Math.min(W, H)) / H) * 100) / 100;
 
@@ -68,7 +64,6 @@ export const scenes: readonly SceneSpec[] = [
 			}),
 		],
 		overlay: ({px, W}) => {
-			// The wide letters fill the frame, so narrow formats scale the title by width.
 			const title = Math.min(px(80), Math.round(W * 0.075));
 			return [
 				fill(

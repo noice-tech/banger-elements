@@ -1,0 +1,8 @@
+{
+	"name": "@banger-elements/oxlint",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"test": "node --test comments/*.test.mjs"
+	}
+}

@@ -9,9 +9,6 @@ import {
 	type InteractivitySchema,
 } from 'remotion';
 
-// Faithful wrapper adaptation of banger.show's current layered VHS shader.
-// HtmlInCanvas supplies the composited child pixels; an SVG approximation is
-// retained for browsers where Chrome's experimental capture API is unavailable.
 type VhsOptions = {
 	readonly children?: React.ReactNode;
 	readonly width?: number;
@@ -125,7 +122,6 @@ void main() {
   gl_Position = vec4(position, 0.0, 1.0);
 }`;
 
-// The only addition is strength, used for an exact bypass.
 const fragmentShader = `#version 300 es
 precision highp float;
 uniform sampler2D inputTexture;
@@ -281,12 +277,6 @@ function cleanupVhsWebGl({gl, program, vao, buffer, texture}: VhsWebGlState) {
 	gl.deleteProgram(program);
 }
 
-/**
- * Upload the effect source as premultiplied alpha, matching the context. The
- * shaders sample with a top-left origin, which is how DOM-oriented canvases
- * arrive (`flipSourceY` is true). Only sources that are already flipped for
- * WebGL need to be flipped back.
- */
 function uploadSource(gl: WebGL2RenderingContext, source: TexImageSource, flipSourceY: boolean) {
 	gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !flipSourceY);
@@ -332,7 +322,6 @@ const vhsEffect = createEffect<VhsEffectParams, VhsWebGlState>({
 	apply: ({source, width, height, params, state, flipSourceY}) =>
 		drawVhsWebGl(state, source as TexImageSource, params, width, height, flipSourceY),
 	cleanup: cleanupVhsWebGl,
-	// The Element's own Interactive.create() schema already exposes these controls.
 	schema: {},
 	validateParams: () => undefined,
 });
@@ -503,8 +492,7 @@ const VhsInner: React.FC<VhsProps> = ({
 				boxSizing: 'border-box',
 				width: drawingWidth,
 				height: drawingHeight,
-				// Avoid isolation here: with overflow: hidden it makes Chrome 158 drop the
-				// HtmlInCanvas paint record during renders.
+				// EXTERNAL: Chrome 158 drops the HtmlInCanvas paint if this div has isolation and overflow hidden.
 				overflow: 'hidden',
 				...style,
 			}}

@@ -1,4 +1,3 @@
-// Highlights site snippets as escaped HTML using the token classes in components.css.
 const escapeHtml = (text: string) =>
 	text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 

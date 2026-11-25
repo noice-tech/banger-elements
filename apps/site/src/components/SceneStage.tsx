@@ -44,9 +44,7 @@ import {
 	useVisiblePlayback,
 } from './stage/parts';
 
-/** The live preview renders about as many pixels as 16:9 at 1280 × 720, in any format. */
 const PREVIEW_PIXELS = 1280 * 720;
-/** Phones and touch devices render fewer pixels per layer: three shaders per frame is a lot for them. */
 const COMPACT_PREVIEW_PIXELS = 960 * 540;
 const SCENE_FADE_OUT_MS = 180;
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
@@ -59,12 +57,9 @@ const previewSize = (format: Format, pixels: number) => {
 
 const levelsOf = waves as Record<string, number[]>;
 
-// Swap scenes and props without changing the Player's composition.
 const SceneContext = createContext<BuiltScene | null>(null);
 const StageRenderScope = Internals.DelayRenderContextType;
 
-// The stage plays an excerpt of the track itself, so tweaks never restart the audio and
-// visitors never download the whole file. The excerpt keeps the track's own timeline.
 function StageComposition() {
 	const scene = useContext(SceneContext);
 	if (!scene) return null;
@@ -92,10 +87,8 @@ const formatOptions = (Object.keys(formats) as Format[]).map((value) => ({
 
 type Copy = 'idle' | 'copied' | 'failed';
 
-/** Every element the scene draws in this state, including its overlay and finish. */
 const elementsFor = (spec: SceneSpec, state: SceneState) => buildScene(spec, state).elements;
 
-// Safari has no requestIdleCallback.
 const whenIdle = (task: () => void) => {
 	const idle = (window as Partial<Window>).requestIdleCallback;
 	if (idle) {
@@ -127,7 +120,6 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	const [reducedMotion] = useState(
 		() => typeof window !== 'undefined' && window.matchMedia(REDUCED_MOTION).matches,
 	);
-	// Render the same shell on the server to avoid layout shift when the Player mounts.
 	const [mounted, setMounted] = useState(false);
 	const [loadError, setLoadError] = useState<string | null>(null);
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -144,7 +136,6 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	const full = useMemo(() => buildScene(spec, state), [spec, state]);
 	const code = useMemo(() => {
 		const lines = printScene(full).split('\n');
-		// Lines your tweaks changed, against the scene as it ships in this format.
 		const original = new Set(
 			printScene(buildScene(spec, {...initialState(spec), format: state.format})).split('\n'),
 		);
@@ -158,8 +149,6 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	}, [full, spec, state.format]);
 
 	const {playerKey, retry, recover} = usePlayerRecovery(rootRef, mounted);
-	// The visualizers signal pending audio analysis through Remotion's delay-render handles.
-	// Scope them to this Player so other previews on the page never block the reveal.
 	const renderScope = useMemo(
 		() => ({
 			remotion_renderReady: false,
@@ -178,8 +167,6 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 	const {playing, muted} = usePlayerStatus(playerRef, mounted, playerKey);
 	useVisiblePlayback(rootRef, playerRef, mounted, !reducedMotion, playerKey);
 
-	// Fetch the first scene's shaders, then mount the Player once the page is idle so
-	// WebGL setup never lands in the middle of loading.
 	useEffect(() => {
 		let live = true;
 		let cancelIdle = () => {};
@@ -197,8 +184,6 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 		};
 	}, [playerKey]);
 
-	// Keep playing the old scene until the new shaders arrive. Fade to the incoming
-	// poster before mounting them: WebGL initialization itself can block the main thread.
 	useEffect(() => {
 		if (!selection || selection.id === sceneId) return;
 		let cancelled = false;
@@ -231,7 +216,6 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 		};
 	}, [selection, sceneId, playerKey]);
 
-	// Tuning changes only have to wait for missing shaders; they don't fade out.
 	const commitWhenLoaded = (target: SceneSpec, targetState: SceneState, commit: () => void) => {
 		const needed = elementsFor(target, targetState);
 		if (needed.every((slug) => loadedElements[slug])) return commit();

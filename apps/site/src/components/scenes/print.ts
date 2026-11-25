@@ -1,6 +1,5 @@
 import type {BuiltScene, PropValue, SceneNode, Style} from './model';
 
-/** Columns per line, counting a tab as two. */
 const WIDTH = 100;
 
 const indent = (depth: number) => '\t'.repeat(depth);

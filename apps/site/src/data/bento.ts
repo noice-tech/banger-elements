@@ -1,5 +1,3 @@
-// Each block has a feature beside two stacked tiles, then a row of three.
-// Alternate blocks mirror the feature; partial blocks stretch to fill the row.
 export function bentoClass(index: number, count: number): string {
 	const block = Math.floor(index / 6);
 	const position = index % 6;

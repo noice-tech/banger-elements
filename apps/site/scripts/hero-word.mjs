@@ -1,4 +1,3 @@
-// Render the headline loop as WebM, or pass `--still=<frame>` for a PNG.
 import {spawnSync} from 'node:child_process';
 import {mkdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';

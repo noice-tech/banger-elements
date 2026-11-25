@@ -160,7 +160,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId; distinguish decoded buffer revisions.
 	const instanceId = useId();
 	const revision = useRef(0);
 	const audioData = useMemo(
@@ -170,7 +169,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 				: null,
 		[result.audioData, instanceId],
 	);
-	// The current chunk can arrive before its retained neighbors.
 	const complete =
 		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
 	const {delayRender, continueRender} = useDelayRender();
@@ -251,7 +249,6 @@ type DataTexture = {
 	data: Uint8Array;
 };
 
-// Adapt the known Banger GLSL sources to WebGL2, without Three's injected built-ins.
 function shaderSource(source: string, fragment: boolean) {
 	let code = source
 		.replace(/\bvarying\b/g, fragment ? 'in' : 'out')
@@ -386,7 +383,6 @@ function drawPulsar({gl, program, texture, uniforms}: PulsarState, frame: Pulsar
 	gl.uniform1f(uniforms.time, frame.sourceTime);
 	gl.uniform1f(uniforms.aspect, frame.width / frame.height);
 	const rainbow = frame.colorMode === 'rainbow';
-	// Rainbow uses the default palette only as a lighting/opacity reference.
 	gl.uniform3fv(
 		uniforms.startColor,
 		linearColor(rainbow ? startColorField.default : frame.startColor),
@@ -412,7 +408,7 @@ function drawPulsar({gl, program, texture, uniforms}: PulsarState, frame: Pulsar
 	gl.uniform1i(uniforms.texture, 0);
 	gl.disable(gl.BLEND);
 	gl.drawArrays(gl.TRIANGLES, 0, 6);
-	// Finish GPU work before Remotion captures the frame.
+	// EXTERNAL: Remotion captures the canvas right after this draw, so gl.finish() waits for the GPU.
 	gl.finish();
 	const error = gl.getError();
 	if (error !== gl.NO_ERROR) throw new Error(`Pulsar WebGL draw failed: ${error}`);
@@ -479,7 +475,6 @@ uniform vec3 iStartColor;
 uniform vec3 iEndColor;
 uniform int iColorMode;
 
-// Smooth, periodic hue palette in linear RGB, matching the gradient pipeline.
 vec3 rainbowColor(float hue) {
     vec3 rgb = clamp(abs(fract(hue + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
     rgb = rgb * rgb * (3.0 - 2.0 * rgb);
@@ -528,7 +523,6 @@ void main()
     const float focalLength = 5.0;
     const float camSurfaceRadius = 5.0;
     
-    // Standalone, aspect-correct framing instead of the editor plane's bottom offset.
     vec2 nuv = (vUv - vec2(0.5)) * vec2(iAspect, 1.0);
     nuv = vec2(nuv.y, -nuv.x);
     nuv.x -= 3.0 / 37.0;
@@ -549,12 +543,10 @@ void main()
     
     vec3 color = vec3(0.);
     vec3 referenceColor = vec3(0.);
-    // Screen-space hue avoids a seam through the volume; time is frame-derived.
     vec3 rainbow = rainbowColor(vUv.x * 2.0 + vUv.y * 0.5 + iGlobalTime * 0.06);
     vec3 checkedSpherePoint = camSurfaceCoord;
     float cumulativeDensity = 1.0;
     
-    // The original step is >= 0.5 over a 75-unit range. Bound GPU work explicitly.
     for (int marchStep = 0; marchStep < 160; marchStep++) {
         if (distance(checkedSpherePoint, camPosition) >= 75.0) break;
         float currentDistance = sphereDistance( checkedSpherePoint );
@@ -567,7 +559,6 @@ void main()
         vec3 palette = iColorMode == 1 ? rainbow : mix(iStartColor, iEndColor, blend);
         float weight = density / cumulativeDensity;
         color += palette * (1.0 + highlight) * weight;
-        // Retain the original light distribution independently of palette blending.
         referenceColor += (iStartColor + iEndColor * highlight) * weight;
         cumulativeDensity += density;
     }
@@ -579,7 +570,6 @@ void main()
     const vec3 luma = vec3(0.299, 0.587, 0.114);
     float luminance = dot(referenceColor, luma);
     float paletteLuminance = dot(color, luma);
-    // Only redistribute chroma: preserve the original glow and alpha silhouette.
     color *= luminance / max(paletteLuminance, 0.000001);
     alpha = smoothstep(threshold - softness, threshold + softness, luminance) * iOpacity;
 

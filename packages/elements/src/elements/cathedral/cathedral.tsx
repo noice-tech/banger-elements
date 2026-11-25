@@ -237,11 +237,6 @@ function getPlan(size: number): RealFftPlan {
 	return plan;
 }
 
-/**
- * Hann-windowed amplitude spectrum of `size` samples centered on `center`.
- * Samples outside `samples` count as silence. Bin `k` is `k * sampleRate / size`
- * Hz; a full-scale sine centered on a bin reads 1.
- */
 function computeAmplitudeSpectrum({
 	samples,
 	center,
@@ -401,11 +396,6 @@ function getBandPlan(sampleRate: number, fftSize: number, count: number): BandPl
 	return plan;
 }
 
-/**
- * Resamples an amplitude spectrum onto `outputBarsCount` log-spaced bands from
- * 20 Hz to 22 kHz. Each band reads the loudest bin it covers, so a tone keeps
- * its level and position regardless of band width or sample rate.
- */
 function computeBars({
 	amplitudes,
 	sampleRate,
@@ -588,23 +578,18 @@ float noise(vec3 p) {
   );
 }
 
-// Continuous forward camera path - always moving in -Z direction
 vec3 camPath(float t) {
   float s = 4.0 * iColumnScale;
 
-  // Continuous forward movement in Z
   float z = -t * s * 2.0;
 
-  // Gentle vertical bob using smooth sine
   float y = 2.0 + sin(t * 0.5) * 0.5;
 
-  // Very subtle lateral sway
   float x = sin(t * 0.3) * 0.2;
 
   return vec3(x, y, z);
 }
 
-// SDF primitives
 float sdBox(vec3 p, vec3 b) {
   vec3 q = abs(p) - b;
   return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
@@ -620,12 +605,10 @@ float smin(float a, float b, float k) {
   return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// Gothic pointed arch shape
 float sdArch(vec3 p, float width, float height, float depth) {
   float archRadius = width * 0.7;
   float archHeight = height * 0.6;
 
-  // Two circles meeting at a point for gothic arch
   vec3 p1 = p - vec3(-width * 0.3, archHeight, 0.0);
   vec3 p2 = p - vec3(width * 0.3, archHeight, 0.0);
 
@@ -633,38 +616,30 @@ float sdArch(vec3 p, float width, float height, float depth) {
   float circle2 = length(p2.xy) - archRadius;
   float arch = max(circle1, circle2);
 
-  // Bound by depth
   arch = max(arch, abs(p.z) - depth);
 
-  // Cut bottom
   arch = max(arch, -p.y);
   arch = max(arch, p.y - height);
 
   return arch;
 }
 
-// Single column with base and capital
 float sdColumn(vec3 p, float radius, float height) {
   float col = sdCylinder(p - vec3(0.0, height * 0.5, 0.0), radius, height * 0.5);
 
-  // Base
   float base = sdBox(p - vec3(0.0, 0.15, 0.0), vec3(radius * 1.4, 0.15, radius * 1.4));
 
-  // Capital
   float capital = sdBox(p - vec3(0.0, height - 0.15, 0.0), vec3(radius * 1.3, 0.15, radius * 1.3));
 
   return min(col, min(base, capital));
 }
 
-// Ribbed vault ceiling
 float sdVault(vec3 p, float width, float height) {
   vec3 rp = p;
   rp.y -= height;
 
-  // Main vault curve
   float curve = length(vec2(abs(rp.x), rp.y + width * 0.3)) - width * 0.8;
 
-  // Ribs
   float ribSpacing = 2.0;
   float ribZ = mod(p.z + ribSpacing * 0.5, ribSpacing) - ribSpacing * 0.5;
   float rib = sdBox(vec3(rp.x, rp.y, ribZ), vec3(width, 0.1, 0.08));
@@ -681,25 +656,19 @@ float map(vec3 p) {
   float columnRadius = 0.3 * scale;
   float columnHeight = 6.0 * scale;
 
-  // Audio reactive breathing
   float breath = 1.0 + iMidFreq * iResponsive * 0.02;
 
-  // Repeat space for columns
   vec3 rp = p;
   rp.z = mod(p.z + columnSpacing * 0.5, columnSpacing) - columnSpacing * 0.5;
 
-  // Fold the symmetric rows onto the nearest column.
   vec3 columnP = vec3(abs(rp.x) - naveWidth, rp.y, rp.z);
   float columns = sdColumn(columnP, columnRadius * breath, columnHeight);
 
-  // Floor
   float floor = p.y + 0.01;
 
-  // Floor tiles pattern
   vec2 tileP = mod(p.xz + 0.5, 1.0) - 0.5;
   float tiles = max(floor, -sdBox(vec3(tileP.x, p.y, tileP.y), vec3(0.45, 0.02, 0.45)));
 
-  // Walls
   float walls = min(
     abs(p.x + naveWidth + 1.5) - 0.3,
     abs(p.x - naveWidth - 1.5) - 0.3
@@ -707,7 +676,6 @@ float map(vec3 p) {
   walls = max(walls, -p.y);
   walls = max(walls, p.y - ceilingHeight);
 
-  // Window alcoves in walls (stained glass areas)
   vec3 winP = p;
   winP.z = mod(p.z + columnSpacing * 0.5, columnSpacing) - columnSpacing * 0.5;
   winP.y -= 3.0;
@@ -715,25 +683,20 @@ float map(vec3 p) {
   vec3 windowP = vec3(abs(winP.x) - (naveWidth + 1.2), winP.y, winP.z);
   float windows = sdArch(windowP, 1.2, 3.5, 0.5);
 
-  // Vault ceiling
   vec3 vaultP = p;
   vaultP.z = mod(p.z + columnSpacing * 0.5, columnSpacing) - columnSpacing * 0.5;
   float vault = sdVault(vaultP, naveWidth + 1.0, ceilingHeight);
 
-  // Arches between columns
   vec3 archP = rp;
   archP.y -= columnHeight;
   vec3 sideArchP = vec3(abs(archP.x) - naveWidth, archP.y, archP.z);
   float arches = sdArch(sideArchP, 1.5, 2.0, 0.15);
 
-  // Central nave arch
   float naveArch = sdArch(archP, naveWidth * 1.8, 2.5, 0.2);
   arches = min(arches, naveArch);
 
-  // Combine architecture
   float stone = min(columns, min(tiles, min(walls, min(vault, arches))));
 
-  // Object IDs: 1 = stone, 2 = window/glass, 3 = floor
   objID = 1.0;
 
   if (windows < stone && windows < 0.5) {
@@ -780,27 +743,23 @@ float calcAO(vec3 pos, vec3 nor) {
   return clamp(1.0 - 1.5 * occ, 0.0, 1.0);
 }
 
-// Stained glass color based on position
 vec3 stainedGlassColor(vec3 p) {
   float pattern = sin(p.y * 3.0) * cos(p.z * 2.0);
   pattern += sin(p.y * 5.0 + p.z * 3.0) * 0.5;
 
   vec3 col = mix(iGlassColor1, iGlassColor2, pattern * 0.5 + 0.5);
 
-  // Add some variation
   float n = noise(p * 2.0);
   col = mix(col, vec3(1.0, 0.9, 0.7), n * 0.2);
 
   return col;
 }
 
-// Light beam effect - width controlled by bassLevel
 float lightBeam(vec3 p, vec3 lightPos, vec3 lightDir, float bassLevel) {
   vec3 toP = p - lightPos;
   float dist = length(toP);
   float angle = dot(normalize(toP), lightDir);
 
-  // Beam widens on bass (lower threshold = wider cone)
   float beamWidth = 0.7 - bassLevel * 0.15;
   float beam = smoothstep(beamWidth, 0.95, angle);
   beam *= exp(-dist * 0.1);
@@ -817,10 +776,9 @@ void main() {
   float midLevel = iMidFreq * iResponsive;
   float highLevel = iHighFreq * iResponsive;
 
-  // Camera setup
   vec3 ro = camPath(time);
   vec3 lk = camPath(time + 0.5);
-  vec3 lp = ro + vec3(0.0, 2.0, 2.0); // Light following camera
+  vec3 lp = ro + vec3(0.0, 2.0, 2.0);
 
   float FOV = 1.8;
   vec3 fwd = normalize(lk - ro);
@@ -829,10 +787,9 @@ void main() {
 
   vec3 rd = normalize(fwd + FOV * (uv.x * rgt + uv.y * up));
 
-  // Raymarch
   float t = trace(ro, rd);
 
-  vec3 col = vec3(0.02, 0.02, 0.03); // Dark ambient
+  vec3 col = vec3(0.02, 0.02, 0.03);
 
   if (t < FAR) {
     float saveObjID = objID;
@@ -840,19 +797,15 @@ void main() {
     vec3 nor = calcNormal(pos);
 
     if (saveObjID > 1.5 && saveObjID < 2.5) {
-      // Stained glass window
       vec3 glassCol = stainedGlassColor(pos);
       float glow = iGlassGlow * (1.0 + bassLevel * 0.5);
 
-      // Light streaming through window
       float windowLight = max(0.0, -nor.x);
       col = glassCol * glow * (0.5 + windowLight);
 
-      // Add high frequency sparkle
       col += vec3(1.0, 0.9, 0.8) * highLevel * 0.3;
 
     } else {
-      // Only stone and floor materials use lighting and AO.
       vec3 li = normalize(lp - pos);
       float lDist = length(lp - pos);
       float atten = 1.0 / (1.0 + lDist * 0.05 + lDist * lDist * 0.01);
@@ -863,7 +816,6 @@ void main() {
       vec3 matCol = iStoneColor;
 
       if (saveObjID > 2.5) {
-        // Floor tiles
         vec2 tileCoord = floor(pos.xz + 0.5);
         float checker = mod(tileCoord.x + tileCoord.y, 2.0);
         matCol = mix(iStoneColor * 0.7, iStoneColor * 1.2, checker);
@@ -872,45 +824,37 @@ void main() {
         col += iLightColor * spec * 0.3;
         col *= ao;
 
-        // Floor reflections from stained glass windows on bass
         float reflectPulse = bassLevel * 0.5;
         vec3 reflectColor = mix(iGlassColor1, iGlassColor2, sin(pos.z * 0.5) * 0.5 + 0.5);
         float reflectPattern = sin(pos.x * 2.0) * sin(pos.z * 1.5) * 0.5 + 0.5;
         col += reflectColor * reflectPattern * reflectPulse * 0.3;
 
       } else {
-        // Stone architecture
         col = matCol * (diff * 0.5 + 0.3) * atten;
         col += iLightColor * spec * 0.2;
         col *= ao;
 
-        // Subtle stone texture variation
         float stoneNoise = noise(pos * 5.0);
         col *= 0.9 + stoneNoise * 0.2;
 
-        // Stone edge glow on bass - rim lighting that pulses
         float rim = 1.0 - max(dot(nor, -rd), 0.0);
         rim = pow(rim, 3.0);
         col += iLightColor * rim * bassLevel * 0.4;
       }
     }
 
-    // Add window light beams
     float columnSpacing = 4.0 * iColumnScale;
     float naveWidth = 3.0 * iColumnScale;
 
     vec3 winPos = pos;
     winPos.z = mod(pos.z + columnSpacing * 0.5, columnSpacing) - columnSpacing * 0.5;
 
-    // Light from left windows
     float leftBeam = lightBeam(pos, vec3(-naveWidth - 1.0, 4.5, winPos.z), vec3(1.0, -0.3, 0.0), bassLevel);
-    // Light from right windows
     float rightBeam = lightBeam(pos, vec3(naveWidth + 1.0, 4.5, winPos.z), vec3(-1.0, -0.3, 0.0), bassLevel);
 
     vec3 beamColor = mix(iGlassColor1, iGlassColor2, 0.5) * iGlassGlow;
     col += beamColor * (leftBeam + rightBeam) * 0.3 * (1.0 + bassLevel * 0.5);
 
-    // Candle flicker glow points
     float candleFlicker = 0.8 + 0.2 * sin(iGlobalTime * 10.0 + pos.z * 2.0);
     candleFlicker *= (1.0 + midLevel * 0.3);
 
@@ -919,13 +863,11 @@ void main() {
     col += iLightColor * candleGlow * 0.15;
   }
 
-  // Atmospheric fog - density pulses on bass
   float fogDensity = iFog * (1.0 + bassLevel * 0.5);
   float fogAmount = 1.0 - exp(-t * t / FAR / FAR * 10.0 * fogDensity);
   vec3 fogColor = mix(iStoneColor * 0.1, iLightColor * 0.1, 0.5);
   col = mix(col, fogColor, fogAmount);
 
-  // Dust particles in light beams - sparkle on high frequencies
   float dustBase = noise(vec3(uv * 10.0, iGlobalTime * 0.5)) * 0.02;
   float dustSparkle = noise(vec3(uv * 30.0, iGlobalTime * 2.0));
   dustSparkle = pow(dustSparkle, 4.0) * highLevel * 0.15;
