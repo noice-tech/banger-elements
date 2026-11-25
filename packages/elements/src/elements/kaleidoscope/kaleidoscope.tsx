@@ -1,9 +1,5 @@
 import {Audio} from '@remotion/media';
-import {
-	useWindowedAudioData,
-	visualizeAudio,
-	type MediaUtilsAudioData,
-} from '@remotion/media-utils';
+import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
 import React, {useId, useLayoutEffect, useMemo, useRef} from 'react';
 import {
 	cancelRender,
@@ -79,9 +75,9 @@ const kaleidoscopeSchema = {
 	},
 	responsive: {
 		type: 'number',
-		default: 0.3,
+		default: 1,
 		min: 0,
-		max: 4,
+		max: 3,
 		step: 0.1,
 		description: 'Audio reactivity',
 		hiddenFromList: false,
@@ -167,29 +163,108 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 	}, [complete, delayRender, continueRender]);
 	return {...result, audioData: complete ? audioData : null};
 }
-function computeBars(values: number[]) {
-	const bars = Array.from({length: 308}, () => 0.0025);
-	const step = (22000 - 20) / values.length;
-	for (let index = 0; index < values.length; index++) {
-		const frequency = 20 + index * step;
-		const bin = Math.floor((Math.log10(frequency / 20) / Math.log10(1100)) * 308);
-		if (bin < 308) bars[bin] += bin < 103 ? values[index] * 1.3 : values[index];
+const bandRate = 60;
+const bandFftSize = 2048;
+const bandRangeDb = 18;
+const bandPeakSeconds = 6;
+const bandPeakDecayDbPerSecond = 2;
+const bandPeakStep = 4;
+const audioBandRanges = [
+	{from: 40, to: 140, floorDb: -42, releaseSeconds: 0.3},
+	{from: 300, to: 2000, floorDb: -45, releaseSeconds: 0.25},
+	{from: 4000, to: 12000, floorDb: -55, releaseSeconds: 0.15},
+] as const;
+const bandWindow = Float64Array.from(
+	{length: bandFftSize},
+	(_, index) => 0.5 - 0.5 * Math.cos((2 * Math.PI * index) / bandFftSize),
+);
+const bandReversed = Uint16Array.from({length: bandFftSize}, (_, index) => {
+	let reversed = 0;
+	for (let bit = 1; bit < bandFftSize; bit <<= 1)
+		reversed = (reversed << 1) | (index & bit ? 1 : 0);
+	return reversed;
+});
+const bandCos = Float64Array.from({length: bandFftSize / 2}, (_, index) =>
+	Math.cos((2 * Math.PI * index) / bandFftSize),
+);
+const bandSin = Float64Array.from(
+	{length: bandFftSize / 2},
+	(_, index) => -Math.sin((2 * Math.PI * index) / bandFftSize),
+);
+const silentBandLevels = audioBandRanges.map(() => -120);
+const bandLevelCache = new Map<string, number[]>();
+function bandLevels(audioData: MediaUtilsAudioData, offset: number, tap: number) {
+	const time = tap / bandRate;
+	if (time < 0 || time >= audioData.durationInSeconds) return silentBandLevels;
+	const key = `${audioData.resultId}:${offset}:${tap}`;
+	const cached = bandLevelCache.get(key);
+	if (cached) return cached;
+	const samples = audioData.channelWaveforms[0];
+	const start = Math.floor((time - offset) * audioData.sampleRate) - bandFftSize / 2;
+	const real = new Float64Array(bandFftSize);
+	const imaginary = new Float64Array(bandFftSize);
+	for (let index = 0; index < bandFftSize; index++)
+		real[bandReversed[index]] = (samples[start + index] ?? 0) * bandWindow[index];
+	for (let size = 2; size <= bandFftSize; size <<= 1) {
+		const half = size >> 1;
+		const stride = bandFftSize / size;
+		for (let block = 0; block < bandFftSize; block += size)
+			for (let index = 0; index < half; index++) {
+				const a = block + index;
+				const b = a + half;
+				const cos = bandCos[index * stride];
+				const sin = bandSin[index * stride];
+				const re = real[b] * cos - imaginary[b] * sin;
+				const im = real[b] * sin + imaginary[b] * cos;
+				real[b] = real[a] - re;
+				imaginary[b] = imaginary[a] - im;
+				real[a] += re;
+				imaginary[a] += im;
+			}
 	}
-	return bars.map((value) => (Number.isFinite(value) ? value : 0));
+	const binWidth = audioData.sampleRate / bandFftSize;
+	const levels = audioBandRanges.map(({from, to}) => {
+		let power = 0;
+		const end = Math.min(bandFftSize / 2, Math.ceil(to / binWidth));
+		for (let bin = Math.ceil(from / binWidth); bin < end; bin++)
+			power += real[bin] * real[bin] + imaginary[bin] * imaginary[bin];
+		return 10 * Math.log10((power * 16) / (bandFftSize * bandFftSize) + 1e-12);
+	});
+	if (bandLevelCache.size >= 4096) bandLevelCache.clear();
+	bandLevelCache.set(key, levels);
+	return levels;
 }
-function spectrumBars(audioData: MediaUtilsAudioData, offset: number, time: number) {
-	if (time < 0 || time >= audioData.durationInSeconds) return Array(308).fill(0) as number[];
-	return computeBars(
-		visualizeAudio({
-			audioData,
-			dataOffsetInSeconds: offset,
-			frame: time * 60,
-			fps: 60,
-			numberOfSamples: 4096,
-			optimizeFor: 'speed',
-			smoothing: true,
-		}),
-	);
+function audioBands(
+	audioData: MediaUtilsAudioData,
+	offset: number,
+	time: number,
+	inputGainDb: number,
+) {
+	if (time < 0 || time >= audioData.durationInSeconds) return audioBandRanges.map(() => 0);
+	const now = Math.floor(time * bandRate + 1e-6);
+	const gain = bounded(inputGainDb, -30, 30, 0);
+	return audioBandRanges.map(({floorDb, releaseSeconds}, band) => {
+		let reference = Math.max(floorDb, bandLevels(audioData, offset, now)[band]);
+		const first = now - bandPeakSeconds * bandRate;
+		for (
+			let tap = first - (first % bandPeakStep);
+			tap <= now + bandPeakSeconds * bandRate;
+			tap += bandPeakStep
+		)
+			reference = Math.max(
+				reference,
+				bandLevels(audioData, offset, tap)[band] -
+					(Math.abs(now - tap) / bandRate) * bandPeakDecayDbPerSecond,
+			);
+		const releaseTaps = Math.round(releaseSeconds * bandRate);
+		let envelope = 0;
+		for (let step = 0; step <= releaseTaps; step++) {
+			const level = bandLevels(audioData, offset, now - step)[band];
+			const value = (level - reference + bandRangeDb + gain) / bandRangeDb;
+			envelope = Math.max(envelope, Math.min(1, value) - step / releaseTaps);
+		}
+		return envelope;
+	});
 }
 const silentAudio: MediaUtilsAudioData = {
 	channelWaveforms: [new Float32Array(1)],
@@ -278,6 +353,10 @@ void main()
 	vec2 uv = (((vUv - vec2(0.5, 0.5)) / vec2(0.3, 0.5)) / 0.0001) / iScale;
 
 	uv /= iResolution.y;
+
+	float bass = pow(clamp(iLowFreq, 0.0, 1.0), 1.5) * iIntensity;
+	float mid = clamp(iMidFreq, 0.0, 1.0) * iIntensity;
+	uv *= 1.0 - 0.08 * bass;
 	
 	if (!iStatic) {
 		uv *= cos(iGlobalTime* iSpeed) + 1.5;
@@ -303,13 +382,13 @@ void main()
 			
 			uv = abs(fract(uv+0.5)*2.0-1.0)*0.7;
 			vec3 p = vec3(1,5,9);
-			outColor.rgb += exp(-min(uv.x, uv.y) * 16.) * (cos(p*float(i)+iGlobalTime*(iLowFreq * iIntensity))*.5+.5)*m ;
+			outColor.rgb += exp(-min(uv.x, uv.y) * 16. / (1.0 + 0.3 * mid)) * (cos(p*float(i) + 0.35 * bass)*.5+.5)*m ;
 
 			if (!iRandomColor) {
 				outColor.rgb += (iStartColor / 50.);
 			}
 			
-			m *= 0.9 + (iLowFreq * (iIntensity * 0.05));
+			m *= 0.9 + 0.03 * bass;
 			
 	}
     
@@ -366,7 +445,7 @@ type KaleidoscopeFrame = Pick<
 	readonly width: number;
 	readonly height: number;
 	readonly time: number;
-	readonly bars: readonly number[];
+	readonly bands: readonly number[];
 	readonly textureSrc?: string;
 };
 type KaleidoscopeState = {
@@ -476,16 +555,12 @@ function drawKaleidoscope(state: KaleidoscopeState, frame: KaleidoscopeFrame) {
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.uniform1f(uniforms.iAspect, frame.width / frame.height);
 	gl.uniform1f(uniforms.iGlobalTime, frame.time);
-	const gain =
-		10 **
-		(bounded((frame as KaleidoscopeFrame & {inputGainDb?: number}).inputGainDb ?? 0, -30, 30, 0) /
-			20);
-	gl.uniform1f(uniforms.iLowFreq, (frame.bars[11] ?? 0) * gain);
-	gl.uniform1f(uniforms.iMidFreq, (frame.bars[45] ?? 0) * gain);
-	gl.uniform1f(uniforms.iHighFreq, (frame.bars[85] ?? 0) * gain);
+	gl.uniform1f(uniforms.iLowFreq, frame.bands[0] ?? 0);
+	gl.uniform1f(uniforms.iMidFreq, frame.bands[1] ?? 0);
+	gl.uniform1f(uniforms.iHighFreq, frame.bands[2] ?? 0);
 	gl.uniform3fv(uniforms.iStartColor, linearColor(frame.startColor));
 	gl.uniform1f(uniforms.iScale, bounded(frame.scale, 1, 10, 5));
-	gl.uniform1f(uniforms.iIntensity, bounded(frame.responsive, 0, 4, 0.3));
+	gl.uniform1f(uniforms.iIntensity, bounded(frame.responsive, 0, 3, 1));
 	gl.uniform1i(uniforms.iRandomColor, Number(frame.randomColors));
 	gl.uniform1i(uniforms.iStatic, Number(frame.disableMovement));
 	gl.uniform1i(uniforms.iStill, Number(frame.still));
@@ -562,13 +637,18 @@ const KaleidoscopeContent: React.FC<
 	const sourceTime = (frame + offsetFrames) / fps;
 	const time = frame / fps + bounded(props.timeOffsetInSeconds, 0, 86400, 0);
 	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
-	const bars = spectrumBars(audioData ?? silentAudio, dataOffsetInSeconds, sourceTime);
+	const bands = audioBands(
+		audioData ?? silentAudio,
+		dataOffsetInSeconds,
+		sourceTime,
+		props.inputGainDb,
+	);
 	return (
 		<>
 			{props.playAudio ? (
 				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
-			<KaleidoscopeCanvas {...props} time={time} bars={bars} />
+			<KaleidoscopeCanvas {...props} time={time} bands={bands} />
 		</>
 	);
 };

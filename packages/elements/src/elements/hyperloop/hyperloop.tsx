@@ -1,9 +1,5 @@
 import {Audio} from '@remotion/media';
-import {
-	useWindowedAudioData,
-	visualizeAudio,
-	type MediaUtilsAudioData,
-} from '@remotion/media-utils';
+import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
 import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
@@ -117,11 +113,11 @@ const hyperloopSchema = {
 	},
 	responsive: {
 		type: 'number',
-		default: 2.0,
+		default: 1,
 		description: 'Audio reactivity',
-		min: 0.0,
-		max: 50.0,
-		step: 0.5,
+		min: 0,
+		max: 3,
+		step: 0.1,
 		hiddenFromList: false,
 	},
 	timeOffsetInSeconds: {
@@ -181,58 +177,107 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 	return {...result, audioData: complete ? audioData : null};
 }
 
-type AudioInput = {
-	readonly audioData: MediaUtilsAudioData;
-	readonly dataOffsetInSeconds: number;
-	readonly sourceTime: number;
-	readonly fps: number;
-};
-
-function computeBars({
-	allVisualizationValues,
-	outputBarsCount = 308,
-}: {
-	allVisualizationValues: number[];
-	outputBarsCount?: number;
-}) {
-	const minFreq = 20;
-	const maxFreq = 22000;
-	const defaultFill = 0.0025;
-	const freqStep = (maxFreq - minFreq) / allVisualizationValues.length;
-	const bars = Array.from({length: outputBarsCount}, () => defaultFill);
-	const binSize = 1 / outputBarsCount;
-	for (let index = 0; index < allVisualizationValues.length; index++) {
-		const frequency = minFreq + index * freqStep;
-		const logFrequency = Math.log10(frequency / minFreq) / Math.log10(maxFreq / minFreq);
-		const binIndex = Math.floor(logFrequency / binSize);
-		if (binIndex < outputBarsCount) {
-			bars[binIndex] +=
-				binIndex < Math.floor(outputBarsCount * 0.334415584415584)
-					? allVisualizationValues[index] * 1.3
-					: allVisualizationValues[index];
-			if (outputBarsCount !== 308 && binIndex >= Math.floor(outputBarsCount * 0.9845)) {
-				bars[binIndex] = defaultFill;
+const bandRate = 60;
+const bandFftSize = 2048;
+const bandRangeDb = 18;
+const bandPeakSeconds = 6;
+const bandPeakDecayDbPerSecond = 2;
+const bandPeakStep = 4;
+const audioBandRanges = [
+	{from: 40, to: 140, floorDb: -42, releaseSeconds: 0.3},
+	{from: 300, to: 2000, floorDb: -45, releaseSeconds: 0.25},
+	{from: 4000, to: 12000, floorDb: -55, releaseSeconds: 0.15},
+] as const;
+const bandWindow = Float64Array.from(
+	{length: bandFftSize},
+	(_, index) => 0.5 - 0.5 * Math.cos((2 * Math.PI * index) / bandFftSize),
+);
+const bandReversed = Uint16Array.from({length: bandFftSize}, (_, index) => {
+	let reversed = 0;
+	for (let bit = 1; bit < bandFftSize; bit <<= 1)
+		reversed = (reversed << 1) | (index & bit ? 1 : 0);
+	return reversed;
+});
+const bandCos = Float64Array.from({length: bandFftSize / 2}, (_, index) =>
+	Math.cos((2 * Math.PI * index) / bandFftSize),
+);
+const bandSin = Float64Array.from(
+	{length: bandFftSize / 2},
+	(_, index) => -Math.sin((2 * Math.PI * index) / bandFftSize),
+);
+const silentBandLevels = audioBandRanges.map(() => -120);
+const bandLevelCache = new Map<string, number[]>();
+function bandLevels(audioData: MediaUtilsAudioData, offset: number, tap: number) {
+	const time = tap / bandRate;
+	if (time < 0 || time >= audioData.durationInSeconds) return silentBandLevels;
+	const key = `${audioData.resultId}:${offset}:${tap}`;
+	const cached = bandLevelCache.get(key);
+	if (cached) return cached;
+	const samples = audioData.channelWaveforms[0];
+	const start = Math.floor((time - offset) * audioData.sampleRate) - bandFftSize / 2;
+	const real = new Float64Array(bandFftSize);
+	const imaginary = new Float64Array(bandFftSize);
+	for (let index = 0; index < bandFftSize; index++)
+		real[bandReversed[index]] = (samples[start + index] ?? 0) * bandWindow[index];
+	for (let size = 2; size <= bandFftSize; size <<= 1) {
+		const half = size >> 1;
+		const stride = bandFftSize / size;
+		for (let block = 0; block < bandFftSize; block += size)
+			for (let index = 0; index < half; index++) {
+				const a = block + index;
+				const b = a + half;
+				const cos = bandCos[index * stride];
+				const sin = bandSin[index * stride];
+				const re = real[b] * cos - imaginary[b] * sin;
+				const im = real[b] * sin + imaginary[b] * cos;
+				real[b] = real[a] - re;
+				imaginary[b] = imaginary[a] - im;
+				real[a] += re;
+				imaginary[a] += im;
 			}
-		}
 	}
-	return bars.filter((b) => b !== defaultFill && !Number.isNaN(b));
-}
-
-function spectrumBars(input: AudioInput, count = 308) {
-	if (input.sourceTime < 0 || input.sourceTime >= input.audioData.durationInSeconds)
-		return Array(count).fill(0) as number[];
-	const frequencies = visualizeAudio({
-		audioData: input.audioData,
-		dataOffsetInSeconds: input.dataOffsetInSeconds,
-		frame: input.sourceTime * 60,
-		fps: 60,
-		numberOfSamples: 4096,
-		optimizeFor: 'speed',
-		smoothing: true,
+	const binWidth = audioData.sampleRate / bandFftSize;
+	const levels = audioBandRanges.map(({from, to}) => {
+		let power = 0;
+		const end = Math.min(bandFftSize / 2, Math.ceil(to / binWidth));
+		for (let bin = Math.ceil(from / binWidth); bin < end; bin++)
+			power += real[bin] * real[bin] + imaginary[bin] * imaginary[bin];
+		return 10 * Math.log10((power * 16) / (bandFftSize * bandFftSize) + 1e-12);
 	});
-	return computeBars({
-		allVisualizationValues: frequencies,
-		outputBarsCount: count,
+	if (bandLevelCache.size >= 4096) bandLevelCache.clear();
+	bandLevelCache.set(key, levels);
+	return levels;
+}
+function audioBands(
+	audioData: MediaUtilsAudioData,
+	offset: number,
+	time: number,
+	inputGainDb: number,
+) {
+	if (time < 0 || time >= audioData.durationInSeconds) return audioBandRanges.map(() => 0);
+	const now = Math.floor(time * bandRate + 1e-6);
+	const gain = bounded(inputGainDb, -30, 30, 0);
+	return audioBandRanges.map(({floorDb, releaseSeconds}, band) => {
+		let reference = Math.max(floorDb, bandLevels(audioData, offset, now)[band]);
+		const first = now - bandPeakSeconds * bandRate;
+		for (
+			let tap = first - (first % bandPeakStep);
+			tap <= now + bandPeakSeconds * bandRate;
+			tap += bandPeakStep
+		)
+			reference = Math.max(
+				reference,
+				bandLevels(audioData, offset, tap)[band] -
+					(Math.abs(now - tap) / bandRate) * bandPeakDecayDbPerSecond,
+			);
+		const releaseTaps = Math.round(releaseSeconds * bandRate);
+		let envelope = 0;
+		for (let step = 0; step <= releaseTaps; step++) {
+			const level = bandLevels(audioData, offset, now - step)[band];
+			const value = (level - reference + bandRangeDb + gain) / bandRangeDb;
+			envelope = Math.max(envelope, Math.min(1, value) - step / releaseTaps);
+		}
+		return envelope;
 	});
 }
 
@@ -247,14 +292,6 @@ function hyperloopTiming(frame: number, fps: number, audioOffset: number, timeOf
 		sourceTime: (frame + offsetFrames) / fps,
 		time: frame / fps + bounded(timeOffset, 0, 86400, 0),
 	};
-}
-
-function hyperloopBands(bars: readonly number[], inputGainDb: number) {
-	const gain = 10 ** (bounded(inputGainDb, -30, 30, 0) / 20);
-	return [11, 45, 85].map((index) => {
-		const value = bars[index] ?? 0;
-		return Number.isFinite(value) ? Math.max(0, value) * gain : 0;
-	});
 }
 
 function hyperloopGeometry() {
@@ -438,7 +475,7 @@ function drawHyperloop(
 	gl.uniform1f(uniforms.iSpeed, bounded(frame.speed, 0.5, 4.0, 2.0));
 	gl.uniform1f(uniforms.iRotationSpeed, bounded(frame.rotationSpeed, 1.0, 20.0, 2.3));
 	gl.uniform1f(uniforms.iPattern, bounded(frame.pattern, 1.0, 3.0, 1.0));
-	gl.uniform1f(uniforms.iResponsive, bounded(frame.responsive, 0.0, 50.0, 2.0));
+	gl.uniform1f(uniforms.iResponsive, bounded(frame.responsive, 0, 3, 1));
 	gl.disable(gl.BLEND);
 	gl.disable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
@@ -604,13 +641,16 @@ void main()
     vec3 xyt = vec3(star, 0.15 * iGlobalTime * energy);
     float val = mix(mutagen(xyt + vec3(1.,0.,0.)), mutagen(xyt), smoothstep(0.0, 1.0, x));
     val = clamp(0.45 + 0.55 * val, 0.0, 1.0);
-    col.rgb = 1.25*iBaseColor * vec3(val);
-    vec3 white = iLowFreq * iResponsive * vec3(smoothstep(0.55, 1.0, val));
+    float bass = pow(clamp(iLowFreq, 0.0, 1.0), 1.5) * iResponsive;
+    float mid = clamp(iMidFreq, 0.0, 1.0) * iResponsive;
+    float high = clamp(iHighFreq, 0.0, 1.0) * iResponsive;
+    col.rgb = 1.25*iBaseColor * vec3(val) * (0.9 + 0.2 * mid);
+    vec3 white = (0.7 * bass + 0.25 * high) * vec3(smoothstep(0.55, 1.0, val));
     col.rgb += white;
     col.rgb = clamp(col.rgb, 0.0, 1.0);
     float vi = 0.0, vo = 0.0;
     float circle_radius = max(0.025 - iDepth / 10., 1.5 * vo);
-    float circle_amount = exp(-(p_len - circle_radius) * iDepth);
+    float circle_amount = exp(-(p_len - circle_radius) * iDepth / (1.0 + 0.5 * bass));
     col.rgb += clamp(vec3(circle_amount), 0.0, 1.0);
     outColor = vec4(col.rgb,1);
 }
@@ -669,18 +709,18 @@ const HyperloopContent: React.FC<Required<HyperloopOptions>> = (props) => {
 		props.timeOffsetInSeconds,
 	);
 	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
-	const bars = spectrumBars({
-		audioData: audioData ?? silentAudio,
+	const bands = audioBands(
+		audioData ?? silentAudio,
 		dataOffsetInSeconds,
 		sourceTime,
-		fps,
-	});
+		props.inputGainDb,
+	);
 	return (
 		<>
 			{props.playAudio ? (
 				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
-			<HyperloopCanvas {...props} time={time} bands={hyperloopBands(bars, props.inputGainDb)} />
+			<HyperloopCanvas {...props} time={time} bands={bands} />
 		</>
 	);
 };

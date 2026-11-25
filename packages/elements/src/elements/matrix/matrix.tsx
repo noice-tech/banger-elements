@@ -131,10 +131,10 @@ const matrixSchema = {
 	},
 	responsive: {
 		type: 'number',
-		default: 2,
+		default: 1,
 		min: 0,
-		max: 10,
-		step: 0.5,
+		max: 3,
+		step: 0.1,
 		hiddenFromList: false,
 		description: 'Audio Reactivity',
 	},
@@ -197,306 +197,107 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 	}, [complete, delayRender, continueRender]);
 	return {...result, audioData: complete ? audioData : null};
 }
-type RealFftPlan = {
-	size: number;
-	window: Float32Array;
-	amplitudeGain: number;
-	bitReversed: Uint32Array;
-	cos: Float64Array;
-	sin: Float64Array;
-	real: Float64Array;
-	imaginary: Float64Array;
-};
-
-const plans = new Map<number, RealFftPlan>();
-
-function getPlan(size: number): RealFftPlan {
-	const cached = plans.get(size);
-
-	if (cached) {
-		return cached;
-	}
-
-	const half = size / 2;
-	const window = new Float32Array(size);
-	let windowSum = 0;
-
-	for (let index = 0; index < size; index++) {
-		window[index] = 0.5 - 0.5 * Math.cos((2 * Math.PI * index) / size);
-		windowSum += window[index];
-	}
-
-	const bits = Math.log2(half);
-	const bitReversed = new Uint32Array(half);
-
-	for (let index = 0; index < half; index++) {
-		let reversed = 0;
-
-		for (let bit = 0; bit < bits; bit++) {
-			reversed = (reversed << 1) | ((index >> bit) & 1);
-		}
-
-		bitReversed[index] = reversed;
-	}
-
-	const cos = new Float64Array(half);
-	const sin = new Float64Array(half);
-
-	for (let index = 0; index < half; index++) {
-		cos[index] = Math.cos((2 * Math.PI * index) / size);
-		sin[index] = Math.sin((2 * Math.PI * index) / size);
-	}
-
-	const plan = {
-		size,
-		window,
-		amplitudeGain: 2 / windowSum,
-		bitReversed,
-		cos,
-		sin,
-		real: new Float64Array(half),
-		imaginary: new Float64Array(half),
-	};
-
-	plans.set(size, plan);
-
-	return plan;
-}
-
-function computeAmplitudeSpectrum({
-	samples,
-	center,
-	size,
-}: {
-	samples: Float32Array;
-	center: number;
-	size: number;
-}): Float32Array {
-	if (size < 4 || (size & (size - 1)) !== 0) {
-		throw new TypeError(`FFT size must be a power of two, got ${size}`);
-	}
-
-	const plan = getPlan(size);
-	const {window, bitReversed, cos, sin, real, imaginary} = plan;
-	const half = size / 2;
-	const start = center - half;
-
-	for (let index = 0; index < half; index++) {
-		const evenIndex = start + 2 * index;
-		const oddIndex = evenIndex + 1;
-		const target = bitReversed[index];
-
-		real[target] =
-			evenIndex >= 0 && evenIndex < samples.length ? samples[evenIndex] * window[2 * index] : 0;
-
-		imaginary[target] =
-			oddIndex >= 0 && oddIndex < samples.length ? samples[oddIndex] * window[2 * index + 1] : 0;
-	}
-
-	for (let length = 2; length <= half; length <<= 1) {
-		const halfLength = length >> 1;
-		const stride = size / length;
-
-		for (let offset = 0; offset < half; offset += length) {
-			for (let index = 0; index < halfLength; index++) {
-				const twiddleReal = cos[index * stride];
-				const twiddleImaginary = -sin[index * stride];
-				const a = offset + index;
-				const b = a + halfLength;
-
-				const productReal = twiddleReal * real[b] - twiddleImaginary * imaginary[b];
-
-				const productImaginary = twiddleReal * imaginary[b] + twiddleImaginary * real[b];
-
-				real[b] = real[a] - productReal;
-				imaginary[b] = imaginary[a] - productImaginary;
-				real[a] += productReal;
-				imaginary[a] += productImaginary;
+const bandRate = 60;
+const bandFftSize = 2048;
+const bandRangeDb = 18;
+const bandPeakSeconds = 6;
+const bandPeakDecayDbPerSecond = 2;
+const bandPeakStep = 4;
+const audioBandRanges = [
+	{from: 40, to: 140, floorDb: -42, releaseSeconds: 0.3},
+	{from: 300, to: 2000, floorDb: -45, releaseSeconds: 0.25},
+	{from: 4000, to: 12000, floorDb: -55, releaseSeconds: 0.15},
+] as const;
+const bandWindow = Float64Array.from(
+	{length: bandFftSize},
+	(_, index) => 0.5 - 0.5 * Math.cos((2 * Math.PI * index) / bandFftSize),
+);
+const bandReversed = Uint16Array.from({length: bandFftSize}, (_, index) => {
+	let reversed = 0;
+	for (let bit = 1; bit < bandFftSize; bit <<= 1)
+		reversed = (reversed << 1) | (index & bit ? 1 : 0);
+	return reversed;
+});
+const bandCos = Float64Array.from({length: bandFftSize / 2}, (_, index) =>
+	Math.cos((2 * Math.PI * index) / bandFftSize),
+);
+const bandSin = Float64Array.from(
+	{length: bandFftSize / 2},
+	(_, index) => -Math.sin((2 * Math.PI * index) / bandFftSize),
+);
+const silentBandLevels = audioBandRanges.map(() => -120);
+const bandLevelCache = new Map<string, number[]>();
+function bandLevels(audioData: MediaUtilsAudioData, offset: number, tap: number) {
+	const time = tap / bandRate;
+	if (time < 0 || time >= audioData.durationInSeconds) return silentBandLevels;
+	const key = `${audioData.resultId}:${offset}:${tap}`;
+	const cached = bandLevelCache.get(key);
+	if (cached) return cached;
+	const samples = audioData.channelWaveforms[0];
+	const start = Math.floor((time - offset) * audioData.sampleRate) - bandFftSize / 2;
+	const real = new Float64Array(bandFftSize);
+	const imaginary = new Float64Array(bandFftSize);
+	for (let index = 0; index < bandFftSize; index++)
+		real[bandReversed[index]] = (samples[start + index] ?? 0) * bandWindow[index];
+	for (let size = 2; size <= bandFftSize; size <<= 1) {
+		const half = size >> 1;
+		const stride = bandFftSize / size;
+		for (let block = 0; block < bandFftSize; block += size)
+			for (let index = 0; index < half; index++) {
+				const a = block + index;
+				const b = a + half;
+				const cos = bandCos[index * stride];
+				const sin = bandSin[index * stride];
+				const re = real[b] * cos - imaginary[b] * sin;
+				const im = real[b] * sin + imaginary[b] * cos;
+				real[b] = real[a] - re;
+				imaginary[b] = imaginary[a] - im;
+				real[a] += re;
+				imaginary[a] += im;
 			}
-		}
 	}
-
-	const amplitudes = new Float32Array(half);
-
-	for (let bin = 0; bin < half; bin++) {
-		const mirror = bin === 0 ? 0 : half - bin;
-		const a = real[bin];
-		const b = imaginary[bin];
-		const c = real[mirror];
-		const d = imaginary[mirror];
-		const evenReal = (a + c) / 2;
-		const evenImaginary = (b - d) / 2;
-		const oddReal = (b + d) / 2;
-		const oddImaginary = (c - a) / 2;
-
-		const spectrumReal = evenReal + cos[bin] * oddReal + sin[bin] * oddImaginary;
-
-		const spectrumImaginary = evenImaginary + cos[bin] * oddImaginary - sin[bin] * oddReal;
-
-		amplitudes[bin] =
-			Math.sqrt(spectrumReal * spectrumReal + spectrumImaginary * spectrumImaginary) *
-			plan.amplitudeGain;
-	}
-
-	return amplitudes;
-}
-
-const SPECTRUM_MIN_FREQUENCY = 20;
-const SPECTRUM_MAX_FREQUENCY = 22000;
-const SPECTRUM_BARS_COUNT = 308;
-
-const SLOPE_DB_PER_OCTAVE = 4.5;
-const SLOPE_PIVOT_FREQUENCY = 1000;
-
-const OUTPUT_GAIN = 3.5;
-const SILENCE = 1e-9;
-
-type BandPlan = {
-	firstBin: Int32Array;
-	endBin: Int32Array;
-	interpolatedBin: Float64Array;
-	gain: Float64Array;
-};
-
-const bandPlans = new Map<string, BandPlan>();
-
-function frequencyToSpectrumPosition(frequency: number): number {
-	return (
-		Math.log(frequency / SPECTRUM_MIN_FREQUENCY) /
-		Math.log(SPECTRUM_MAX_FREQUENCY / SPECTRUM_MIN_FREQUENCY)
-	);
-}
-
-function spectrumPositionToFrequency(position: number): number {
-	return (
-		SPECTRUM_MIN_FREQUENCY * Math.pow(SPECTRUM_MAX_FREQUENCY / SPECTRUM_MIN_FREQUENCY, position)
-	);
-}
-
-function getBarAtFrequency(bars: number[], frequency: number): number {
-	const index = Math.floor(frequencyToSpectrumPosition(frequency) * bars.length);
-
-	return bars[Math.min(bars.length - 1, Math.max(0, index))] ?? 0;
-}
-
-function getBandPlan(sampleRate: number, fftSize: number, count: number): BandPlan {
-	const key = `${sampleRate}:${fftSize}:${count}`;
-	const cached = bandPlans.get(key);
-
-	if (cached) {
-		return cached;
-	}
-
-	const binCount = fftSize / 2;
-	const binWidth = sampleRate / fftSize;
-	const nyquist = sampleRate / 2;
-
-	const plan = {
-		firstBin: new Int32Array(count),
-		endBin: new Int32Array(count),
-		interpolatedBin: new Float64Array(count),
-		gain: new Float64Array(count),
-	};
-
-	for (let band = 0; band < count; band++) {
-		const low = spectrumPositionToFrequency(band / count);
-		const high = spectrumPositionToFrequency((band + 1) / count);
-		const center = Math.sqrt(low * high);
-		const firstBin = Math.max(1, Math.ceil(low / binWidth));
-		const endBin = Math.min(binCount, Math.ceil(high / binWidth));
-
-		plan.firstBin[band] = firstBin;
-		plan.endBin[band] = endBin;
-		plan.interpolatedBin[band] = endBin > firstBin ? -1 : center / binWidth;
-
-		plan.gain[band] =
-			center >= nyquist
-				? 0
-				: OUTPUT_GAIN *
-					Math.pow(10, (SLOPE_DB_PER_OCTAVE * Math.log2(center / SLOPE_PIVOT_FREQUENCY)) / 20);
-	}
-
-	if (bandPlans.size >= 32) bandPlans.clear();
-	bandPlans.set(key, plan);
-
-	return plan;
-}
-
-function computeBars({
-	amplitudes,
-	sampleRate,
-	fftSize,
-	outputBarsCount = SPECTRUM_BARS_COUNT,
-}: {
-	amplitudes: ArrayLike<number>;
-	sampleRate: number;
-	fftSize: number;
-	outputBarsCount?: number;
-}): number[] {
-	const bars = Array.from({length: outputBarsCount}, () => 0);
-
-	if (amplitudes.length < fftSize / 2 || sampleRate <= 0) {
-		return bars;
-	}
-
-	const plan = getBandPlan(sampleRate, fftSize, outputBarsCount);
-
-	for (let band = 0; band < outputBarsCount; band++) {
-		const gain = plan.gain[band];
-
-		if (gain === 0) {
-			continue;
-		}
-
-		const position = plan.interpolatedBin[band];
-		let amplitude = 0;
-
-		if (position >= 0) {
-			const lower = Math.floor(position);
-
-			const bin = Math.max(
-				1,
-				Math.min(fftSize / 2 - 2, amplitudes[lower + 1] > amplitudes[lower] ? lower + 1 : lower),
-			);
-
-			const offset = position - bin;
-			const previous = Math.log(amplitudes[bin - 1] + SILENCE);
-			const current = Math.log(amplitudes[bin] + SILENCE);
-			const next = Math.log(amplitudes[bin + 1] + SILENCE);
-
-			amplitude = Math.max(
-				0,
-				Math.exp(
-					current +
-						(offset * (next - previous)) / 2 +
-						(offset * offset * (next - 2 * current + previous)) / 2,
-				) - SILENCE,
-			);
-		} else {
-			for (let bin = plan.firstBin[band]; bin < plan.endBin[band]; bin++) {
-				amplitude = Math.max(amplitude, amplitudes[bin]);
-			}
-		}
-
-		bars[band] = amplitude * gain;
-	}
-
-	return bars;
-}
-
-function spectrumBars(audioData: MediaUtilsAudioData, offset: number, time: number, count = 308) {
-	if (time < 0 || time >= audioData.durationInSeconds) return Array.from({length: count}, () => 0);
-	const size = 16384;
-	const amplitudes = computeAmplitudeSpectrum({
-		samples: audioData.channelWaveforms[0],
-		center: Math.floor((time - offset) * audioData.sampleRate),
-		size,
+	const binWidth = audioData.sampleRate / bandFftSize;
+	const levels = audioBandRanges.map(({from, to}) => {
+		let power = 0;
+		const end = Math.min(bandFftSize / 2, Math.ceil(to / binWidth));
+		for (let bin = Math.ceil(from / binWidth); bin < end; bin++)
+			power += real[bin] * real[bin] + imaginary[bin] * imaginary[bin];
+		return 10 * Math.log10((power * 16) / (bandFftSize * bandFftSize) + 1e-12);
 	});
-	return computeBars({
-		amplitudes,
-		sampleRate: audioData.sampleRate,
-		fftSize: size,
-		outputBarsCount: count,
+	if (bandLevelCache.size >= 4096) bandLevelCache.clear();
+	bandLevelCache.set(key, levels);
+	return levels;
+}
+function audioBands(
+	audioData: MediaUtilsAudioData,
+	offset: number,
+	time: number,
+	inputGainDb: number,
+) {
+	if (time < 0 || time >= audioData.durationInSeconds) return audioBandRanges.map(() => 0);
+	const now = Math.floor(time * bandRate + 1e-6);
+	const gain = bounded(inputGainDb, -30, 30, 0);
+	return audioBandRanges.map(({floorDb, releaseSeconds}, band) => {
+		let reference = Math.max(floorDb, bandLevels(audioData, offset, now)[band]);
+		const first = now - bandPeakSeconds * bandRate;
+		for (
+			let tap = first - (first % bandPeakStep);
+			tap <= now + bandPeakSeconds * bandRate;
+			tap += bandPeakStep
+		)
+			reference = Math.max(
+				reference,
+				bandLevels(audioData, offset, tap)[band] -
+					(Math.abs(now - tap) / bandRate) * bandPeakDecayDbPerSecond,
+			);
+		const releaseTaps = Math.round(releaseSeconds * bandRate);
+		let envelope = 0;
+		for (let step = 0; step <= releaseTaps; step++) {
+			const level = bandLevels(audioData, offset, now - step)[band];
+			const value = (level - reference + bandRangeDb + gain) / bandRangeDb;
+			envelope = Math.max(envelope, Math.min(1, value) - step / releaseTaps);
+		}
+		return envelope;
 	});
 }
 const silentAudio: MediaUtilsAudioData = {
@@ -552,7 +353,6 @@ precision highp float;
 precision highp int;
 
 uniform float iGlobalTime;
-uniform sampler2D iSoundTexture;
 uniform sampler2D iTexture;
 uniform float iTextureExists;
 
@@ -629,14 +429,13 @@ void main() {
 
   vec4 col = vec4(0.0);
 
-  float specLow = texture(iSoundTexture, vec2(0.10, 0.5)).r * iResponsive;
-  float specMid = texture(iSoundTexture, vec2(0.40, 0.5)).r * iResponsive;
-  float specHigh = texture(iSoundTexture, vec2(0.80, 0.5)).r * iResponsive;
+  float specLow = clamp(iLowFreq, 0.0, 1.0) * iResponsive;
+  float specMid = clamp(iMidFreq, 0.0, 1.0) * iResponsive;
+  float specHigh = clamp(iHighFreq, 0.0, 1.0) * iResponsive;
 
   float iterations = clamp(iIterations, 4.0, float(MAX_ITERATIONS));
-  float timeOffset = (time + 100.0) * 0.3 + specLow * 0.25 + specHigh * 0.12;
-  float noiseStrength = 1.0 + specMid * 0.18;
-  float spread = iSpread * (1.0 + specMid * 0.15);
+  float timeOffset = (time + 100.0) * 0.3;
+  float spread = iSpread * (1.0 + specMid * 0.04);
 
   for (int index = 0; index < MAX_ITERATIONS; index++) {
     float i = float(index);
@@ -647,13 +446,12 @@ void main() {
     vec2 offset = vec2(cos(angle), direction.y);
 
     float noise = fractalnoise(p * 1.5 + timeOffset * offset, time);
-    col += vec4(noise * noiseStrength);
+    col += vec4(noise);
 
     p += direction * col.x * spread;
   }
 
-  float colorCycle = iColorCycle * (1.0 + specHigh * 0.18);
-  vec4 colorMod = vec4(1.0, 1.618, 2.618, 0.0) * colorCycle;
+  vec4 colorMod = vec4(1.0, 1.618, 2.618, 0.0) * iColorCycle;
   col = sin(col * colorMod) * 0.5 + 0.5;
   col *= col;
 
@@ -670,9 +468,9 @@ void main() {
   lumCol = mix(lumCol, iGlowColor, lumSquared * 0.35);
 
   finalCol = mix(lumCol, finalCol, 0.65);
-  finalCol *= 0.55 + lum * 0.75;
-  finalCol += iGlowColor * (lumSquared * lum) * iGlow * (0.22 + specLow * 0.12);
-  finalCol = mix(finalCol, iGlowColor, specHigh * 0.05);
+  finalCol *= (0.55 + lum * 0.75) * (0.92 + 0.16 * specLow);
+  finalCol += iGlowColor * (lumSquared * lum) * iGlow * (0.22 + specLow * 0.14);
+  finalCol = mix(finalCol, iGlowColor, specHigh * 0.08 * lumSquared);
 
   outColor = vec4(clamp(finalCol, 0.0, 1.0), 1.0);
 }
@@ -710,13 +508,15 @@ function linearColor(color: string) {
 	return result;
 }
 
-type MatrixFrame = Required<MatrixOptions> & {readonly time: number; readonly bars: number[]};
+type MatrixFrame = Required<MatrixOptions> & {
+	readonly time: number;
+	readonly bands: readonly number[];
+};
 type MatrixState = {
 	readonly gl: WebGL2RenderingContext;
 	readonly program: WebGLProgram;
 	readonly buffer: WebGLBuffer;
 	readonly vertexCount: number;
-	readonly audioTexture: WebGLTexture;
 	readonly imageTexture: WebGLTexture | null;
 	imageLoaded: boolean;
 	readonly uniforms: Record<string, WebGLUniformLocation | null>;
@@ -736,7 +536,6 @@ function setupMatrix(canvas: HTMLCanvasElement): MatrixState {
 	if (!program) throw new Error('Matrix could not create a program.');
 	const shaders: WebGLShader[] = [];
 	let buffer: WebGLBuffer | null = null;
-	let audioTexture: WebGLTexture | null = null;
 	let imageTexture: WebGLTexture | null = null;
 	try {
 		for (const [type, source] of [
@@ -770,31 +569,26 @@ function setupMatrix(canvas: HTMLCanvasElement): MatrixState {
 			gl.vertexAttribPointer(attribute, size, gl.FLOAT, false, 20, offset);
 		}
 
-		audioTexture = gl.createTexture();
-		if (!audioTexture) throw new Error('Matrix could not create an audio texture.');
 		imageTexture = gl.createTexture();
 		if (!imageTexture) throw new Error('Matrix could not create an image texture.');
-		for (const texture of [audioTexture, imageTexture]) {
-			if (!texture) continue;
-			gl.bindTexture(gl.TEXTURE_2D, texture);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-			gl.texImage2D(
-				gl.TEXTURE_2D,
-				0,
-				gl.RGBA,
-				1,
-				1,
-				0,
-				gl.RGBA,
-				gl.UNSIGNED_BYTE,
-				new Uint8Array([0, 0, 0, 255]),
-			);
-		}
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.texImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.RGBA,
+			1,
+			1,
+			0,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			new Uint8Array([0, 0, 0, 255]),
+		);
 		return {
-			audioTexture,
 			imageTexture,
 			imageLoaded: false,
 			gl,
@@ -808,7 +602,6 @@ function setupMatrix(canvas: HTMLCanvasElement): MatrixState {
 					'iMidFreq',
 					'iHighFreq',
 					'iAspect',
-					'iSoundTexture',
 					'iColor1',
 					'iColor2',
 					'iGlowColor',
@@ -826,7 +619,6 @@ function setupMatrix(canvas: HTMLCanvasElement): MatrixState {
 			),
 		};
 	} catch (error) {
-		gl.deleteTexture(audioTexture);
 		gl.deleteTexture(imageTexture);
 		gl.deleteBuffer(buffer);
 		gl.deleteProgram(program);
@@ -843,10 +635,9 @@ function drawMatrix(state: MatrixState, frame: MatrixFrame) {
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	gl.uniform1f(uniforms.iAspect, frame.width / frame.height);
 	gl.uniform1f(uniforms.iGlobalTime, frame.time);
-	const gain = 10 ** (bounded(frame.inputGainDb, -30, 30, 0) / 20);
-	gl.uniform1f(uniforms.iLowFreq, getBarAtFrequency(frame.bars, 60) * gain);
-	gl.uniform1f(uniforms.iMidFreq, getBarAtFrequency(frame.bars, 1000) * gain);
-	gl.uniform1f(uniforms.iHighFreq, getBarAtFrequency(frame.bars, 8000) * gain);
+	gl.uniform1f(uniforms.iLowFreq, frame.bands[0] ?? 0);
+	gl.uniform1f(uniforms.iMidFreq, frame.bands[1] ?? 0);
+	gl.uniform1f(uniforms.iHighFreq, frame.bands[2] ?? 0);
 	gl.uniform3fv(uniforms.iColor1, linearColor(frame.color1));
 	gl.uniform3fv(uniforms.iColor2, linearColor(frame.color2));
 	gl.uniform3fv(uniforms.iGlowColor, linearColor(frame.glowColor));
@@ -856,30 +647,11 @@ function drawMatrix(state: MatrixState, frame: MatrixFrame) {
 	gl.uniform1f(uniforms.iSpread, bounded(frame.spread, 0.1, 1.5, 0.75));
 	gl.uniform1f(uniforms.iColorCycle, bounded(frame.colorCycle, 0.5, 5, 2.5));
 	gl.uniform1f(uniforms.iGlow, bounded(frame.glow, 0, 2, 1));
-	gl.uniform1f(uniforms.iResponsive, bounded(frame.responsive, 0, 10, 2));
+	gl.uniform1f(uniforms.iResponsive, bounded(frame.responsive, 0, 3, 1));
 	gl.uniform1f(uniforms.iBpm, bounded(frame.bpm, 1, 300, 120));
 	gl.activeTexture(gl.TEXTURE0);
-	gl.bindTexture(gl.TEXTURE_2D, state.audioTexture);
-	const data = new Uint8Array(frame.bars.length * 4);
-	for (let i = 0; i < frame.bars.length; i++) {
-		data[i * 4] = Math.round(Math.min(1, Math.max(0, frame.bars[i] * gain)) * 255);
-		data[i * 4 + 3] = 255;
-	}
-	gl.texImage2D(
-		gl.TEXTURE_2D,
-		0,
-		gl.RGBA,
-		frame.bars.length,
-		1,
-		0,
-		gl.RGBA,
-		gl.UNSIGNED_BYTE,
-		data,
-	);
-	gl.uniform1i(uniforms.iSoundTexture, 0);
-	gl.activeTexture(gl.TEXTURE1);
 	gl.bindTexture(gl.TEXTURE_2D, state.imageTexture);
-	gl.uniform1i(uniforms.iTexture, 1);
+	gl.uniform1i(uniforms.iTexture, 0);
 	gl.uniform1f(uniforms.iTextureExists, Number(state.imageLoaded));
 	gl.disable(gl.BLEND);
 	gl.disable(gl.DEPTH_TEST);
@@ -890,8 +662,7 @@ function drawMatrix(state: MatrixState, frame: MatrixFrame) {
 	const error = gl.getError();
 	if (error !== gl.NO_ERROR) throw new Error('Matrix WebGL draw failed: ' + error);
 }
-function cleanupMatrix({gl, program, buffer, audioTexture, imageTexture}: MatrixState) {
-	gl.deleteTexture(audioTexture);
+function cleanupMatrix({gl, program, buffer, imageTexture}: MatrixState) {
 	gl.deleteTexture(imageTexture);
 	gl.deleteBuffer(buffer);
 	gl.deleteProgram(program);
@@ -939,7 +710,7 @@ function MatrixCanvas(frame: MatrixFrame) {
 			if (!active) return;
 			try {
 				const {gl} = current;
-				gl.activeTexture(gl.TEXTURE1);
+				gl.activeTexture(gl.TEXTURE0);
 				gl.bindTexture(gl.TEXTURE_2D, current.imageTexture);
 				gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
@@ -995,13 +766,18 @@ const MatrixContent: React.FC<Required<MatrixOptions> & {width: number; height: 
 	const sourceTime = (frame + offsetFrames) / fps;
 	const time = frame / fps + bounded(props.timeOffsetInSeconds, 0, 86400, 0);
 	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
-	const bars = spectrumBars(audioData ?? silentAudio, dataOffsetInSeconds, sourceTime);
+	const bands = audioBands(
+		audioData ?? silentAudio,
+		dataOffsetInSeconds,
+		sourceTime,
+		props.inputGainDb,
+	);
 	return (
 		<>
 			{props.playAudio ? (
 				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
-			<MatrixCanvas {...props} time={time} bars={bars} />
+			<MatrixCanvas {...props} time={time} bands={bands} />
 		</>
 	);
 };
