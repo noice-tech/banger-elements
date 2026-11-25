@@ -116,7 +116,7 @@ export const scenes: readonly SceneSpec[] = [
 				props: ({palette, energy}) => ({
 					baseColor: palette.a,
 					speed: energy(1, 2.5, 0.25),
-					responsive: energy(1, 6, 0.5),
+					responsive: energy(0.8, 2),
 					inputGainDb: 0,
 				}),
 			}),
@@ -178,7 +178,7 @@ export const scenes: readonly SceneSpec[] = [
 					bpm: track.bpm,
 					speed: energy(0.4, 1, 0.05),
 					glassGlow: energy(1.5, 3, 0.25),
-					responsive: energy(1, 3, 0.5),
+					responsive: energy(0.8, 2),
 					inputGainDb: 0,
 				}),
 			}),

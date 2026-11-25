@@ -187,7 +187,7 @@ const details = {
 		controls: [
 			'baseColor / mixColor — fractal palette',
 			'colorful / contrast / cubeScale — pattern, contrast and scale',
-			'responsive — extra audio modulation; zero retains the original baseline bass response',
+			'responsive — audio response; zero turns it off',
 			'inputGainDb — visual audio gain, without changing playback volume',
 			'timeOffsetInSeconds — animation phase, independent of audioOffsetInSeconds',
 		],
@@ -217,7 +217,7 @@ const details = {
 		renderer: 'WebGL2',
 		tagline: 'Fold luminous geometry into a constantly evolving mirrored pattern.',
 		description:
-			'A layered kaleidoscopic field with configurable symmetry, motion and bass-reactive color.',
+			'A layered kaleidoscopic field with configurable symmetry and motion that punches in on the kick.',
 		controls: [
 			'startColor / randomColors — fixed theme or procedural colors',
 			'scale / pattern / amount — mirrored structure and density',
@@ -232,7 +232,7 @@ const details = {
 		renderer: 'WebGL2',
 		tagline: 'Travel through an endless field of surreal watching eyes.',
 		description:
-			'A procedural eye tunnel with alternate color treatments and bass-reactive geometry.',
+			'A procedural eye tunnel with alternate color treatments. Pupils widen and the tunnel brightens with the bass.',
 		controls: [
 			'startColor / endColor / colorful / dark — color treatment',
 			'amount / smoothness / volume — eye field geometry',
@@ -277,7 +277,7 @@ const details = {
 		renderer: 'WebGL2',
 		tagline: 'Glide past a neon skyline and an infinite glowing grid.',
 		description:
-			'A procedural cityscape with animated buildings, windows, stars and a perspective ground plane.',
+			'A procedural cityscape with animated buildings, stars and a perspective ground plane. Windows light up with the music.',
 		controls: [
 			'startColor / endColor — buildings and sky glow',
 			'lightsColor / groundColor / shineColor — windows and grid palette',
@@ -292,7 +292,7 @@ const details = {
 		renderer: 'WebGL2',
 		tagline: 'A restrained audio-reactive gradient sky with optional stars.',
 		description:
-			'A lightweight procedural background that blends two colors with the bass and can add a flickering star field.',
+			'A lightweight procedural background where the intensify color glows from the center with the bass. Add a flickering star field if you like.',
 		controls: [
 			'backgroundColor / intensifyColor / starsColor — palette',
 			'enableStars / stars / pattern — star field and flicker',

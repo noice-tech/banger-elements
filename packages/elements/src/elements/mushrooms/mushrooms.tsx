@@ -1,9 +1,5 @@
 import {Audio} from '@remotion/media';
-import {
-	useWindowedAudioData,
-	visualizeAudio,
-	type MediaUtilsAudioData,
-} from '@remotion/media-utils';
+import {useWindowedAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
 import React, {useRef, useId, useMemo, useLayoutEffect} from 'react';
 import {
 	Interactive,
@@ -97,11 +93,11 @@ const mushroomsSchema = {
 	},
 	responsive: {
 		type: 'number',
-		default: 0,
+		default: 1,
 		description: 'Audio reactivity',
-		min: -10,
-		max: 30,
-		step: 0.5,
+		min: 0,
+		max: 3,
+		step: 0.1,
 		hiddenFromList: false,
 	},
 	timeOffsetInSeconds: {
@@ -159,58 +155,107 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 	return {...result, audioData: complete ? audioData : null};
 }
 
-type AudioInput = {
-	readonly audioData: MediaUtilsAudioData;
-	readonly dataOffsetInSeconds: number;
-	readonly sourceTime: number;
-	readonly fps: number;
-};
-
-function computeBars({
-	allVisualizationValues,
-	outputBarsCount = 308,
-}: {
-	allVisualizationValues: number[];
-	outputBarsCount?: number;
-}) {
-	const minFreq = 20;
-	const maxFreq = 22000;
-	const defaultFill = 0.0025;
-	const freqStep = (maxFreq - minFreq) / allVisualizationValues.length;
-	const bars = Array.from({length: outputBarsCount}, () => defaultFill);
-	const binSize = 1 / outputBarsCount;
-	for (let index = 0; index < allVisualizationValues.length; index++) {
-		const frequency = minFreq + index * freqStep;
-		const logFrequency = Math.log10(frequency / minFreq) / Math.log10(maxFreq / minFreq);
-		const binIndex = Math.floor(logFrequency / binSize);
-		if (binIndex < outputBarsCount) {
-			bars[binIndex] +=
-				binIndex < Math.floor(outputBarsCount * 0.334415584415584)
-					? allVisualizationValues[index] * 1.3
-					: allVisualizationValues[index];
-			if (outputBarsCount !== 308 && binIndex >= Math.floor(outputBarsCount * 0.9845)) {
-				bars[binIndex] = defaultFill;
+const bandRate = 60;
+const bandFftSize = 2048;
+const bandRangeDb = 18;
+const bandPeakSeconds = 6;
+const bandPeakDecayDbPerSecond = 2;
+const bandPeakStep = 4;
+const audioBandRanges = [
+	{from: 40, to: 140, floorDb: -42, releaseSeconds: 0.3},
+	{from: 300, to: 2000, floorDb: -45, releaseSeconds: 0.25},
+	{from: 4000, to: 12000, floorDb: -55, releaseSeconds: 0.15},
+] as const;
+const bandWindow = Float64Array.from(
+	{length: bandFftSize},
+	(_, index) => 0.5 - 0.5 * Math.cos((2 * Math.PI * index) / bandFftSize),
+);
+const bandReversed = Uint16Array.from({length: bandFftSize}, (_, index) => {
+	let reversed = 0;
+	for (let bit = 1; bit < bandFftSize; bit <<= 1)
+		reversed = (reversed << 1) | (index & bit ? 1 : 0);
+	return reversed;
+});
+const bandCos = Float64Array.from({length: bandFftSize / 2}, (_, index) =>
+	Math.cos((2 * Math.PI * index) / bandFftSize),
+);
+const bandSin = Float64Array.from(
+	{length: bandFftSize / 2},
+	(_, index) => -Math.sin((2 * Math.PI * index) / bandFftSize),
+);
+const silentBandLevels = audioBandRanges.map(() => -120);
+const bandLevelCache = new Map<string, number[]>();
+function bandLevels(audioData: MediaUtilsAudioData, offset: number, tap: number) {
+	const time = tap / bandRate;
+	if (time < 0 || time >= audioData.durationInSeconds) return silentBandLevels;
+	const key = `${audioData.resultId}:${offset}:${tap}`;
+	const cached = bandLevelCache.get(key);
+	if (cached) return cached;
+	const samples = audioData.channelWaveforms[0];
+	const start = Math.floor((time - offset) * audioData.sampleRate) - bandFftSize / 2;
+	const real = new Float64Array(bandFftSize);
+	const imaginary = new Float64Array(bandFftSize);
+	for (let index = 0; index < bandFftSize; index++)
+		real[bandReversed[index]] = (samples[start + index] ?? 0) * bandWindow[index];
+	for (let size = 2; size <= bandFftSize; size <<= 1) {
+		const half = size >> 1;
+		const stride = bandFftSize / size;
+		for (let block = 0; block < bandFftSize; block += size)
+			for (let index = 0; index < half; index++) {
+				const a = block + index;
+				const b = a + half;
+				const cos = bandCos[index * stride];
+				const sin = bandSin[index * stride];
+				const re = real[b] * cos - imaginary[b] * sin;
+				const im = real[b] * sin + imaginary[b] * cos;
+				real[b] = real[a] - re;
+				imaginary[b] = imaginary[a] - im;
+				real[a] += re;
+				imaginary[a] += im;
 			}
-		}
 	}
-	return bars.filter((b) => b !== defaultFill && !Number.isNaN(b));
-}
-
-function spectrumBars(input: AudioInput, count = 308) {
-	if (input.sourceTime < 0 || input.sourceTime >= input.audioData.durationInSeconds)
-		return Array(count).fill(0) as number[];
-	const frequencies = visualizeAudio({
-		audioData: input.audioData,
-		dataOffsetInSeconds: input.dataOffsetInSeconds,
-		frame: input.sourceTime * 60,
-		fps: 60,
-		numberOfSamples: 4096,
-		optimizeFor: 'speed',
-		smoothing: true,
+	const binWidth = audioData.sampleRate / bandFftSize;
+	const levels = audioBandRanges.map(({from, to}) => {
+		let power = 0;
+		const end = Math.min(bandFftSize / 2, Math.ceil(to / binWidth));
+		for (let bin = Math.ceil(from / binWidth); bin < end; bin++)
+			power += real[bin] * real[bin] + imaginary[bin] * imaginary[bin];
+		return 10 * Math.log10((power * 16) / (bandFftSize * bandFftSize) + 1e-12);
 	});
-	return computeBars({
-		allVisualizationValues: frequencies,
-		outputBarsCount: count,
+	if (bandLevelCache.size >= 4096) bandLevelCache.clear();
+	bandLevelCache.set(key, levels);
+	return levels;
+}
+function audioBands(
+	audioData: MediaUtilsAudioData,
+	offset: number,
+	time: number,
+	inputGainDb: number,
+) {
+	if (time < 0 || time >= audioData.durationInSeconds) return audioBandRanges.map(() => 0);
+	const now = Math.floor(time * bandRate + 1e-6);
+	const gain = bounded(inputGainDb, -30, 30, 0);
+	return audioBandRanges.map(({floorDb, releaseSeconds}, band) => {
+		let reference = Math.max(floorDb, bandLevels(audioData, offset, now)[band]);
+		const first = now - bandPeakSeconds * bandRate;
+		for (
+			let tap = first - (first % bandPeakStep);
+			tap <= now + bandPeakSeconds * bandRate;
+			tap += bandPeakStep
+		)
+			reference = Math.max(
+				reference,
+				bandLevels(audioData, offset, tap)[band] -
+					(Math.abs(now - tap) / bandRate) * bandPeakDecayDbPerSecond,
+			);
+		const releaseTaps = Math.round(releaseSeconds * bandRate);
+		let envelope = 0;
+		for (let step = 0; step <= releaseTaps; step++) {
+			const level = bandLevels(audioData, offset, now - step)[band];
+			const value = (level - reference + bandRangeDb + gain) / bandRangeDb;
+			envelope = Math.max(envelope, Math.min(1, value) - step / releaseTaps);
+		}
+		return envelope;
 	});
 }
 
@@ -225,14 +270,6 @@ function mushroomsTiming(frame: number, fps: number, audioOffset: number, timeOf
 		sourceTime: (frame + offsetFrames) / fps,
 		time: frame / fps + bounded(timeOffset, 0, 86400, 0),
 	};
-}
-
-function mushroomsBands(bars: readonly number[], inputGainDb: number) {
-	const gain = 10 ** (bounded(inputGainDb, -30, 30, 0) / 20);
-	return [11, 45, 85].map((index) => {
-		const value = bars[index] ?? 0;
-		return Number.isFinite(value) ? Math.max(0, value) * gain : 0;
-	});
 }
 
 function mushroomsGeometry() {
@@ -412,7 +449,7 @@ function drawMushrooms(
 	gl.uniform1f(uniforms.iColorful, bounded(frame.colorful, -2, 12, 0));
 	gl.uniform1f(uniforms.iContrast, bounded(frame.contrast, 1, 9, 6));
 	gl.uniform1f(uniforms.iCubeScale, bounded(frame.cubeScale, 0.5, 2, 1));
-	gl.uniform1f(uniforms.iResponsive, bounded(frame.responsive, -10, 30, 0));
+	gl.uniform1f(uniforms.iResponsive, bounded(frame.responsive, 0, 3, 1));
 	gl.disable(gl.BLEND);
 	gl.disable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
@@ -496,6 +533,9 @@ uniform float iResponsive;
 in vec2 vUv;
 out vec4 outColor;
 
+float g_bass = 0.0;
+float g_mid = 0.0;
+
 vec3 drat(float LL)
 {
     vec3 R = iBaseColor;
@@ -504,13 +544,7 @@ vec3 drat(float LL)
     vec3 B = vec3(1.0,1.0,1.0);
     vec3 E = vec3(0.254, 0.421, 0.557);
 
-    float coefficient = 0.0;
-    if (iResponsive > 0.0) {
-        coefficient = iHighFreq * iResponsive / 20.0;
-    }
-
-
-    return R + G * cos((6.28 + coefficient) * (B*LL+E));
+    return R + G * cos(6.28 * (B*LL+E));
 }
 
 #define XY(xx)(cos((xx)*6.3+vec3(0,23,21))*.5+.5)
@@ -519,7 +553,7 @@ float obj3d(vec2 uv, float trans)
     uv = max(abs(uv), vec2(0.000001));
     vec2 pos = min(uv.xy/uv.yx, trans);
 
-    float pBase = 2.0 + iLowFreq * 2.;
+    float pBase = 2.0 + 0.5 * g_bass;
     float JJ = (pBase - pos.r - pos.g);
 
     return (2.0+JJ*(JJ*JJ-1.5)) / (uv.r+uv.g);
@@ -531,6 +565,8 @@ vec2 spinning(vec2 A, float angle) {
 }
 void main()
 {
+    g_bass = pow(clamp(iLowFreq, 0.0, 1.0), 1.5) * iResponsive;
+    g_mid = clamp(iMidFreq, 0.0, 1.0) * iResponsive;
     vec2 nuv = (vUv - vec2(0.495, 0.5)) / vec2(0.35, 0.65);
     vec2 uv = nuv;
     vec2 viewing = nuv;
@@ -545,11 +581,7 @@ void main()
 
     vec2 luv;
     luv = uv;
-    if (iCubeScale > 0.0) {
-        luv /= max(0.0001, iCubeScale + iLowFreq * iResponsive / 20.0);
-    } else {
-        luv /= iCubeScale;
-    }
+    luv /= max(0.0001, iCubeScale * (1.0 + 0.06 * g_bass));
 
     vec3 d2 = e + luv.x * u + luv.y * v;
     vec3 a = (e + .1) / d2;
@@ -610,7 +642,7 @@ void main()
 
     float trans = sin(iGlobalTime * 12.0) * 0.1 + 1.0;
 
-    vec3 col = compiled*O.rgb;
+    vec3 col = compiled*O.rgb*(1.0 + 0.8 * g_bass + 0.2 * g_mid);
     col += smoothstep(0.0, 1.0, obj3d(viewing,trans)) * vec3(0.50,0.50,0.50)*0.08;
 
     outColor = vec4(col, 1.0);
@@ -671,18 +703,18 @@ const MushroomsContent: React.FC<Required<MushroomsOptions>> = (props) => {
 		props.timeOffsetInSeconds,
 	);
 	const {audioData, dataOffsetInSeconds} = useVisualizerAudio(props.audioSrc, sourceTime, fps);
-	const bars = spectrumBars({
-		audioData: audioData ?? silentAudio,
+	const bands = audioBands(
+		audioData ?? silentAudio,
 		dataOffsetInSeconds,
 		sourceTime,
-		fps,
-	});
+		props.inputGainDb,
+	);
 	return (
 		<>
 			{props.playAudio ? (
 				<Audio src={props.audioSrc} trimBefore={offsetFrames} showInTimeline={false} />
 			) : null}
-			<MushroomsCanvas {...props} time={time} bands={mushroomsBands(bars, props.inputGainDb)} />
+			<MushroomsCanvas {...props} time={time} bands={bands} />
 		</>
 	);
 };

@@ -131,7 +131,7 @@ const Drop: Part = ({from}) => {
 						baseColor="#8a2cff"
 						speed={3.2}
 						depth={6}
-						responsive={8}
+						responsive={2}
 						rotationSpeed={4}
 					/>
 					<AudioParticles
