@@ -1,7 +1,7 @@
 import fields from '../../../../packages/elements/dist/fields.json';
 import {elementCategories, elements} from './elements';
 
-export const SITE = 'https://banger-elements.dev';
+const SITE = 'https://banger-elements.dev';
 
 type Field = {
 	name: string;

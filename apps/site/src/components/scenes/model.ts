@@ -26,18 +26,18 @@ export const finishes = {
 	fisheye: {label: 'Fisheye', props: {strength: 0.6, perspectiveFactor: 0.35}},
 } as const satisfies Record<Finish, {label: string; props: Record<string, number>}>;
 
-export type Palette = {
+type Palette = {
 	readonly name: string;
 	readonly a: string;
 	readonly b: string;
 	readonly c: string;
 };
 
-export type Expr = {readonly expr: string; readonly value: number};
+type Expr = {readonly expr: string; readonly value: number};
 export type PropValue = string | number | boolean | Expr;
 export type Style = Readonly<Record<string, string | number>>;
 
-export type ElementNode = {
+type ElementNode = {
 	readonly kind: 'element';
 	readonly slug: string;
 	readonly name: string;
@@ -119,12 +119,12 @@ export type BuiltScene = {
 	readonly elements: readonly string[];
 };
 
-export const FONT = 'Geist, Inter, system-ui, sans-serif';
-export const FILL: Style = {position: 'absolute', inset: 0};
+const FONT = 'Geist, Inter, system-ui, sans-serif';
+const FILL: Style = {position: 'absolute', inset: 0};
 
 const nameOf = new Map(catalog.map((entry) => [entry.slug, entry.name]));
 
-export const elementName = (slug: string) => {
+const elementName = (slug: string) => {
 	const name = nameOf.get(slug);
 	if (!name) throw new Error(`Unknown element: ${slug}`);
 	return name;

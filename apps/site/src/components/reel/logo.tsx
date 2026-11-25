@@ -9,9 +9,9 @@ const ICON_CENTER = ICON.x + ICON.width / 2;
 const LOCKUP_CENTER = VIEW.x + VIEW.width / 2;
 const WORDMARK_CENTER = 1862;
 
-export const LOGO_WIDTH = 940;
+const LOGO_WIDTH = 940;
 const UNIT = LOGO_WIDTH / VIEW.width;
-export const LOGO_HEIGHT = VIEW.height * UNIT;
+const LOGO_HEIGHT = VIEW.height * UNIT;
 
 const SLIDE = BEAT;
 const FIRST_LETTER = BEAT + 6.5 * TICK;
