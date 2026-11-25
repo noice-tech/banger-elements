@@ -72,6 +72,20 @@ export function schemaFields(source: string): SchemaField[] {
 	};
 
 	const fields = new Map<string, SchemaField>();
+	const addField = (field: SchemaField) => {
+		const existing = fields.get(field.name);
+		if (!existing) {
+			fields.set(field.name, field);
+		} else if (existing.shownWhen && field.shownWhen?.control === existing.shownWhen.control) {
+			fields.set(field.name, {
+				...existing,
+				shownWhen: {
+					control: field.shownWhen.control,
+					values: [...existing.shownWhen.values, ...field.shownWhen.values],
+				},
+			});
+		}
+	};
 	const read = (object: ts.ObjectLiteralExpression, shownWhen: SchemaField['shownWhen']) => {
 		for (const prop of object.properties) {
 			if (!ts.isPropertyAssignment(prop)) continue;
@@ -86,27 +100,16 @@ export function schemaFields(source: string): SchemaField[] {
 							p.name!.getText(file).replace(/['"]/g, ''),
 						)
 					: null;
-			const existing = fields.get(name);
-			if (existing?.shownWhen && shownWhen && existing.shownWhen.control === shownWhen.control) {
-				fields.set(name, {
-					...existing,
-					shownWhen: {
-						control: shownWhen.control,
-						values: [...existing.shownWhen.values, ...shownWhen.values],
-					},
-				});
-			} else if (!existing) {
-				fields.set(name, {
-					name,
-					type: type === 'asset' ? `${literal(property(field, 'assetType'))} asset` : type,
-					default: literal(property(field, 'default')),
-					description: literal(property(field, 'description')) as string | null,
-					min: literal(property(field, 'min')) as number | null,
-					max: literal(property(field, 'max')) as number | null,
-					options,
-					shownWhen,
-				});
-			}
+			addField({
+				name,
+				type: type === 'asset' ? `${literal(property(field, 'assetType'))} asset` : type,
+				default: literal(property(field, 'default')),
+				description: literal(property(field, 'description')) as string | null,
+				min: literal(property(field, 'min')) as number | null,
+				max: literal(property(field, 'max')) as number | null,
+				options,
+				shownWhen,
+			});
 			if (variants) {
 				const variantObject = resolve(variants);
 				if (!ts.isObjectLiteralExpression(variantObject)) continue;

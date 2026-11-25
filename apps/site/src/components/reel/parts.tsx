@@ -29,8 +29,8 @@ import {
 import {BAR, BEAT, REEL_FPS, SONG_FRAME, TICK} from './scenes';
 
 export const TRACK = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
-export const W = 1280;
-export const H = 720;
+const W = 1280;
+const H = 720;
 export const fill: CSSProperties = {position: 'absolute', inset: 0};
 
 export const layer = (from: number) => ({

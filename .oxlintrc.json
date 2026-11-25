@@ -101,12 +101,17 @@
 		"@remotion/no-object-fit-on-media-video": "warn",
 		"@remotion/valid-composition-and-folder-name": "error",
 		"comments/no-comments": "error",
-		"comments/unslop": "error"
+		"comments/unslop": "error",
+		"complexity": ["error", {"max": 15}],
+		"max-depth": ["error", 4],
+		"no-nested-ternary": "error"
 	},
 	"overrides": [
 		{
 			"files": ["packages/elements/src/elements/**/*.tsx"],
 			"rules": {
+				"complexity": "off",
+				"no-nested-ternary": "off",
 				"no-restricted-imports": [
 					"error",
 					{

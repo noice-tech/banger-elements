@@ -1,7 +1,7 @@
 import fields from '../../../../packages/elements/dist/fields.json';
 import {elementCategories, elements} from './elements';
 
-export const SITE = 'https://banger-elements.dev';
+const SITE = 'https://banger-elements.dev';
 
 type Field = {
 	name: string;
@@ -93,13 +93,15 @@ const formatDefault = (field: Field) => {
 	return code(typeof field.default === 'string' ? `'${field.default}'` : String(field.default));
 };
 
+const rangeOf = (field: Field) => {
+	if (field.options) return field.options.map((option) => code(`'${option}'`)).join(', ');
+	if (field.min !== null || field.max !== null) return `${field.min ?? ''} to ${field.max ?? ''}`;
+	return '';
+};
+
 const props = (element: Element) => {
 	const rows = (fields as Record<string, Field[]>)[element.slug]!.map((field) => {
-		const range = field.options
-			? field.options.map((option) => code(`'${option}'`)).join(', ')
-			: field.min !== null || field.max !== null
-				? `${field.min ?? ''} to ${field.max ?? ''}`
-				: '';
+		const range = rangeOf(field);
 		const shown = field.shownWhen
 			? `Only used when \`${field.shownWhen.control}\` is ${or(field.shownWhen.values.map((value) => code(`'${value}'`)))}.`
 			: '';

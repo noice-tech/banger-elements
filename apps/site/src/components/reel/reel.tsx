@@ -34,18 +34,19 @@ const label: CSSProperties = {
 	textShadow: '0 1px 12px rgb(0 0 0 / 0.6)',
 };
 
+const captionFor = (scene: (typeof reelScenes)[number], eighth: number) => {
+	if (scene.id !== 'recap') return scene.layers.join(' × ');
+	if (eighth >= 4) return 'Every element at once';
+	return reelScenes.find((candidate) => candidate.id === recapOrder[eighth])!.layers.join(' × ');
+};
+
 const Hud = () => {
 	const frame = useCurrentFrame();
 	if (frame >= OUTRO) return null;
 	const scene = [...reelScenes].reverse().find((candidate) => candidate.from <= frame)!;
 	const bar = Math.floor((frame - DROP) / BAR) + 1;
 	const eighth = Math.floor((frame - MONTAGE) / (BEAT / 2));
-	const caption =
-		scene.id !== 'recap'
-			? scene.layers.join(' × ')
-			: eighth < 4
-				? reelScenes.find((candidate) => candidate.id === recapOrder[eighth])!.layers.join(' × ')
-				: 'Every element at once';
+	const caption = captionFor(scene, eighth);
 	return (
 		<AbsoluteFill style={{pointerEvents: 'none'}}>
 			<div style={{...label, left: 44, top: 38}}>Banger Elements</div>

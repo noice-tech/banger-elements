@@ -22,6 +22,85 @@ type PreviewControlsProps = {
 	artwork: ReturnType<typeof usePreviewArtwork>;
 };
 
+function tabKeyTarget(key: string, index: number, count: number) {
+	if (key === 'ArrowRight') return (index + 1) % count;
+	if (key === 'ArrowLeft') return (index + count - 1) % count;
+	if (key === 'Home') return 0;
+	if (key === 'End') return count - 1;
+	return -1;
+}
+
+function HaloArtworkControls({
+	customProps,
+	artwork,
+	update,
+	onArtworkChange,
+}: {
+	customProps: PreviewProps;
+	artwork: PreviewControlsProps['artwork'];
+	update: (key: string, value: PreviewValue) => void;
+	onArtworkChange: () => void;
+}) {
+	const {artworkFile, setArtworkFile, localArtwork, artworkError} = artwork;
+	return (
+		<div className="artwork-controls artwork-control">
+			{customProps.centerMode === 'transparent' ? (
+				<p className="control-note">
+					The center is transparent. Color and artwork settings are kept for Filled mode.
+				</p>
+			) : null}
+			<label className="wide-control">
+				<span>Optional artwork URL</span>
+				<input
+					type="url"
+					value={String(customProps.artworkSrc ?? '')}
+					disabled={Boolean(artworkFile) || customProps.centerMode === 'transparent'}
+					onChange={(event) => update('artworkSrc', event.target.value)}
+					placeholder="https://example.com/cover.jpg"
+				/>
+			</label>
+			<label className="file-control">
+				<span>Or choose local artwork</span>
+				<input
+					type="file"
+					accept="image/*"
+					disabled={customProps.centerMode === 'transparent'}
+					onChange={(event) => {
+						const file = event.currentTarget.files?.[0];
+						event.currentTarget.value = '';
+						if (!file) return;
+						setArtworkFile(file);
+						onArtworkChange();
+					}}
+				/>
+			</label>
+			{artworkFile ? (
+				<>
+					<p className="control-note" role="status">
+						{artworkFile.name}
+						{!localArtwork && !artworkError ? ' — loading…' : ''}
+					</p>
+					<button
+						type="button"
+						onClick={() => {
+							setArtworkFile(null);
+							update('artworkSrc', '');
+						}}
+					>
+						Remove artwork
+					</button>
+				</>
+			) : null}
+			{artworkError ? (
+				<p className="control-note" role="alert">
+					{artworkError}
+				</p>
+			) : null}
+			<p className="control-note">Local images stay in your browser and are never uploaded.</p>
+		</div>
+	);
+}
+
 export function PreviewControls({
 	slug,
 	customProps,
@@ -34,11 +113,16 @@ export function PreviewControls({
 	const selected = slug;
 	const isWrapper = isWrapperElement(selected);
 	const example: {props: PreviewProps; controls: readonly Control[]} = examples[selected];
+	const tabLabels = {look: 'Look', audio: isWrapper ? 'Demo audio' : 'Audio', more: 'More'};
+	const fallbackValue = (key: string) => {
+		if (selected !== 'halo' || key !== 'leadingColor') return example.props[key];
+		return customProps.colorMode === 'gradient' ? customProps.startColor : '#ffffff';
+	};
 	const [panel, setPanel] = useState<'look' | 'audio' | 'more'>('look');
 	const [copyMessage, setCopyMessage] = useState('');
 	const {audioUrl, audioDraft, setAudioUrl, setAudioDraft, localAudio, chooseAudio, clearAudio} =
 		audio;
-	const {artworkFile, setArtworkFile, localArtwork, artworkError} = artwork;
+	const {localArtwork} = artwork;
 	useEffect(() => setCopyMessage(''), [inputProps]);
 	const update = (key: string, value: PreviewValue) => {
 		setCustomProps((current) => ({...current, [key]: value}));
@@ -116,29 +200,14 @@ export function PreviewControls({
 						tabIndex={panel === tab ? 0 : -1}
 						onClick={() => setPanel(tab)}
 						onKeyDown={(event) => {
-							const next =
-								event.key === 'ArrowRight'
-									? (index + 1) % tabs.length
-									: event.key === 'ArrowLeft'
-										? (index + tabs.length - 1) % tabs.length
-										: event.key === 'Home'
-											? 0
-											: event.key === 'End'
-												? tabs.length - 1
-												: -1;
+							const next = tabKeyTarget(event.key, index, tabs.length);
 							if (next < 0) return;
 							event.preventDefault();
 							setPanel(tabs[next]!);
 							document.getElementById(`${slug}-tab-${tabs[next]}`)?.focus();
 						}}
 					>
-						{tab === 'look'
-							? 'Look'
-							: tab === 'audio'
-								? isWrapper
-									? 'Demo audio'
-									: 'Audio'
-								: 'More'}
+						{tabLabels[tab]}
 					</button>
 				))}
 			</div>
@@ -295,14 +364,7 @@ export function PreviewControls({
 							<ControlField
 								key={control.key}
 								control={control}
-								value={
-									customProps[control.key] ??
-									(selected === 'halo' && control.key === 'leadingColor'
-										? customProps.colorMode === 'gradient'
-											? customProps.startColor
-											: '#ffffff'
-										: example.props[control.key])
-								}
+								value={customProps[control.key] ?? fallbackValue(control.key)}
 								disabled={
 									selected === 'halo' &&
 									((customProps.colorMode !== 'gradient' &&
@@ -334,63 +396,12 @@ export function PreviewControls({
 					</p>
 				) : null}
 				{selected === 'halo' ? (
-					<div className="artwork-controls artwork-control">
-						{customProps.centerMode === 'transparent' ? (
-							<p className="control-note">
-								The center is transparent. Color and artwork settings are kept for Filled mode.
-							</p>
-						) : null}
-						<label className="wide-control">
-							<span>Optional artwork URL</span>
-							<input
-								type="url"
-								value={String(customProps.artworkSrc ?? '')}
-								disabled={Boolean(artworkFile) || customProps.centerMode === 'transparent'}
-								onChange={(event) => update('artworkSrc', event.target.value)}
-								placeholder="https://example.com/cover.jpg"
-							/>
-						</label>
-						<label className="file-control">
-							<span>Or choose local artwork</span>
-							<input
-								type="file"
-								accept="image/*"
-								disabled={customProps.centerMode === 'transparent'}
-								onChange={(event) => {
-									const file = event.currentTarget.files?.[0];
-									event.currentTarget.value = '';
-									if (!file) return;
-									setArtworkFile(file);
-									setCopyMessage('');
-								}}
-							/>
-						</label>
-						{artworkFile ? (
-							<>
-								<p className="control-note" role="status">
-									{artworkFile.name}
-									{!localArtwork && !artworkError ? ' — loading…' : ''}
-								</p>
-								<button
-									type="button"
-									onClick={() => {
-										setArtworkFile(null);
-										update('artworkSrc', '');
-									}}
-								>
-									Remove artwork
-								</button>
-							</>
-						) : null}
-						{artworkError ? (
-							<p className="control-note" role="alert">
-								{artworkError}
-							</p>
-						) : null}
-						<p className="control-note">
-							Local images stay in your browser and are never uploaded.
-						</p>
-					</div>
+					<HaloArtworkControls
+						customProps={customProps}
+						artwork={artwork}
+						update={update}
+						onArtworkChange={() => setCopyMessage('')}
+					/>
 				) : null}
 			</div>
 			<details className="configuration-export">

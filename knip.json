@@ -1,0 +1,21 @@
+{
+	"$schema": "https://unpkg.com/knip@6/schema.json",
+	"workspaces": {
+		"packages/elements": {
+			"entry": ["src/elements/*/*.tsx", "tests/*.test.ts"]
+		},
+		"apps/site": {
+			"entry": ["scripts/*.{mjs,ts}", "scripts/hero-word/root.tsx", "src/route-data.ts"],
+			"ignoreBinaries": ["ffmpeg"],
+			"ignoreDependencies": ["@banger-elements/collection"]
+		},
+		"apps/studio": {
+			"entry": ["remotion.config.ts", "src/fixtures/render-root.tsx", "scripts/*.mjs"],
+			"ignoreDependencies": ["@banger-elements/collection"]
+		},
+		"tools/oxlint": {
+			"entry": ["comments/*.test.mjs"],
+			"ignore": ["comments/fixtures/**"]
+		}
+	}
+}

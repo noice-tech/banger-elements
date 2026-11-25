@@ -14,12 +14,13 @@ const {entry} = Astro.props;
 const isWrapper = entry.category === 'effects';
 const wrapperName = entry.name;
 const bypassKey = entry.slug === 'wet-glass' ? 'amount' : 'strength';
+const bypassValues: Record<string, number> = {'wet-glass': 0.65, vhs: 1};
 const wrapperExample = `import {${wrapperName}} from './${entry.slug}.element';
 import {Space} from './space.element';
 import {Halo} from './halo.element';
 
 // Install Space and Halo separately, or use your existing content.
-<${wrapperName} width={1280} height={720} ${bypassKey}={${entry.slug === 'wet-glass' ? 0.65 : entry.slug === 'vhs' ? 1 : 0.75}}>
+<${wrapperName} width={1280} height={720} ${bypassKey}={${bypassValues[entry.slug] ?? 0.75}}>
   <Space playAudio={false} style={{position: 'absolute', inset: 0}} />
   <Halo playAudio style={{position: 'absolute', inset: 0}} />
 </${wrapperName}>`;

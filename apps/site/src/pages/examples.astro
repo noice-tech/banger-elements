@@ -32,7 +32,10 @@ const forReaders = (source: string) =>
 			.join('\n'),
 	);
 
-const shapeOf = (width: number, height: number) => (width === height ? 'square' : width > height ? 'wide' : 'tall');
+const shapeOf = (width: number, height: number) => {
+	if (width === height) return 'square';
+	return width > height ? 'wide' : 'tall';
+};
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
 const cards = recipes.map((recipe) => {

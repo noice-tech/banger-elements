@@ -5,7 +5,7 @@ export const BEAT = (60 / 122) * REEL_FPS;
 export const BAR = BEAT * 4;
 /** Where the reel starts in the song, in frames: one bar before the drop. */
 export const SONG_FRAME = Math.round(2.685 * REEL_FPS - BAR);
-export const at = (bars: number) => Math.round(bars * BAR);
+const at = (bars: number) => Math.round(bars * BAR);
 export const REEL_FRAMES = at(11);
 
 export type ReelScene = {
