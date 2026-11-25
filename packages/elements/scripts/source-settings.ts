@@ -8,6 +8,21 @@ const unwrap = (expression: ts.Expression) => {
 	return expression;
 };
 
+const keywords = new Map<string, unknown>([
+	['true', true],
+	['false', false],
+	['undefined', null],
+]);
+
+function defaultValue(expression: ts.Expression, file: ts.SourceFile) {
+	if (ts.isStringLiteral(expression)) return expression.text;
+	const text = expression.getText(file);
+	if (keywords.has(text)) return keywords.get(text);
+	const value = Number(text);
+	if (!Number.isFinite(value)) throw new Error(`Unsupported default: ${text}`);
+	return value;
+}
+
 export function sourceSettings(source: string) {
 	const file = ts.createSourceFile(
 		'element.tsx',
@@ -55,18 +70,7 @@ export function sourceSettings(source: string) {
 			const expression = ts.isIdentifier(def.initializer)
 				? (constants.get(def.initializer.text) ?? def.initializer)
 				: def.initializer;
-			const text = expression.getText(file);
-			const value = ts.isStringLiteral(expression)
-				? expression.text
-				: text === 'true'
-					? true
-					: text === 'false'
-						? false
-						: text === 'undefined'
-							? null
-							: Number(text);
-			if (typeof value === 'number' && !Number.isFinite(value))
-				throw new Error(`Unsupported default: ${text}`);
+			const value = defaultValue(expression, file);
 			const key = prop.name.getText(file).replace(/^['"]|['"]$/g, '');
 			const setting = {start: expression.getStart(file), end: expression.end, value};
 			const existing = settings[key];

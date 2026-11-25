@@ -230,62 +230,71 @@ function waveformPath({
 	return `M${upper.join(' L')} L${lower.join(' L')} Z`;
 }
 
+function frequencyColorsForSecond(
+	waveform: Float32Array,
+	sampleRate: number,
+	offset: number,
+	second: number,
+) {
+	const filters = [
+		{frequency: 200, highpass: false},
+		{frequency: 200, highpass: true},
+		{frequency: 2000, highpass: false},
+		{frequency: 2000, highpass: true},
+	].map(({frequency, highpass}) => {
+		const omega = (2 * Math.PI * Math.min(frequency, sampleRate * 0.45)) / sampleRate;
+		const cosine = Math.cos(omega),
+			alpha = Math.sin(omega) / (2 * Math.SQRT1_2),
+			a0 = 1 + alpha;
+		const b0 = (highpass ? 1 + cosine : 1 - cosine) / (2 * a0);
+		return {
+			b0,
+			b1: (highpass ? -2 : 2) * b0,
+			b2: b0,
+			a1: (-2 * cosine) / a0,
+			a2: (1 - alpha) / a0,
+			z1: 0,
+			z2: 0,
+		};
+	});
+	const colors = new Float32Array(3000);
+	const energy = [0, 0, 0],
+		bands = [0, 0, 0];
+	const smoothing = 1 - Math.exp(-1 / (sampleRate * 0.015));
+	for (let tick = -100; tick < 1000; tick++) {
+		const from = Math.round((second + tick / 1000 - offset) * sampleRate);
+		const to = Math.round((second + (tick + 1) / 1000 - offset) * sampleRate);
+		for (let i = from; i < to; i++) {
+			const raw = waveform[i] ?? 0,
+				input = Number.isFinite(raw) ? raw : 0;
+			let midInput = input;
+			for (let f = 0; f < filters.length; f++) {
+				const filter = filters[f],
+					x = f === 2 ? midInput : input,
+					y = filter.b0 * x + filter.z1;
+				filter.z1 = filter.b1 * x - filter.a1 * y + filter.z2;
+				filter.z2 = filter.b2 * x - filter.a2 * y;
+				if (f === 1) midInput = y;
+				else bands[f === 0 ? 0 : f - 1] = y;
+			}
+			for (let band = 0; band < 3; band++)
+				energy[band] += smoothing * (bands[band] ** 2 - energy[band]);
+		}
+		if (tick < 0) continue;
+		const loudest = Math.sqrt(Math.max(...energy));
+		for (let band = 0; band < 3; band++)
+			colors[tick * 3 + band] = loudest > 1e-8 ? Math.sqrt(Math.max(0, energy[band])) / loudest : 1;
+	}
+	return colors;
+}
+
 function createFrequencyColors(waveform: Float32Array, sampleRate: number, offset: number) {
 	const cache = new Map<number, Float32Array>();
 	return (time: number) => {
 		const second = Math.floor(time);
 		let colors = cache.get(second);
 		if (!colors) {
-			const filters = [
-				{frequency: 200, highpass: false},
-				{frequency: 200, highpass: true},
-				{frequency: 2000, highpass: false},
-				{frequency: 2000, highpass: true},
-			].map(({frequency, highpass}) => {
-				const omega = (2 * Math.PI * Math.min(frequency, sampleRate * 0.45)) / sampleRate;
-				const cosine = Math.cos(omega),
-					alpha = Math.sin(omega) / (2 * Math.SQRT1_2),
-					a0 = 1 + alpha;
-				const b0 = (highpass ? 1 + cosine : 1 - cosine) / (2 * a0);
-				return {
-					b0,
-					b1: (highpass ? -2 : 2) * b0,
-					b2: b0,
-					a1: (-2 * cosine) / a0,
-					a2: (1 - alpha) / a0,
-					z1: 0,
-					z2: 0,
-				};
-			});
-			colors = new Float32Array(3000);
-			const energy = [0, 0, 0],
-				bands = [0, 0, 0];
-			const smoothing = 1 - Math.exp(-1 / (sampleRate * 0.015));
-			for (let tick = -100; tick < 1000; tick++) {
-				const from = Math.round((second + tick / 1000 - offset) * sampleRate);
-				const to = Math.round((second + (tick + 1) / 1000 - offset) * sampleRate);
-				for (let i = from; i < to; i++) {
-					const raw = waveform[i] ?? 0,
-						input = Number.isFinite(raw) ? raw : 0;
-					let midInput = input;
-					for (let f = 0; f < filters.length; f++) {
-						const filter = filters[f],
-							x = f === 2 ? midInput : input,
-							y = filter.b0 * x + filter.z1;
-						filter.z1 = filter.b1 * x - filter.a1 * y + filter.z2;
-						filter.z2 = filter.b2 * x - filter.a2 * y;
-						if (f === 1) midInput = y;
-						else bands[f === 0 ? 0 : f - 1] = y;
-					}
-					for (let band = 0; band < 3; band++)
-						energy[band] += smoothing * (bands[band] ** 2 - energy[band]);
-				}
-				if (tick < 0) continue;
-				const loudest = Math.sqrt(Math.max(...energy));
-				for (let band = 0; band < 3; band++)
-					colors[tick * 3 + band] =
-						loudest > 1e-8 ? Math.sqrt(Math.max(0, energy[band])) / loudest : 1;
-			}
+			colors = frequencyColorsForSecond(waveform, sampleRate, offset, second);
 			if (cache.size >= 8) cache.delete(cache.keys().next().value!);
 			cache.set(second, colors);
 		}

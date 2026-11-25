@@ -271,6 +271,12 @@ function createHaloHistory(input: HistoryInput) {
 
 const INFINITY = 1e20;
 
+function closerSite(y: number, above: number, below: number) {
+	if (above < 0) return below;
+	if (below < 0) return above;
+	return y - above <= below - y ? above : below;
+}
+
 function nearestSites(isSite: Uint8Array) {
 	const columnDistance = new Float64Array(WIDTH * HEIGHT);
 	const columnSite = new Int32Array(WIDTH * HEIGHT);
@@ -285,7 +291,7 @@ function nearestSites(isSite: Uint8Array) {
 			const i = y * WIDTH + x;
 			if (isSite[i]) next = y;
 			const above = columnSite[i];
-			const site = above < 0 ? next : next < 0 ? above : y - above <= next - y ? above : next;
+			const site = closerSite(y, above, next);
 			columnSite[i] = site;
 			columnDistance[i] = site < 0 ? INFINITY : (y - site) ** 2;
 		}

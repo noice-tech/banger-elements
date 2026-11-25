@@ -143,6 +143,7 @@ const rows = [
 	'WET GLASS ✶ VHS ✶ FISHEYE ✶ ',
 	'LIQUID ✶ PULSAR ✶ RAIN ✶ ',
 ];
+const rowColors = ['#f4efe6', '#4a3a66', '#c38bff', '#4a3a66', '#f4efe6', '#4a3a66'];
 
 const Marquee = () => {
 	const loop = useLoop();
@@ -168,7 +169,7 @@ const Marquee = () => {
 						key={text}
 						style={{
 							transform: `translateX(${shift}px)`,
-							color: index % 2 === 1 ? '#4a3a66' : index === 2 ? '#c38bff' : '#f4efe6',
+							color: rowColors[index],
 						}}
 					>
 						{text.repeat(Math.ceil((W * 2) / length) + 1)}

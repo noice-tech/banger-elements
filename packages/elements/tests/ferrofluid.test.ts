@@ -72,6 +72,8 @@ test('Ferrofluid: requires WebGL2 explicitly', () => {
 		/requires WebGL2/,
 	);
 });
+const deletedBufferCounts: Partial<Record<string, number>> = {texture: 2, 'second-buffer': 1};
+
 for (const failure of [
 	'vertex',
 	'fragment',
@@ -90,10 +92,7 @@ for (const failure of [
 			failure === 'vertex' ? 1 : 2,
 		);
 		const deletedBuffers = calls.filter(({name}) => name === 'deleteBuffer');
-		assert.equal(
-			deletedBuffers.length,
-			failure === 'texture' ? 2 : failure === 'second-buffer' ? 1 : 0,
-		);
+		assert.equal(deletedBuffers.length, deletedBufferCounts[failure] ?? 0);
 	});
 }
 
