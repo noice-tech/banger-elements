@@ -28,6 +28,15 @@ export const isAdvancedControl = (key: string) => advancedKeys.has(key);
 const wrapperSlugs = new Set(['vhs', 'fisheye', 'wet-glass']);
 export const isWrapper = (slug: string) => wrapperSlugs.has(slug);
 
+const circleVariantControls: Record<string, string[]> = {
+	count: ['radial-bars', 'dotted-ring'],
+	barWidth: ['radial-bars'],
+	lineWidth: ['glow-ring'],
+	showLines: ['glow-ring'],
+	lineThickness: ['waveform-ring'],
+	dotSize: ['dotted-ring'],
+};
+
 export function isControlVisible(slug: string, props: Record<string, PreviewValue>, key: string) {
 	if (slug === 'waveform' && key === 'color') return props.colorMode !== 'frequency';
 	if (slug === 'oscilloscope' && key === 'timeSpanMs') return props.displayMode !== 'single-cycle';
@@ -37,13 +46,8 @@ export function isControlVisible(slug: string, props: Record<string, PreviewValu
 	if (['rainbowSpeed', 'saturation', 'brightness'].includes(key))
 		return props.colorMode === 'rainbow';
 	if (slug === 'spectre') return key !== 'segmentGap' || props.spectreVariant === 'segmented';
-	const variant = props.circleVariant ?? 'radial-bars';
-	if (key === 'count') return variant === 'radial-bars' || variant === 'dotted-ring';
-	if (key === 'barWidth') return variant === 'radial-bars';
-	if (key === 'lineWidth' || key === 'showLines') return variant === 'glow-ring';
-	if (key === 'lineThickness') return variant === 'waveform-ring';
-	if (key === 'dotSize') return variant === 'dotted-ring';
-	return true;
+	const variants = circleVariantControls[key];
+	return !variants || variants.includes(String(props.circleVariant ?? 'radial-bars'));
 }
 
 export function configuredJsx(

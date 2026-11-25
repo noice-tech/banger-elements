@@ -87,6 +87,12 @@ const formatOptions = (Object.keys(formats) as Format[]).map((value) => ({
 
 type Copy = 'idle' | 'copied' | 'failed';
 
+const copyLabels: Record<Copy, string> = {
+	idle: 'Copy code',
+	copied: 'Copied',
+	failed: 'Select to copy',
+};
+
 const elementsFor = (spec: SceneSpec, state: SceneState) => buildScene(spec, state).elements;
 
 const whenIdle = (task: () => void) => {
@@ -469,7 +475,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 						<span className="scene-code-actions">
 							<span className="scene-code-count">{code.length} lines</span>
 							<button type="button" className="code-copy" onClick={copyCode}>
-								{copy === 'copied' ? 'Copied' : copy === 'failed' ? 'Select to copy' : 'Copy code'}
+								{copyLabels[copy]}
 							</button>
 						</span>
 					</div>

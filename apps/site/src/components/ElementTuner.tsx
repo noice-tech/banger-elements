@@ -72,6 +72,41 @@ const baseProps = (slug: PreviewKind): PreviewProps => {
 };
 
 type VisualProps = ComponentProps<typeof PreviewRenderer>;
+function TunerControl({
+	control,
+	value,
+	swatches,
+	onChange,
+}: {
+	control: Control;
+	value: PreviewValue | undefined;
+	swatches: readonly string[] | undefined;
+	onChange: (value: PreviewValue) => void;
+}) {
+	if (control.type === 'color' && swatches)
+		return (
+			<Swatches
+				label={control.label}
+				value={String(value)}
+				swatches={swatches}
+				onChange={onChange}
+			/>
+		);
+	if (control.type === 'select')
+		return (
+			<Segments
+				label={control.label}
+				options={(control.options ?? []).map((option) => ({
+					value: String(option.value),
+					label: option.label,
+				}))}
+				value={String(value)}
+				onChange={onChange}
+			/>
+		);
+	return <ControlField control={control} value={(value ?? 0) as PreviewValue} update={onChange} />;
+}
+
 const VisualContext = createContext<VisualProps | null>(null);
 
 function TunerComposition() {
@@ -227,30 +262,12 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 								key={`${selected}-${control.key}`}
 								className={`stage-control stage-control-${control.type}`}
 							>
-								{control.type === 'color' && swatches ? (
-									<Swatches
-										label={control.label}
-										value={String(value)}
-										swatches={swatches}
-										onChange={(next) => update(control.key, next)}
-									/>
-								) : control.type === 'select' ? (
-									<Segments
-										label={control.label}
-										options={(control.options ?? []).map((option) => ({
-											value: String(option.value),
-											label: option.label,
-										}))}
-										value={String(value)}
-										onChange={(next) => update(control.key, next)}
-									/>
-								) : (
-									<ControlField
-										control={control}
-										value={(value ?? 0) as PreviewValue}
-										update={(next) => update(control.key, next)}
-									/>
-								)}
+								<TunerControl
+									control={control}
+									value={value}
+									swatches={swatches}
+									onChange={(next) => update(control.key, next)}
+								/>
 							</div>
 						);
 					})}

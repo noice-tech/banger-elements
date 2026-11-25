@@ -55,6 +55,28 @@ export function mockCanvas(failure?: Failure) {
 	let shaderCount = 0,
 		bufferCount = 0,
 		textureCount = 0;
+	const handlers: Record<string, (args: unknown[]) => unknown> = {
+		createShader: () => ({shader: ++shaderCount}),
+		getShaderParameter: () =>
+			!(failure === 'vertex' || (failure === 'fragment' && shaderCount === 2)),
+		getProgramParameter: () => failure !== 'link',
+		createVertexArray: () => (failure === 'vao' ? null : {name: 'createVertexArray'}),
+		createBuffer: () => {
+			bufferCount++;
+			return failure === 'first-buffer' || (failure === 'second-buffer' && bufferCount === 2)
+				? null
+				: {buffer: bufferCount};
+		},
+		createTexture: () => {
+			textureCount++;
+			return failure === 'texture' || (failure === 'second-texture' && textureCount === 2)
+				? null
+				: {texture: textureCount};
+		},
+		getUniformLocation: (args) => args[1],
+		getAttribLocation: () => 0,
+		getError: () => (failure === 'draw' ? -1 : (constants.get('NO_ERROR') ?? constants.size + 1)),
+	};
 	const gl = new Proxy(
 		{},
 		{
@@ -65,29 +87,8 @@ export function mockCanvas(failure?: Failure) {
 				}
 				return (...args: unknown[]) => {
 					calls.push({name, args});
-					if (name === 'createShader') return {shader: ++shaderCount};
-					if (name === 'getShaderParameter')
-						return !(failure === 'vertex' || (failure === 'fragment' && shaderCount === 2));
-					if (name === 'getProgramParameter') return failure !== 'link';
-					if (name === 'createVertexArray' && failure === 'vao') return null;
-					if (name === 'createBuffer') {
-						bufferCount++;
-						return failure === 'first-buffer' || (failure === 'second-buffer' && bufferCount === 2)
-							? null
-							: {buffer: bufferCount};
-					}
-					if (name === 'createTexture') {
-						textureCount++;
-						return failure === 'texture' || (failure === 'second-texture' && textureCount === 2)
-							? null
-							: {texture: textureCount};
-					}
-					if (name.startsWith('create')) return {name};
-					if (name === 'getUniformLocation') return args[1];
-					if (name === 'getAttribLocation') return 0;
-					if (name === 'getError')
-						return failure === 'draw' ? -1 : (constants.get('NO_ERROR') ?? constants.size + 1);
-					return null;
+					if (Object.hasOwn(handlers, name)) return handlers[name]!(args);
+					return name.startsWith('create') ? {name} : null;
 				};
 			},
 		},

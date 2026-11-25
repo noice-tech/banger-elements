@@ -54,6 +54,7 @@ for (const entry of catalog) {
 		);
 		assert.ok(payload);
 		assert.equal(payload.element.sourceCode, sourceCode);
+		assert.ok(sourceCode.length < 200_000, `${sourceCode.length} characters`);
 		assert.equal(payload.element.slug, `banger-elements/${entry.slug}`);
 		assert.equal(payload.element.installationMode, 'component-owned-sequence');
 		assert.equal(

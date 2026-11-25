@@ -33,11 +33,7 @@ const attributeLines = (attr: string | Style, depth: number): string[] => {
 	];
 };
 
-const printNode = (node: SceneNode | string, depth: number): string[] => {
-	if (typeof node === 'string') return [indent(depth) + text(node)];
-	if (node.kind === 'box' && node.tag === 'br') return [`${indent(depth)}<br />`];
-
-	const tag = node.kind === 'element' ? node.name : node.tag;
+const nodeAttributes = (node: SceneNode): (string | Style)[] => {
 	const attrs: (string | Style)[] = [];
 	if (node.kind === 'element') {
 		if (node.shared) attrs.push('{...audio}');
@@ -45,6 +41,15 @@ const printNode = (node: SceneNode | string, depth: number): string[] => {
 		for (const [name, value] of Object.entries(node.props)) attrs.push(attribute(name, value));
 	}
 	if (node.style) attrs.push(node.style);
+	return attrs;
+};
+
+const printNode = (node: SceneNode | string, depth: number): string[] => {
+	if (typeof node === 'string') return [indent(depth) + text(node)];
+	if (node.kind === 'box' && node.tag === 'br') return [`${indent(depth)}<br />`];
+
+	const tag = node.kind === 'element' ? node.name : node.tag;
+	const attrs = nodeAttributes(node);
 	const children = node.children ?? [];
 
 	const inlineAttrs = attrs
