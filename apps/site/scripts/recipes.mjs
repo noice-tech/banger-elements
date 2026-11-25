@@ -1,5 +1,3 @@
-// Render the curated compositions on /examples from src/components/recipes,
-// plus a poster for each. usage: node scripts/recipes.mjs [id,...]
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, rmSync} from 'node:fs';
 import {createRequire} from 'node:module';
@@ -46,7 +44,7 @@ for (const recipe of recipes) {
 		`--scale=${recipe.scale}`,
 		`--crf=${recipe.crf ?? 44}`,
 		recipe.silent ? '--muted' : '--audio-bitrate=128k',
-		// More tabs than this starve each other of the software GPU and the audio fetch.
+		// EXTERNAL: More than 4 Chrome tabs starve each other of the software GPU and the audio fetch.
 		'--concurrency=4',
 	]);
 	const still = path.join(out, `${recipe.id}.png`);
@@ -61,7 +59,6 @@ for (const recipe of recipes) {
 	await sharp(still)
 		.webp({quality: 80})
 		.toFile(path.join(out, `${recipe.id}.webp`));
-	// The home page stacks small copies of the posters in its link to /examples.
 	await sharp(still)
 		.resize({width: 96})
 		.webp({quality: 65})

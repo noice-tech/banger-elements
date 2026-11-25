@@ -91,14 +91,12 @@ for (const entry of catalog) {
 				(dependency) => !dependency.name.startsWith('@remotion/') || dependency.version === null,
 			),
 		);
-		// Shaders fill whatever composition they are placed in; other Elements keep their box.
 		const fills = sourceCode.includes(`layout: 'absolute-fill'`);
 		assert.equal(fills, entry.category === 'shaders');
 		assert.deepEqual(
 			payload.element.dimensions,
 			fills ? null : {width: entry.width, height: entry.height},
 		);
-		// Audio Elements copy the demo track into public/ so a fresh install plays offline.
 		if (entry.category === 'effects') {
 			assert.deepEqual(payload.element.assets, []);
 			assert.equal(payload.element.initialProps, null);

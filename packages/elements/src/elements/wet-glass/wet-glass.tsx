@@ -138,8 +138,7 @@ void main() {
 }`;
 
 const dropFieldGlsl = `
-// The original droplet field uses both ascending and descending smoothsteps.
-// Define descending edges explicitly instead of relying on undefined GLSL behavior.
+// EXTERNAL: GLSL smoothstep is undefined when edge0 >= edge1, so S() handles descending edges.
 float S(float a, float b, float t) {
   if (abs(a - b) < 0.00001) return step(a, t);
   return a < b ? smoothstep(a, b, t) : 1.0 - smoothstep(b, a, t);
@@ -147,7 +146,7 @@ float S(float a, float b, float t) {
 
 
 vec3 N13(float p) {
-  // Hash by Dave Hoskins.
+  // Hash by Dave Hoskins: https://www.shadertoy.com/view/4djSRW
   vec3 p3 = fract(vec3(p) * vec3(.1031, .11369, .13787));
   p3 += dot(p3, p3.yzx + 19.19);
   return fract(vec3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x));
@@ -215,8 +214,6 @@ vec2 Drops(vec2 uv, float t, float l0, float l1, float l2) {
   return vec2(c, max(m1.y * l0, m2.y * l1));
 }
 
-// Droplet field shared by the WebGL shader and the drop-map canvas that feeds the
-// SVG fallback: the refraction normal and how clear the glass is at this point.
 void wetField(
   vec2 vUv,
   vec2 resolution,
@@ -239,8 +236,6 @@ void wetField(
   float layer2 = S(0.0, 0.5, amount);
   vec2 c = Drops(uv, t, staticDrops, layer1, layer2);
 
-  // Finite differences, as in the background shader: round droplets refract the
-  // scene while the streams behind them clear a path through the fogged glass.
   vec2 e = vec2(0.001, 0.0);
   normal = vec2(
     Drops(uv + e, t, staticDrops, layer1, layer2).x - c.x,
@@ -280,8 +275,6 @@ vec4 sampleScene(vec2 uv) {
 vec4 blurredScene(vec2 uv, vec2 radius) {
   if (blur <= 0.0) return sampleScene(uv);
 
-  // Scene render targets have no mip chain. A fixed disk kernel gives wet-glass
-  // defocus without textureLod, temporal noise, or feedback from previous frames.
   vec4 result = vec4(0.0);
   for (int i = 0; i < 16; i++) {
     float index = float(i);
@@ -308,12 +301,8 @@ void main() {
   vec2 refractedUv = vUv + normal * refraction * dropSize / aspect;
   vec2 radius = blur * amount * 0.05 * mix(1.0, 0.15, clearGlass) / aspect;
   vec4 wetScene = blurredScene(refractedUv, radius);
-  // Colored water transmits light through droplets and cleared trails, not the
-  // entire frame. White is neutral; multiplying RGB also preserves scene alpha.
   wetScene.rgb *= mix(vec3(1.0), color, clearGlass);
 
-  // Sample and mix RGBA together: wet glass distorts existing scene coverage,
-  // never paints an opaque rectangle or invents drops over an empty scene.
   vec4 result = mix(source, wetScene, opacity);
   vec3 rgb = result.a > 0.00001 ? max(vec3(0.0), result.rgb / result.a) : vec3(0.0);
   rgb = mix(rgb * 12.92, 1.055 * pow(rgb, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), rgb));
@@ -321,13 +310,8 @@ void main() {
 }
 `;
 
-// The drop map is drawn at this fraction of the element size: PNG encoding the
-// full-size map costs ~30 ms per frame, and the filter stretches it back up.
 const DROP_MAP_SCALE = 0.5;
 
-// Draws only the droplet field, never the scene, so it needs no HTML-in-canvas.
-// Red/green hold each pixel's refraction offset around 0.5 (feDisplacementMap's
-// neutral) in units of `offsetRange` pixels; blue holds how clear the glass is.
 const dropMapShader = `#version 300 es
 precision highp float;
 
@@ -349,8 +333,6 @@ void main() {
   float clearGlass;
   wetField(vUv, resolution, time, seed, amount, speed, dropSize, normal, clearGlass);
 
-  // Same offset as the shader, in pixels. The shader clamps its sample position
-  // to the scene; clamp the offset so the SVG filter never reads beyond the edge.
   vec2 pixel = vUv * resolution;
   vec2 offset = normal * refraction * dropSize * min(resolution.x, resolution.y);
   offset = clamp(pixel + offset, vec2(0.5), resolution - 0.5) - pixel;
@@ -453,12 +435,6 @@ function cleanupWetGlassWebGl({gl, program, vao, buffer, texture}: WetGlassWebGl
 	gl.deleteProgram(program);
 }
 
-/**
- * Upload the effect source as premultiplied alpha, matching the context. The
- * shaders sample with a top-left origin, which is how DOM-oriented canvases
- * arrive (`flipSourceY` is true). Only sources that are already flipped for
- * WebGL need to be flipped back.
- */
 function uploadSource(gl: WebGL2RenderingContext, source: TexImageSource, flipSourceY: boolean) {
 	gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !flipSourceY);
@@ -505,7 +481,6 @@ const wetGlassEffect = createEffect<WetGlassEffectParams, WetGlassWebGlState>({
 	apply: ({source, width, height, params, state, flipSourceY}) =>
 		drawWetGlassWebGl(state, source as TexImageSource, params, width, height, flipSourceY),
 	cleanup: cleanupWetGlassWebGl,
-	// The Element's own Interactive.create() schema already exposes these controls.
 	schema: {},
 	validateParams: () => undefined,
 });
@@ -568,10 +543,6 @@ type DropMapRenderer = {
 	readonly dispose: () => void;
 };
 
-/**
- * Renders the droplet field to a plain WebGL canvas and returns it as a PNG data
- * URL for the SVG fallback. Returns null when WebGL2 is unavailable.
- */
 function createDropMapRenderer(): DropMapRenderer | null {
 	const canvas = document.createElement('canvas');
 	const gl = canvas.getContext('webgl2', {alpha: false, antialias: false});
@@ -628,13 +599,6 @@ function createDropMapRenderer(): DropMapRenderer | null {
 	};
 }
 
-/**
- * Approximation for browsers without HTML-in-canvas. A browser cannot read its
- * own DOM pixels into WebGL, but it can still draw the droplet field: that goes
- * into an SVG filter as a displacement map (refraction) and a mask (clear trails
- * vs. fogged glass), and the filter blurs and bends the children with it. It runs
- * in sRGB: Chrome quantises linearRGB filters to 8 bits, which lifts and tints darks.
- */
 function WetGlassFallback(props: ResolvedWetGlassProps & {time: number}) {
 	const id = useId().replace(/:/g, '');
 	const [renderer, setRenderer] = useState<DropMapRenderer | null>(null);
@@ -651,7 +615,6 @@ function WetGlassFallback(props: ResolvedWetGlassProps & {time: number}) {
 		blur = bounded(props.blur, 0, 1, 0.35),
 		dropSize = bounded(props.dropSize, 0.25, 2, 1);
 	const shortEdge = Math.min(width, height);
-	// The map stores offsets within +/- half of this many pixels.
 	const offsetRange = shortEdge * Math.max(refraction * dropSize, 0.25);
 	const map = useMemo(
 		() =>
@@ -681,9 +644,7 @@ function WetGlassFallback(props: ResolvedWetGlassProps & {time: number}) {
 	);
 	if (!map) return <>{children}</>;
 
-	// Multiplying sRGB values by the sRGB colour approximates the shader's linear multiply.
 	const tint = props.color === '#ffffff' ? null : srgbColor(props.color);
-	// Disk blur of radius r (as in the shader) matches a Gaussian of r / 2.
 	const foggedBlur = (blur * amount * 0.05 * shortEdge) / 2;
 	const clearBlur = foggedBlur * 0.15;
 	const addition = {operator: 'arithmetic', k2: 1, k3: 1} as const;
@@ -701,7 +662,6 @@ function WetGlassFallback(props: ResolvedWetGlassProps & {time: number}) {
 							preserveAspectRatio="none"
 							result="map"
 						/>
-						{/* Blue channel of the map becomes alpha: 1 where the glass is clear. */}
 						<feColorMatrix
 							in="map"
 							type="matrix"
@@ -711,8 +671,6 @@ function WetGlassFallback(props: ResolvedWetGlassProps & {time: number}) {
 						<feComponentTransfer in="clearMask" result="fogMask">
 							<feFuncA type="linear" slope="-1" intercept="1" />
 						</feComponentTransfer>
-						{/* As in the shader, blur the scene first and bend that: drops refract
-						    the fogged glass without smearing their contents into their surroundings. */}
 						<feGaussianBlur in="SourceGraphic" stdDeviation={foggedBlur} result="foggedScene" />
 						<feGaussianBlur in="SourceGraphic" stdDeviation={clearBlur} result="clearedScene" />
 						<feDisplacementMap
@@ -736,7 +694,6 @@ function WetGlassFallback(props: ResolvedWetGlassProps & {time: number}) {
 						<feComposite in="foggedPart" in2="clearedPart" result="wet" {...addition} />
 						{tint && (
 							<>
-								{/* Water tint applies only where the glass is clear, as in the shader. */}
 								<feComponentTransfer in="wet" result="tinted">
 									<feFuncR type="linear" slope={tint[0]} />
 									<feFuncG type="linear" slope={tint[1]} />
@@ -804,8 +761,7 @@ const WetGlassInner: React.FC<WetGlassProps> = ({
 				boxSizing: 'border-box',
 				width: drawingWidth,
 				height: drawingHeight,
-				// Avoid isolation here: with overflow: hidden it makes Chrome 158 drop the
-				// HtmlInCanvas paint record during renders.
+				// EXTERNAL: Chrome 158 drops the HtmlInCanvas paint if this div has isolation and overflow hidden.
 				overflow: 'hidden',
 				...style,
 			}}

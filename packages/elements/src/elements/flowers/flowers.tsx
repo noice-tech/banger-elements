@@ -288,8 +288,7 @@ out vec4 outColor;
 
 vec2 iResolution = vec2(1920.0, 1080.0);
 
-// CCO: Mandala flowers
-//  Smoooth kaleidoscope + abstract shape + colors
+// EXTERNAL: Ported from the CC0 shader "Mandala flowers".
 
 #define RESOLUTION  iResolution
 #define TIME        iGlobalTime
@@ -313,12 +312,10 @@ vec3 hsv2rgb(vec3 c) {
   return c.z * mix(hsv2rgb_K.xxx, clamp(p - hsv2rgb_K.xxx, 0.0, 1.0), c.y);
 }
 
-//  Macro version of above to enable compile-time constants
 #define HSV2RGB(c)  (c.z * mix(hsv2rgb_K.xxx, clamp(abs(fract(c.xxx + hsv2rgb_K.xyz) * 6.0 - hsv2rgb_K.www) - hsv2rgb_K.xxx, 0.0, 1.0), c.y))
 
 const float logo_radius= 0.25;
 const float logo_off   = 0.25;
-// const float logo_dx    = LOGO_DX;
 const float logo_width = 0.1;
 
 float rcp(float x) {
@@ -347,8 +344,7 @@ float hex(vec2 p, float r) {
 
 
 vec2 hextile(inout vec2 p) {
-  // See Art of Code: Hexagonal Tiling Explained!
-  // https://www.youtube.com/watch?v=VmrIDyYiJBA
+  // Based on: https://www.youtube.com/watch?v=VmrIDyYiJBA
   const vec2 sz       = vec2(1.0, sqrt(3.0));
   const vec2 hsz      = 0.5*sz;
 
@@ -359,7 +355,6 @@ vec2 hextile(inout vec2 p) {
   p = p3;
 
   n -= vec2(0.5);
-  // Rounding to make hextile 0,0 well behaved
   return round(n*2.0)*0.5;
 }
 
@@ -371,21 +366,16 @@ float modPolar(inout vec2 p, float repetitions) {
   float c = floor(a/angle);
   a = mod(a,angle) - angle/2.;
   p = vec2(cos(a), sin(a))*r;
-  // For an odd number of repetitions, fix cell index of the cell in -x direction
-  // (cell index would be e.g. -5 and 5 in the two halves of the cell):
   if (abs(c) >= (repetitions/2.0)) c = abs(c);
   return c;
 }
 
 
 vec3 postProcess(vec3 col, vec2 q) {
-  //  Found this somewhere on the interwebs
   col = clamp(col, 0.0, 1.0);
-  // Gamma correction
   col = pow(col, 1.0/vec3(2.2));
   col = col*0.6+0.4*col*col*(3.0-2.0*col);
   col = mix(col, vec3(dot(col, vec3(0.33))), -0.4);
-  // Vignetting
   return col;
 }
 
@@ -532,7 +522,7 @@ vec3 effect(vec2 p, vec2 q) {
   float h = hash(np);
   float hh = fract(137.0*h);
   float sm = mix(mix(0.025, 0.25, hh), 0.025, h);
-  float rep = 2.0*floor(mix(8.0, 30.0, h)); // test ilowfreq
+  float rep = 2.0*floor(mix(8.0, 30.0, h));
   float cn = smoothKaleidoscope(cp, sm, rep);
   cp *= ROT(TIME*iFlowersSpeed+TAU*h);
 
@@ -546,7 +536,6 @@ vec3 effect(vec2 p, vec2 q) {
 }
 
 void main() {
-  // vec2 q = fragCoord/RESOLUTION.xy;
   vec2 uv = ((vUv - vec2(.5, .5)) / vec2(0.2, 0.2)) / 0.1 / iScale;
   vec2 q = uv;
 

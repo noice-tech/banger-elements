@@ -5,13 +5,10 @@ import {BEAT, DROP, KICKS_END, OUTRO, TICK} from './scenes';
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
 const outCubic = Easing.out(Easing.cubic);
 
-/** The frame in the whole reel, from inside a scene that starts at `from`. */
 export const useReelFrame = (from: number) => useCurrentFrame() + from;
 
-/** Whether the song has a kick on the beat: not before the drop, and not on the riser before the outro. */
 const kicking = (frame: number) => (frame >= DROP && frame < KICKS_END) || frame >= OUTRO;
 
-/** The frame of the kick on beat `n` after the drop. */
 const kickFrame = (beat: number) => Math.round(DROP + beat * BEAT);
 
 /** 1 on a kick, easing to 0 before the next. Silent before the drop and on the riser. */
@@ -25,7 +22,6 @@ export const kick = (frame: number, decay = 3 * TICK) => {
 export const pulse = (frame: number, start: number, decay = 3 * TICK) =>
 	frame >= start ? Math.exp(-(frame - start) / decay) : 0;
 
-/** The frames of every kick inside a stretch, for effects that spawn one thing per hit. */
 export const kicksBetween = (from: number, to: number) => {
 	const hits: number[] = [];
 	for (let beat = 0; kickFrame(beat) < to; beat++) {
@@ -35,7 +31,6 @@ export const kicksBetween = (from: number, to: number) => {
 	return hits;
 };
 
-/** Jitter that jumps every tick, so impacts read as a hit rather than a wobble at any frame rate. */
 export const Shake = ({
 	frame,
 	amount,
@@ -56,7 +51,6 @@ export const Shake = ({
 	);
 };
 
-/** One expanding ring per birth frame. */
 export const Shockwaves = ({
 	frame,
 	births,
@@ -72,7 +66,6 @@ export const Shockwaves = ({
 	frame: number;
 	births: readonly number[];
 	color: string;
-	/** Start and end radius in px. */
 	from?: number;
 	to?: number;
 	life?: number;
@@ -109,7 +102,6 @@ export const Shockwaves = ({
 	</AbsoluteFill>
 );
 
-/** An anamorphic lens streak across the frame. */
 export const Streak = ({
 	amount,
 	color = '#bcd4ff',
@@ -139,10 +131,8 @@ export const Streak = ({
 	return <div style={style} />;
 };
 
-/** Scales every cut's punch; the recap's short cuts turn it down so a cut never outlasts its own entrance. */
 export const CutScale = createContext(1);
 
-/** Cuts in with a punch, and winds up for the next cut on its last frames. */
 export const Cut = ({
 	children,
 	zoom: fullZoom = 0.3,
@@ -195,7 +185,6 @@ export const ramp = (
 		easing: ease,
 	});
 
-/** Splits red and blue apart horizontally, the way a cheap lens fringes on a hit. */
 export const Aberration = ({
 	amount,
 	brightness = 1,

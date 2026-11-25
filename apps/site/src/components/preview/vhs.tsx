@@ -2,8 +2,6 @@ import {useCurrentFrame, useVideoConfig} from 'remotion';
 import {Halo, Space, Vhs} from '../../../../../packages/elements/dist/components';
 import type {PreviewProps} from './types';
 
-// Demo children belong to the showcase, never the installed wrapper source.
-// The maintained gallery render uses this same component and settings.
 export const vhsPreviewDefaults = {
 	strength: 1,
 	horizontalDistortion: 0.02,

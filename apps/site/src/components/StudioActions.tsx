@@ -11,7 +11,6 @@ import {
 	type StudioElementPayload,
 } from '@remotion/studio-protocol';
 
-// Next steps for the failures Remotion's library guide asks libraries to explain.
 const nextStep: Partial<
 	Record<InstallInStudioErrorCode | AddElementLibraryToStudioErrorCode, string>
 > = {
@@ -68,8 +67,7 @@ export default function StudioActions({
 		try {
 			const result = library
 				? await addElementLibraryToStudio({
-						// Same URL and name as `npx remotion elements add-library https://banger-elements.dev`,
-						// which reads og:site_name, so Studio doesn't list the collection twice.
+						// EXTERNAL: This URL and name match og:site_name, so Remotion Studio lists the library once.
 						url: new URL('/', location.href).href,
 						displayName: 'Banger Elements',
 					})

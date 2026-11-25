@@ -145,7 +145,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId; distinguish decoded buffer revisions.
 	const instanceId = useId();
 	const revision = useRef(0);
 	const audioData = useMemo(
@@ -158,7 +157,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 				: null,
 		[result.audioData, instanceId],
 	);
-	// The current chunk can arrive before its retained neighbors.
 	const complete =
 		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
 	const {delayRender, continueRender} = useDelayRender();
@@ -225,7 +223,6 @@ function spectrumBars(input: AudioInput, count = 308) {
 	});
 }
 
-// All numeric entry points are bounded, including direct JSX and non-finite values.
 function bounded(value: number, min: number, max: number, fallback: number) {
 	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
@@ -247,8 +244,6 @@ function spaceBands(bars: readonly number[], inputGainDb: number) {
 	});
 }
 
-// Match the source's 32 × 32 environment sphere rather than stretching its UVs
-// across a quad. The default camera is at (0, 0, 5), with a 75-degree vertical FOV.
 function spaceGeometry() {
 	const vertices: number[] = [];
 	const vertex = (x: number, y: number) => {
@@ -411,7 +406,6 @@ function drawSpace({gl, program, uniforms, vertexCount}: SpaceState, frame: Spac
 	gl.uniform1f(uniforms.iLowFreq, frame.bands[0] ?? 0);
 	gl.uniform1f(uniforms.iMidFreq, frame.bands[1] ?? 0);
 	gl.uniform1f(uniforms.iHighFreq, frame.bands[2] ?? 0);
-	// Match the source's linear Three.js color uniforms; output is display RGB.
 	gl.uniform3fv(uniforms.iBaseColor, linearColor(frame.baseColor));
 	gl.uniform1f(uniforms.iZoom, bounded(frame.zoom, 0.1, 3, 0.8));
 	gl.uniform1f(uniforms.iStellarDensity, Math.trunc(bounded(frame.stellarDensity, 5, 25, 17)));
@@ -544,32 +538,29 @@ void main()
 	vec3 v=vec3(0.);
 	for (int r=0; r<volsteps; r++) {
 		vec3 p=from+s*dir*.5;
-		p = abs(vec3(tile)-mod(p,vec3(tile*2.))); // tiling fold
+		p = abs(vec3(tile)-mod(p,vec3(tile*2.)));
 		float pa,a=pa=0.;
 		int iterationsConverted = int(iStellarDensity);
 		for (int i=0; i<iterationsConverted; i++) {
-			p=abs(p)/max(dot(p,p), 0.000001)-iPattern; // the magic formula
-			a+=abs(length(p)-pa); // absolute sum of average change
+			p=abs(p)/max(dot(p,p), 0.000001)-iPattern;
+			a+=abs(length(p)-pa);
 			pa=length(p);
 		}
-		float dm=max(0.,darkmatter-a*a*.001); //dark matter
-		a*=a * a; // add contrast
-		if (r>6) fade*=1.-dm; // dark matter, don't render near
+		float dm=max(0.,darkmatter-a*a*.001);
+		a*=a * a;
+		if (r>6) fade*=1.-dm;
 		v+=fade;
 		vec3 frags = vec3(s,s*s,s*s*s*s);
 		vec3 dif = vec3(frags.x + (iBaseColor.x * 0.1), frags.y + (iBaseColor.y * 0.2), frags.z + (iBaseColor.z * 0.2));
 		v+=fade;
-		v+=dif*a*brightness*fade; // coloring based on distance
+		v+=dif*a*brightness*fade;
 		float adjustedDistfading = distfading - 0.07 + (iLowFreq / 3. * iResponsive);
-		fade*=adjustedDistfading; // distance fading
+		fade*=adjustedDistfading;
 		s+=stepsize;
 	}
-	v=mix(vec3(length(v)),v,saturation); //color adjust
+	v=mix(vec3(length(v)),v,saturation);
 
 	vec3 col = v*.01;
-
-	// When post-processing is active, convert to linear space to compensate
-	// for EffectComposer's automatic color management
 
 	outColor = vec4(col, 1.0);
 }

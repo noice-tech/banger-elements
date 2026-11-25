@@ -8,8 +8,6 @@ const unwrap = (expression: ts.Expression) => {
 	return expression;
 };
 
-// Record edit locations at build time. No TypeScript parser is sent to the browser.
-// Fields may be inline or shared constants, and enum variants nest more fields.
 export function sourceSettings(source: string) {
 	const file = ts.createSourceFile(
 		'element.tsx',

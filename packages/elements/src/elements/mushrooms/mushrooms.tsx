@@ -136,7 +136,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId; distinguish decoded buffer revisions.
 	const instanceId = useId();
 	const revision = useRef(0);
 	const audioData = useMemo(
@@ -149,7 +148,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 				: null,
 		[result.audioData, instanceId],
 	);
-	// The current chunk can arrive before its retained neighbors.
 	const complete =
 		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
 	const {delayRender, continueRender} = useDelayRender();
@@ -216,7 +214,6 @@ function spectrumBars(input: AudioInput, count = 308) {
 	});
 }
 
-// All numeric entry points are bounded, including direct JSX and non-finite values.
 function bounded(value: number, min: number, max: number, fallback: number) {
 	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
@@ -238,8 +235,6 @@ function mushroomsBands(bars: readonly number[], inputGainDb: number) {
 	});
 }
 
-// Match the source's 32 × 32 environment sphere rather than stretching its UVs
-// across a quad. The default camera is at (0, 0, 5), with a 75-degree vertical FOV.
 function mushroomsGeometry() {
 	const vertices: number[] = [];
 	const vertex = (x: number, y: number) => {
@@ -412,7 +407,6 @@ function drawMushrooms(
 	gl.uniform1f(uniforms.iLowFreq, frame.bands[0] ?? 0);
 	gl.uniform1f(uniforms.iMidFreq, frame.bands[1] ?? 0);
 	gl.uniform1f(uniforms.iHighFreq, frame.bands[2] ?? 0);
-	// Match the source's linear Three.js color uniforms; output is display RGB.
 	gl.uniform3fv(uniforms.iBaseColor, linearColor(frame.baseColor));
 	gl.uniform3fv(uniforms.iMixColor, linearColor(frame.mixColor));
 	gl.uniform1f(uniforms.iColorful, bounded(frame.colorful, -2, 12, 0));
@@ -618,9 +612,6 @@ void main()
 
     vec3 col = compiled*O.rgb;
     col += smoothstep(0.0, 1.0, obj3d(viewing,trans)) * vec3(0.50,0.50,0.50)*0.08;
-
-    // When post-processing is active, convert to linear space to compensate
-    // for EffectComposer's automatic color management
 
     outColor = vec4(col, 1.0);
 }

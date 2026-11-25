@@ -1,5 +1,3 @@
-// Prerender the lightweight, silent loops used by the overview cards.
-// The checked-in WebP posters remain the loading, error and reduced-motion fallback.
 import {spawnSync} from 'node:child_process';
 import {mkdirSync} from 'node:fs';
 import {createRequire} from 'node:module';

@@ -1,4 +1,3 @@
-// Build scene waveforms, posters and thumbnails. Usage: node scripts/scenes.mjs [id,...]
 import {spawnSync} from 'node:child_process';
 import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
@@ -29,7 +28,6 @@ const only = process.argv[2]?.split(',');
 const SLICES = 256;
 const RATE = 8000;
 
-/** Loudness of the scene's stretch in SLICES slices, scaled so the loudest is 1. */
 const levelsOf = (timing) => {
 	const track = tracks[timing.track];
 	const seconds = SCENE_BARS * barSeconds(track);
@@ -72,7 +70,6 @@ const render = (args) => {
 	if (result.status !== 0) process.exit(result.status ?? 1);
 };
 
-// Keep the other scenes' waveforms when only some are prepared.
 const waves = existsSync(wavesFile) ? JSON.parse(readFileSync(wavesFile, 'utf8')) : {};
 
 for (const timing of sceneTimings) {

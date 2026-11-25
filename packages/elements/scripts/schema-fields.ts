@@ -8,7 +8,7 @@ export type SchemaField = {
 	readonly min: number | null;
 	readonly max: number | null;
 	readonly options: readonly string[] | null;
-	// Set for controls that Studio shows only for some values of an enum control.
+	/** Set for controls that Studio shows only for some values of an enum control. */
 	readonly shownWhen: {readonly control: string; readonly values: readonly string[]} | null;
 };
 
@@ -22,7 +22,6 @@ const unwrap = (expression: ts.Expression) => {
 	return expression;
 };
 
-// Reads an Element's Interactive schema at build time, for the Markdown docs.
 export function schemaFields(source: string): SchemaField[] {
 	const file = ts.createSourceFile(
 		'element.tsx',
@@ -89,7 +88,6 @@ export function schemaFields(source: string): SchemaField[] {
 					: null;
 			const existing = fields.get(name);
 			if (existing?.shownWhen && shownWhen && existing.shownWhen.control === shownWhen.control) {
-				// The same field appears under several variants of one enum.
 				fields.set(name, {
 					...existing,
 					shownWhen: {

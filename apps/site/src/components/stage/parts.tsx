@@ -13,7 +13,6 @@ import type {PlayerRef} from '@remotion/player';
 export const formatTime = (seconds: number) =>
 	`${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
-/** `generation` changes when the Player is remounted, so listeners move to the new instance. */
 export function usePlayerStatus(
 	playerRef: RefObject<PlayerRef | null>,
 	mounted: boolean,
@@ -42,7 +41,6 @@ export function usePlayerStatus(
 	return {playing, muted};
 }
 
-/** Turning sound on is a request to hear it, so it also starts playback. */
 export const toggleSound = (player: PlayerRef | null) => {
 	if (!player) return;
 	if (player.isMuted()) {
@@ -135,7 +133,6 @@ export function TrackWave({
 		return () => observer.disconnect();
 	}, []);
 
-	// Update the DOM directly to avoid re-rendering the stage every frame.
 	useEffect(() => {
 		if (!mounted) return;
 		const player = playerRef.current;
@@ -168,8 +165,6 @@ export function TrackWave({
 			const slice = levels.slice(from, to);
 			return slice.reduce((sum, level) => sum + level, 0) / slice.length;
 		});
-		// Mastered tracks sit near full loudness throughout, which draws a flat
-		// block. Stretching from the quiet end up brings out the song's shape.
 		const floor = 0.75 * [...levels].sort((a, b) => a - b)[Math.floor(levels.length / 10)]!;
 		const loudest = Math.max(...means);
 		return means.map((mean) => {
@@ -311,10 +306,6 @@ export function Swatches({
 	);
 }
 
-/**
- * Plays while the stage is on screen and pauses when it scrolls away, unless
- * the visitor paused it themselves. `autoPlay` false waits for a first play.
- */
 export function useVisiblePlayback(
 	rootRef: RefObject<HTMLElement | null>,
 	playerRef: RefObject<PlayerRef | null>,
@@ -339,7 +330,6 @@ export function useVisiblePlayback(
 		player.addEventListener('pause', onPause);
 		const observer = new IntersectionObserver(
 			(entries) => {
-				// A busy main thread batches observations, so the last one is the current state.
 				const entry = entries[entries.length - 1]!;
 				if (entry.isIntersecting) {
 					if (!held && !player.isPlaying()) player.play();
@@ -361,17 +351,10 @@ export function useVisiblePlayback(
 
 const RECOVERY_WINDOW_MS = 30_000;
 const MAX_AUTO_RECOVERIES = 3;
-/** WebGL's CONTEXT_LOST_WEBGL, which the elements report when a draw fails after a lost context. */
 const CONTEXT_LOST_CODE = '37442';
 
 export const isContextLoss = (error: Error) => error.message.includes(CONTEXT_LOST_CODE);
 
-/**
- * Browsers drop WebGL contexts under memory pressure or a GPU reset, and the
- * elements then throw, which would leave the Player on its error screen until
- * a reload. Remounting the Player with a new `key` builds fresh contexts.
- * `recover` retries by itself a few times; `retry` is for the visitor.
- */
 export function usePlayerRecovery(rootRef: RefObject<HTMLElement | null>, mounted: boolean) {
 	const [attempt, setAttempt] = useState(0);
 	const recent = useRef<number[]>([]);
@@ -388,9 +371,7 @@ export function usePlayerRecovery(rootRef: RefObject<HTMLElement | null>, mounte
 	useEffect(() => {
 		const root = rootRef.current;
 		if (!mounted || !root) return;
-		// While playing, the failed draw unmounts the canvas before this event arrives, and the
-		// error screen calls `recover` instead. A paused stage draws nothing, so only this sees it.
-		// Context events do not bubble, so listen while they travel down to the canvas.
+		// EXTERNAL: WebGL context events don't bubble, so this listener uses the capture phase.
 		root.addEventListener('webglcontextlost', recover, true);
 		return () => root.removeEventListener('webglcontextlost', recover, true);
 	}, [rootRef, mounted, recover]);
@@ -405,7 +386,6 @@ export function StageError({
 }: {
 	message: string;
 	onRetry: () => void;
-	/** Called once when this error is a lost WebGL context, to start an automatic retry. */
 	onLost?: () => void;
 }) {
 	useEffect(() => onLost?.(), [onLost]);

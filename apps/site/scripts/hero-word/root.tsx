@@ -1,6 +1,4 @@
-// Adapted from packages/elements/src/elements/halo (shader changes marked "Banger hero").
-// The video carries only the rings; showcase.css blends them over live text.
-// Re-run `bun run hero-word` from apps/site after changing the headline typography.
+// EXTERNAL: This forks the Halo element, so a Halo fix needs the same fix here.
 import {useAudioData, type MediaUtilsAudioData} from '@remotion/media-utils';
 import {useLayoutEffect, useMemo, useRef, useState, type FC} from 'react';
 import {
@@ -15,7 +13,7 @@ import {
 	useVideoConfig,
 } from 'remotion';
 
-// Keep these render dimensions and offsets in sync with showcase.css.
+// EXTERNAL: These match the hero word in showcase.css; re-run `bun run hero-word` after changing either.
 const EM = 240;
 const WIDTH = 968;
 const HEIGHT = 498;
@@ -24,19 +22,11 @@ const BASELINE = 317;
 const WORD = 'shape.';
 const LETTER_SPACING = -0.055;
 
-// Halo measures everything in canvas heights, with a 0.24-high resting ring.
-// Here one unit is 1.8 em, so the rim, bass growth and spikes keep Halo's
-// proportions to a word about as tall as that ring is wide.
 const UNIT = 1.8 * EM;
-// The resting rim's outer edge, measured from the word's closed outline.
 const RIM_OFFSET = 0.07 * EM;
-// Gaps and counters narrower than twice this are filled, so the outline stays smooth.
 const CLOSING = 0.14 * EM;
-// Three cycles cover the longer perimeter; an odd count keeps bass at the top.
 const SPECTRUM_CYCLES = 3;
 
-// A silence-to-silence slice of the demo track, so the loop has no seam. Halo's
-// analysis and shader run at 60 fps; the video keeps every other frame.
 const AUDIO = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3';
 const HALO_FPS = 60;
 const FPS = 30;
@@ -44,7 +34,6 @@ const START_SECONDS = 2.5;
 const DURATION = 123;
 const LOOP_FADE = 8;
 
-// Halo's defaults, as in the site's Halo example.
 const HALO = {
 	radius: 0.12,
 	intensity: 1,
@@ -53,8 +42,6 @@ const HALO = {
 	bars: 1280,
 };
 
-// --- Halo's audio analysis, verbatim ---------------------------------------------
-
 const ANALYSIS_SAMPLE_RATE = 44100;
 const FFT_SIZE = 2048;
 const FREQUENCY_BIN_COUNT = 512;
@@ -62,7 +49,6 @@ const TEMPORAL_SMOOTHING = 0.8;
 const MIN_DECIBELS = -100;
 const MAX_DECIBELS = -30;
 const SPECTRUM_SCALE = 0.08;
-// Retain only the low-frequency bins used by the ring (~10 KB/sec).
 const RETAINED_BINS = Math.ceil(SPECTRUM_SCALE * FREQUENCY_BIN_COUNT) + 1;
 const BLUR_SAMPLES = 6;
 const HISTORY_ROWS = 9 + BLUR_SAMPLES - 1;
@@ -92,7 +78,6 @@ type AnalysisParameters = {
 	inputGainDb: number;
 };
 
-// Web Audio's speakers downmix to mono, including the defined quad/5.1 layouts.
 function monoSample(channels: Float32Array[], index: number) {
 	const sample = (channel: number) => channels[channel]?.[index] ?? 0;
 	if (channels.length === 1) return sample(0);
@@ -100,7 +85,7 @@ function monoSample(channels: Float32Array[], index: number) {
 	if (channels.length === 4) return (sample(0) + sample(1) + sample(2) + sample(3)) * 0.25;
 	if (channels.length === 6)
 		return Math.SQRT1_2 * (sample(0) + sample(1)) + sample(2) + 0.5 * (sample(4) + sample(5));
-	return sample(0); // Web Audio's discrete fallback for other layouts.
+	return sample(0);
 }
 
 function getRawMagnitudes({
@@ -155,8 +140,6 @@ type AnalysisTrace = {
 	magnitudes: Float32Array[];
 	gains: Map<number, number[]>;
 };
-// Owned by the decoded audio, not by playback. Seeking can only extend a trace;
-// it never changes previously computed values. No finite-window smoothing reset.
 const analysisCache = new WeakMap<MediaUtilsAudioData, Map<string, AnalysisTrace>>();
 
 function getAnalysisTrace(parameters: AnalysisParameters) {
@@ -188,14 +171,12 @@ function getAnalysisTrace(parameters: AnalysisParameters) {
 
 function normalizeMagnitude(magnitude: number, inputGainDb: number) {
 	const decibels = 20 * Math.log10(Math.max(magnitude, 1e-12)) + inputGainDb;
-	// getByteFrequencyData quantizes BEFORE texture interpolation and thresholds.
 	return (
 		Math.floor(clamp((decibels - MIN_DECIBELS) / (MAX_DECIBELS - MIN_DECIBELS), 0, 1) * 255) / 255
 	);
 }
 
 function sampleFrequency(values: Float32Array, x: number) {
-	// Normalized GL coordinates address texel CENTERS, not x * (width - 1).
 	const position = clamp(x * FREQUENCY_BIN_COUNT - 0.5, 0, values.length - 1);
 	const left = Math.floor(position);
 	const mix = position - left;
@@ -229,7 +210,6 @@ function getBassPhase(parameters: AnalysisParameters) {
 		const bass = bassFromSpectrum(
 			normalizedSpectrum(trace.magnitudes[next], parameters.inputGainDb),
 		);
-		// Accumulate previous-frame bass in Float32 for stable GPU phase values.
 		gainTrace.push(Math.fround(gainTrace[next] + bass));
 	}
 	return gainTrace[endFrame];
@@ -256,7 +236,6 @@ function createHaloHistory(input: HistoryInput) {
 		fps: input.fps,
 		inputGainDb: input.inputGainDb,
 	});
-	// Build from the latest frame once, then read older rows without replaying FFTs.
 	const trace = getAnalysisTrace(parameters(Math.max(0, headFrame)));
 	for (let row = 0; row < HISTORY_ROWS; row++) {
 		const frame = headFrame - row;
@@ -290,12 +269,8 @@ function createHaloHistory(input: HistoryInput) {
 	};
 }
 
-// --- The word in place of the circle ---------------------------------------------
-
 const INFINITY = 1e20;
 
-// Exact Euclidean distance to the nearest site, and which site that is
-// (Felzenszwalb and Huttenlocher, with the argument of each minimum kept).
 function nearestSites(isSite: Uint8Array) {
 	const columnDistance = new Float64Array(WIDTH * HEIGHT);
 	const columnSite = new Int32Array(WIDTH * HEIGHT);
@@ -360,9 +335,6 @@ function measureWord(context: CanvasRenderingContext2D) {
 	return context.measureText(WORD);
 }
 
-// Replace Halo's radius and angle with distance from the word and arc length
-// along a fitted capsule. Spikes stay vertical above and below the word and
-// fan out at its ends.
 function wordShape(): Shape {
 	const canvas = document.createElement('canvas');
 	canvas.width = WIDTH;
@@ -375,7 +347,6 @@ function wordShape(): Shape {
 	const ink = new Uint8Array(WIDTH * HEIGHT);
 	for (let i = 0; i < ink.length; i++) ink[i] = alpha[i * 4 + 3] >= 128 ? 1 : 0;
 
-	// Morphological closing, then fill whatever the outside cannot reach.
 	const far = Uint8Array.from(nearestSites(ink).distance, (distance) =>
 		distance > CLOSING ? 1 : 0,
 	);
@@ -405,7 +376,6 @@ function wordShape(): Shape {
 	const radius = (metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) / 2;
 	const half = Math.max(0, radiusX - radius);
 	const perimeter = 4 * half + 2 * Math.PI * radius;
-	// Clockwise along the capsule from its top center, in pixels.
 	const along = (x: number, y: number) => {
 		const dx = x - centerX;
 		const dy = y - centerY;
@@ -420,7 +390,6 @@ function wordShape(): Shape {
 		return 2 * Math.min(fraction, 1 - fraction);
 	};
 
-	// RG texture rows run bottom-up, like WebGL's framebuffer.
 	const {distance} = nearestSites(solid);
 	const texture = new Float32Array(WIDTH * HEIGHT * 2);
 	for (let y = 0; y < HEIGHT; y++) {
@@ -434,10 +403,9 @@ function wordShape(): Shape {
 	return {texture, center: [centerX, HEIGHT - centerY], ink};
 }
 
-// --- Halo's fragment shader, with the word in place of the circle ---------------
-
 const haloFragment = `#version 300 es
 /*
+  SPDX-License-Identifier: 0BSD
 
   Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted.
 
@@ -452,7 +420,6 @@ precision highp int;
 uniform float iGlobalTime;
 uniform float iAspect;
 uniform sampler2D iHistoryTexture;
-// Banger hero: the word as the circle. r = distance outside the rim, g = spectrum position.
 uniform sampler2D iShapeTexture;
 uniform vec2 iResolution;
 uniform vec2 iWordCenter;
@@ -483,13 +450,11 @@ vec2 rotatePoint(vec2 point, float angle) {
   return point * mat2(cosine, sine, -sine, cosine);
 }
 
-// The visible radius is twice the radius parameter.
 float sourceCircle(float distanceFromCenter, float radius, float smoothness) {
   float halfSmoothness = smoothness * 0.5;
   return 1.0 - smoothstep(radius - halfSmoothness, radius + halfSmoothness, distanceFromCenter - radius);
 }
 
-// Premultiplied alpha keeps layered colors and afterglow compositable.
 vec4 over(vec4 back, vec4 front) {
   return vec4(front.rgb * front.a + back.rgb * (1.0 - front.a), front.a + back.a * (1.0 - front.a));
 }
@@ -531,17 +496,17 @@ vec4 renderHalo(vec2 uv, int sampleAge, out float innerMask) {
   float time = iGlobalTime - float(sampleAge) / 60.0;
   vec4 audio = texelFetch(iHistoryTexture, ivec2(0, sampleAge), 0);
   float bass = audio.g, extra = audio.b;
-  vec2 point = (uv * iResolution - iWordCenter) / iUnit + shakeAt(time); // Banger hero
+  vec2 point = (uv * iResolution - iWordCenter) / iUnit + shakeAt(time);
   point = rotatePoint(point, sin(time * 1.5 + extra) * 0.005);
   point += vec2(cos(time * 9.0 + extra * 0.3), sin(time * 9.0 + extra * 0.3)) * 0.003;
-  vec2 shape = texture(iShapeTexture, (iWordCenter + point * iUnit) / iResolution).rg; // Banger hero
-  float distanceFromCenter = shape.r + iRadius * 2.0; // Banger hero
+  vec2 shape = texture(iShapeTexture, (iWordCenter + point * iUnit) / iResolution).rg;
+  float distanceFromCenter = shape.r + iRadius * 2.0;
   float bassGrowth = bass * 0.03;
   float maximumRadius = min(1.0, iRadius + bassGrowth + 0.07 * iIntensity) * 2.0;
   float glowExtent = iGlowBlur > 0.0 ? iGlowBlur * 0.001 + iGlowSpread * 0.0002 : 0.0;
   if (distanceFromCenter > maximumRadius + glowExtent + 0.004) return vec4(0.0);
 
-  float frequencyX = shape.g; // Banger hero
+  float frequencyX = shape.g;
   vec4 result = vec4(0.0);
   if (iGlowBlur > 0.0) {
     float radius = min(1.0, iRadius + bassGrowth + getFrequency(frequencyX, sampleAge) * 0.07 * iIntensity);
@@ -560,7 +525,6 @@ vec4 renderHalo(vec2 uv, int sampleAge, out float innerMask) {
   float innerRadius = max(0.02, iRadius + bassGrowth - CIRCLE_BORDER_SIZE);
   innerMask = sourceCircle(distanceFromCenter, innerRadius, 0.004);
   if (iTransparentCenter) {
-    // Cut ALL premultiplied channels, including the spectrum discs and glow.
     result *= 1.0 - innerMask;
   } else if (innerMask > 0.0) {
     result = over(result, vec4(innerCircle(point / innerRadius, time), innerMask));
@@ -571,13 +535,11 @@ vec4 renderHalo(vec2 uv, int sampleAge, out float innerMask) {
     }
   }
   result.rgb += bass * 0.05 * result.a;
-  result.rgb *= smoothstep(0.0, 1.0, 1.7 - distanceFromCenter); // Banger hero
+  result.rgb *= smoothstep(0.0, 1.0, 1.7 - distanceFromCenter);
   return result;
 }
 
 void main() {
-  // Evaluate 0.8*current + 0.2*previous without persistent GPU state.
-  // Six shifted samples approximate temporal blur; discarded weight is 0.2^6.
   vec4 result = vec4(0.0);
   vec2 uv = vUv;
   float weight = 1.0;
@@ -592,9 +554,7 @@ void main() {
     uv += shakeAt(time);
     weight *= 0.2;
   }
-  // Old, smaller rings must not leave ghosts inside the current bass-expanded hole.
   if (iTransparentCenter && iMotionBlur > 0.5) result *= 1.0 - currentInnerMask;
-  // Colors are already in display RGB; no additional color-space conversion.
   outColor = clamp(result, 0.0, 1.0);
 }
 `;
@@ -693,7 +653,6 @@ function createRenderer(canvas: HTMLCanvasElement, shape: Shape): Renderer {
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, WIDTH, HEIGHT, 0, gl.RG, gl.FLOAT, shape.texture);
 
-	// Halo's defaults: rainbow trails, white leading ring, transparent center.
 	for (const [name, value] of Object.entries({
 		iAspect: WIDTH / HEIGHT,
 		iUnit: UNIT,
@@ -814,7 +773,6 @@ const HaloWord: FC<{showWord: boolean}> = ({showWord}) => {
 	}, [fontReady, showWord]);
 	if (fps !== FPS) throw new Error(`HeroWord renders at ${FPS} fps.`);
 	const sourceTime = START_SECONDS + frame / fps;
-	// Fade into the frames before the slice to hide the shake and wobble jump at the loop seam.
 	const fade = Math.max(0, (frame - (DURATION - LOOP_FADE)) / LOOP_FADE);
 	return (
 		<AbsoluteFill style={{backgroundColor: '#000'}}>

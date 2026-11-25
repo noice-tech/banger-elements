@@ -6,7 +6,6 @@ import {defineConfig} from 'astro/config';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
 
-// The elements import `@remotion/media-utils`; the live preview gets it with a spectrum cache.
 const mediaUtils = path.join(
 	path.dirname(createRequire(import.meta.url).resolve('@remotion/media-utils/package.json')),
 	'dist/esm/index.mjs',
@@ -27,8 +26,7 @@ export default defineConfig({
 			],
 		},
 	},
-	// Astro 7 defaults to JSX whitespace rules, which drop the line breaks between
-	// text and tags that this site's templates rely on for spaces.
+	// EXTERNAL: Astro 7's JSX whitespace rules drop spaces the templates rely on.
 	compressHTML: true,
 	site: 'https://banger-elements.dev',
 	server: {host: '127.0.0.1', port: Number(process.env.PORT ?? 3300)},

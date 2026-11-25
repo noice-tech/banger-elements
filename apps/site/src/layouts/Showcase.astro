@@ -10,10 +10,8 @@ interface Props {
 	description: string;
 	pageClass?: string;
 	searchable?: boolean;
-	/** Open Graph image under static/share, built by `bun run share-images`. */
 	image?: string;
 	imageAlt?: string;
-	/** The page's Markdown twin for coding agents. */
 	markdown?: string;
 }
 const {
@@ -25,7 +23,6 @@ const {
 	imageAlt = 'A grid of Banger Elements visualizers, shaders and effects',
 	markdown,
 } = Astro.props;
-// The host serves pages without the .html extension and redirects to that form.
 const pathname = Astro.url.pathname.replace(/(index)?\.html$/, '').replace(/\/$/, '') || '/';
 const canonical = new URL(pathname, Astro.site).href;
 const imageUrl = new URL(image, Astro.site).href;
@@ -75,9 +72,7 @@ const fullTitle = title.includes('Banger Elements') ? title : `${title} | Banger
 				for (const video of videos()) {
 					const hiddenByFilter = Boolean(video.closest('[hidden]'));
 					if (!motion.matches && !document.hidden && visible.has(video) && !hiddenByFilter) {
-						void video.play().catch(() => {
-							/* Keep the poster if playback is unavailable. */
-						});
+						void video.play().catch(() => {});
 					} else video.pause();
 				}
 			};

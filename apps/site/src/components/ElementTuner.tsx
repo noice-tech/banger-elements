@@ -36,14 +36,12 @@ type Pick = {slug: PreviewKind; title: string; name: string};
 
 const FPS = 60;
 
-// The first stretch of the demo song, cut by scripts/clips.mjs. The loop ends before the track goes silent.
 const AUDIO = '/audio/tuner.mp3';
 const SECONDS = 50;
 const DURATION_IN_FRAMES = SECONDS * FPS;
 
 const TUNER_PROPS: Partial<Record<PreviewKind, PreviewProps>> = {
 	halo: {centerMode: 'transparent'},
-	// The song's tempo, so Trip's motion lands on the beat.
 	trip: {bpm: 122},
 };
 
@@ -54,14 +52,13 @@ const TUNER_CONTROLS: Partial<Record<PreviewKind, readonly string[]>> = {
 	liquid: ['swirl', 'distortion', 'color1'],
 };
 
-// The first swatch is the example's default.
 const SWATCHES: Partial<Record<PreviewKind, readonly string[]>> = {
 	ferrofluid: ['#ffbc8e', '#7cc4ff', '#ff6fae', '#b9f26b', '#f2efe9'],
 	trip: ['#ff00ff', '#00e5ff', '#ff5a1f', '#7dff6b', '#ffe14d'],
 	liquid: ['#1e00ff', '#ff1f6b', '#00b8ff', '#8a2be2', '#ff8a00'],
 };
 
-// Keep this in sync with the poster frames in static/tuner/.
+// EXTERNAL: static/tuner/*.webp are renders of this frame; re-render them when it changes.
 const POSTER_FRAME = 330;
 
 const baseProps = (slug: PreviewKind): PreviewProps => {
@@ -75,10 +72,8 @@ const baseProps = (slug: PreviewKind): PreviewProps => {
 };
 
 type VisualProps = ComponentProps<typeof PreviewRenderer>;
-// Change the visual without changing the Player's composition or timing config.
 const VisualContext = createContext<VisualProps | null>(null);
 
-// A single native audio tag keeps playing while a different shader initializes.
 function TunerComposition() {
 	const visual = useContext(VisualContext);
 	return (
@@ -102,7 +97,6 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 			typeof window !== 'undefined' &&
 			window.matchMedia('(prefers-reduced-motion: reduce)').matches,
 	);
-	// Render the same shell on the server to avoid layout shift when the Player mounts.
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
 	const rootRef = useRef<HTMLDivElement>(null);

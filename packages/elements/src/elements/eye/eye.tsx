@@ -300,7 +300,6 @@ vec3 hsv2rgb(vec3 c) {
   vec3 p = abs(fract(c.xxx + hsv2rgb_K.xyz) * 6.0 - hsv2rgb_K.www);
   return c.z * mix(hsv2rgb_K.xxx, clamp(p - hsv2rgb_K.xxx, 0.0, 1.0), c.y);
 }
-// Macro version of above to enable compile-time constants
 #define HSV2RGB(c)  (c.z * mix(hsv2rgb_K.xxx, clamp(abs(fract(c.xxx + hsv2rgb_K.xyz) * 6.0 - hsv2rgb_K.www) - hsv2rgb_K.xxx, 0.0, 1.0), c.y))
 
 const vec3 std_gamma        = vec3(2.2);
@@ -343,9 +342,8 @@ vec3 alphaBlend(vec3 back, vec4 front) {
 }
 
 float tanh_approx(float x) {
-//  return tanh(x);
   float x2 = x*x;
-  return clamp(x*(iSmooth + x2)/(27.0+9.0*x2), -1.0, 1.0); // TODO check
+  return clamp(x*(iSmooth + x2)/(27.0+9.0*x2), -1.0, 1.0);
 }
 
 // https://mercury.sexy/hg_sdf/
@@ -464,23 +462,17 @@ vec4 completeEye(vec2 p, float th) {
   return vec4(d, d6, d5, max(d4, d6));
 }
 
-
-// The path function
 vec3 offset(float z) {
   float a = z;
   vec2 p = (-0.1) * (vec2(cos(a), sin(a*sqrt(2.0))) + vec2(cos(a*sqrt(0.75)), sin(a*sqrt(0.5))));
   return vec3(p, z);
 }
 
-// The derivate of the path function
-//  Used to generate where we are looking
 vec3 doffset(float z) {
   float eps = 0.1;
   return 0.5*(offset(z + eps) - offset(z - eps))/eps;
 }
 
-// The second derivate of the path function
-//  Used to generate tilt
 vec3 ddoffset(float z) {
   float eps = 0.1;
   return 0.125*(doffset(z + eps) - doffset(z - eps))/eps;
@@ -514,13 +506,12 @@ float fbm(vec2 p, float aa) {
 
 // https://iquilezles.org/articles/warp
 float warp(vec2 p, out vec2 v, out vec2 w) {
-  float r  = 0.5 + iLowFreq * iIntensity; // iRadius1
-  float rr = 0.25 + iLowFreq  * iIntensity; // iRadius2
+  float r  = 0.5 + iLowFreq * iIntensity;
+  float rr = 0.25 + iLowFreq  * iIntensity;
   float l2 = length(p);
   float f  = 1.0;
 
   f = smoothstep(-0.1, iLowFreq * iIntensity / 2., completeEye(p, g_th).x);
-  // f = smoothstep(-0.1, 0.5, completeEye(p, g_th).x);
   float rep = iAmount;
   float sm = 0.125*0.5*60.0/rep;
   float n = smoothKaleidoscope(p, sm, rep);
@@ -609,9 +600,6 @@ vec3 weird(vec2 p) {
   float ref1  = max(dot(ref, ld1), 0.0);
   float ref2  = max(dot(ref, ld2), 0.0);
 
-  // const vec3 col1 = vec3(0.1, 0.7, 0.8).xzy;
-  // const vec3 col2 = vec3(0.7, 0.3, 0.5).zyx;
-
   vec3 col1 = vec3(0.1, 0.7, 0.8).xzy;
   vec3 col2 = vec3(0.7, 0.3, 0.5).zyx;
 
@@ -632,10 +620,6 @@ vec3 weird(vec2 p) {
     col -= 0.5*hsv2rgb(vec3(fract(-0.5*TIME+0.25*a+0.125*w.x), 0.85 + iLowFreq * iIntensity, abs(tanh_approx(w.y))));
   }
 
-  /*
-  col += 0.25*diff1;
-  col += 0.25*diff2;
-  */
   col += 0.5*lcol1*pow(ref1, 20.0);
   col += 0.5*lcol2*pow(ref2, 10.0);
   col *= hf;
@@ -700,8 +684,6 @@ vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
 
   vec3 skyCol = skyColor(ro, rd);
 
-  // Steps from nearest to furthest plane and accumulates the color
-
   vec4 acol = vec4(0.0);
   const float cutOff = 0.95;
   bool cutOut = false;
@@ -738,18 +720,14 @@ vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
   }
 
   vec3 col = alphaBlend(skyCol, acol);
-// To debug cutouts due to transparency
-//  col += cutOut ? vec3(1.0, -1.0, 0.0) : vec3(0.0);
   return col;
 }
 
-// Classic post processing
 vec3 postProcess(vec3 col, vec2 q) {
   col = clamp(col, 0.0, 1.0);
   col = pow(col, 1.0/std_gamma);
   col = col*0.6+0.4*col*col*(3.0-2.0*col);
   col = mix(col, vec3(dot(col, vec3(0.33))), -0.4);
-  //col *=0.5+0.5*pow(19.0*q.x*q.y*(1.0-q.x)*(1.0-q.y),0.7);
   return col;
 }
 
@@ -771,13 +749,10 @@ vec3 effect(vec2 p, vec2 q) {
 
 void main() {
   vec2 uv = (vUv - vec2(.39, .32)) / vec2(0.2, 0.4);
-  // vec2 q = fragCoord/RESOLUTION.xy;
 	vec2 q = uv;
   vec2 p = -1. + 2. * q;
-  // p.x *= iResolution.x/iResolution.y;
 
   vec3 col = effect(p, q);
-  //col += smoothstep(3.0, 0.0, TIME);
   col = postProcess(col, q);
 
 

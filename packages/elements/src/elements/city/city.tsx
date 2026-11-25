@@ -421,7 +421,7 @@ float city(vec2 p) {
   const float count = 6.0;
   const float width = 0.2;
 
-  float cityLightsValue = cityLights(p, 1.1); // Calculate city lights value
+  float cityLightsValue = cityLights(p, 1.1);
 
   for (float i = 0.0; i < count; ++i) {
     vec2 pp = p;
@@ -489,7 +489,6 @@ float windows (vec2 uv, float offset)
 	return (uv.y < n + .01) ? n2 : 0.;
 }
 
-// Building skyline
 float buildings(vec2 st)
 {
 
@@ -513,8 +512,6 @@ vec3 sunEffect(vec2 p, float dc) {
   vec3 sunCol = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.0, 1.0), clamp(0.5 - 1.0*p.y, 0.0, 1.0));
   vec3 glareCol = sqrt(sunCol);
   vec3 cityCol = sunCol*sunCol;
-
-  //col += glareCol*(exp(-30.0*ds))*step(0.0, ds);
 
 
   float t1 = smoothstep(0.0, 0.075, -dd);

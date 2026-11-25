@@ -1,8 +1,6 @@
 import {useEffect, useState, type FC} from 'react';
 import {continueRender, delayRender, staticFile} from 'remotion';
 
-// The site's recipes and scenes ask for these. Renders pass --public-dir=apps/site/static,
-// so load them from there before the first frame.
 const fonts = [
 	['Geist', 'fonts/Geist.woff2', '100 900'],
 	['Geist Mono', 'fonts/GeistMono.woff2', '100 900'],
@@ -20,9 +18,7 @@ const useSiteFonts = () => {
 					.then((font) => document.fonts.add(font)),
 			),
 		)
-			.catch(() => {
-				/* Fall back to the system font. */
-			})
+			.catch(() => {})
 			.finally(() => continueRender(handle));
 	}, [handle]);
 };

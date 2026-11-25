@@ -21,7 +21,8 @@
 	},
 	"workspaces": [
 		"apps/*",
-		"packages/*"
+		"packages/*",
+		"tools/*"
 	],
 	"scripts": {
 		"build:elements": "node scripts/turbo.mjs run build --filter=@banger-elements/collection",
@@ -31,22 +32,22 @@
 		"studio": "node scripts/turbo.mjs run studio --filter=@banger-elements/studio",
 		"format": "oxfmt --ignore-path=.oxfmtignore .",
 		"format:check": "oxfmt --check --ignore-path=.oxfmtignore .",
-		"lint": "eslint .",
+		"lint": "oxlint",
 		"typecheck": "node scripts/turbo.mjs run typecheck",
 		"test": "node scripts/turbo.mjs run test",
-		"check": "oxfmt --check --ignore-path=.oxfmtignore . && eslint . && node scripts/turbo.mjs run typecheck test",
+		"check": "oxfmt --check --ignore-path=.oxfmtignore . && oxlint && node scripts/turbo.mjs run typecheck test",
 		"smoke": "node scripts/turbo.mjs run smoke --filter=@banger-elements/studio",
 		"render": "node scripts/turbo.mjs run render --filter=@banger-elements/studio",
 		"previews": "node scripts/turbo.mjs run previews --filter=@banger-elements/site",
 		"clean": "node scripts/clean.mjs"
 	},
 	"devDependencies": {
+		"@oxlint/plugins": "1.79.0",
 		"@remotion/cli": "4.0.547",
-		"@remotion/eslint-config-flat": "4.0.547",
+		"@remotion/eslint-plugin": "4.0.547",
 		"@types/node": "24.19.2",
-		"eslint": "9.39.5",
-		"globals": "17.14.0",
 		"oxfmt": "0.79.0",
+		"oxlint": "1.79.0",
 		"turbo": "2.11.11",
 		"typescript": "6.0.3"
 	}

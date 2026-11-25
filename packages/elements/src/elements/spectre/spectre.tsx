@@ -243,8 +243,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId. Keep each decoded buffer revision
-	// distinct, including when neighboring windows arrive asynchronously.
 	const instanceId = useId();
 	const revision = useRef(0);
 	const audioData = useMemo(
@@ -257,7 +255,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 				: null,
 		[result.audioData, instanceId],
 	);
-	// The hook can publish the current chunk before its retained neighbors.
 	const complete =
 		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
 	const {delayRender, continueRender} = useDelayRender();
@@ -276,7 +273,6 @@ type AudioInput = {
 	readonly fps: number;
 };
 
-// Preserve every log-spaced slot, including silence and frequencies above Nyquist.
 function computeBars({
 	allVisualizationValues,
 	sampleRate = 44100,
@@ -344,7 +340,6 @@ void main() {
 }
 `;
 
-// Original Banger Spectre shaders, adapted only for the standalone WebGL2 canvas.
 const barsFragmentShader = /* glsl */ `
 uniform float iGlobalTime;
 uniform sampler2D iTexture;
@@ -657,7 +652,6 @@ function drawSpectre(state: SpectreState, frame: SpectreFrame) {
 	gl.viewport(0, 0, frame.width, frame.height);
 	gl.clearColor(0, 0, 0, 0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
-	// WebGL ignores null locations for uniforms optimized out of a variant.
 	gl.uniform1f(uniforms.time, frame.sourceTime);
 	gl.uniform1f(uniforms.barWidth, frame.barWidth);
 	gl.uniform1f(uniforms.count, Math.round(frame.count));
@@ -691,7 +685,7 @@ function drawSpectre(state: SpectreState, frame: SpectreFrame) {
 	);
 	gl.uniform1i(uniforms.texture, 0);
 	gl.drawArrays(gl.TRIANGLES, 0, 6);
-	// Complete GPU work before Remotion captures this frame.
+	// EXTERNAL: Remotion captures the canvas right after this draw, so gl.finish() waits for the GPU.
 	gl.finish();
 	const error = gl.getError();
 	if (error !== gl.NO_ERROR) throw new Error(`Spectre WebGL draw failed: ${error}`);

@@ -3,23 +3,18 @@ import {BEAT, BAR, TICK} from './scenes';
 import {pulse, ramp} from './fx';
 import {BANGER, ELEMENTS, type Letter} from './wordmark';
 
-/** The lockup's own units, as in assets/brand/banger-elements.svg. */
 const VIEW = {x: -1432, y: -826, width: 5217, height: 1331};
-/** The 512 px icon, cropped to its artwork, laid where the lockup puts the mark. */
 const ICON = {x: -1432, y: -818, width: 1281, height: 1297};
 const ICON_CENTER = ICON.x + ICON.width / 2;
 const LOCKUP_CENTER = VIEW.x + VIEW.width / 2;
-/** The middle of the ELEMENTS line. */
 const WORDMARK_CENTER = 1862;
 
 export const LOGO_WIDTH = 940;
 const UNIT = LOGO_WIDTH / VIEW.width;
 export const LOGO_HEIGHT = VIEW.height * UNIT;
 
-/** When each piece lands, in frames after the hit: on the kicks of the two outro bars. */
 const SLIDE = BEAT;
 const FIRST_LETTER = BEAT + 6.5 * TICK;
-/** The full stop of "banger." lands on the third kick, and ELEMENTS unfurls from it. */
 const ELEMENTS_AT = BEAT * 3;
 const LETTER_EVERY = (ELEMENTS_AT - FIRST_LETTER) / 6;
 const IGNITE = BAR;
@@ -29,7 +24,6 @@ const springIn = (frame: number, fps: number, damping = 10) =>
 
 const px = (devicePixels: number) => devicePixels / UNIT;
 
-/** One letter, slammed in from the camera. */
 const Stamp = ({
 	letter,
 	start,
@@ -59,7 +53,6 @@ const Stamp = ({
 	);
 };
 
-/** One ELEMENTS letter, flying out from the middle of the word. */
 const Unfurl = ({letter, index, o}: {letter: Letter; index: number; o: number}) => {
 	const start = ELEMENTS_AT + index * 0.7 * TICK;
 	const spread = 1 - Easing.out(Easing.exp)(Math.min(1, Math.max(0, (o - start) / (13 * TICK))));
@@ -78,7 +71,6 @@ const Unfurl = ({letter, index, o}: {letter: Letter; index: number; o: number}) 
 	);
 };
 
-/** The banger. / ELEMENTS lockup, built on the beat: the mark hits, slides home, then the name lands. */
 export const Logo = ({o, k}: {o: number; k: number}) => {
 	const {fps} = useVideoConfig();
 	const slam = springIn(o, fps, 12);
@@ -86,7 +78,6 @@ export const Logo = ({o, k}: {o: number; k: number}) => {
 	const ignite = pulse(o, IGNITE, 5 * TICK);
 	const landing = pulse(o, ELEMENTS_AT, 6 * TICK);
 	const breathe = 1 + 0.02 * k + 0.012 * landing;
-	// The mark starts huge and centred, then shrinks and slides to its place in the lockup.
 	const markScale = (1 + 1.1 * (1 - slam)) * (1 + 0.85 * (1 - slide));
 	const markShift = (LOCKUP_CENTER - ICON_CENTER) * UNIT * (1 - slide);
 	const glint = ramp(o, IGNITE + 3 * TICK, IGNITE + 24 * TICK, Easing.inOut(Easing.quad));

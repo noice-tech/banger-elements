@@ -33,7 +33,6 @@ export const W = 1280;
 export const H = 720;
 export const fill: CSSProperties = {position: 'absolute', inset: 0};
 
-/** Every element reads the same song, positioned at this scene's frame. */
 export const layer = (from: number) => ({
 	audioSrc: TRACK,
 	audioOffsetInSeconds: (SONG_FRAME + from) / REEL_FPS,
@@ -45,7 +44,6 @@ export const layer = (from: number) => ({
 
 export type Part = FC<{from: number; length: number}>;
 
-/** Four quiet pulses, then the lights go out for a beat before the drop. */
 const Intro: Part = ({from}) => {
 	const frame = useReelFrame(from);
 	const {durationInFrames} = useVideoConfig();
@@ -113,7 +111,6 @@ const Intro: Part = ({from}) => {
 	);
 };
 
-/** The kick lands: a shockwave per beat, a camera shake that settles, and a hue turn in the second bar. */
 const Drop: Part = ({from}) => {
 	const frame = useReelFrame(from);
 	const since = frame - from;
@@ -181,15 +178,12 @@ const Drop: Part = ({from}) => {
 	);
 };
 
-/** A scene that never reaches its own ending, for the recap's short cuts. */
 const OPEN = 1e6;
 
-/** A night drive: sunset synthwave, an equalizer along the road, and a riser that winds up into the next cut. */
 const Ride: Part = ({from, length}) => {
 	const frame = useReelFrame(from);
 	const k = kick(frame);
 	const second = ramp(frame, from + BAR, from + BAR * 1.15);
-	// The tom fill on the last beat: zoom toward the sun, flash on every 16th.
 	const fillStart = from + length - BEAT;
 	const wind = ramp(frame, fillStart, from + length, Easing.in(Easing.cubic));
 	const stutter =
@@ -250,10 +244,7 @@ const Ride: Part = ({from, length}) => {
 	);
 };
 
-/**
- * Two acts through one VHS tape: a Trip tunnel, then a tear to neon Fractals. Every cut tears the picture.
- * No scaling wrapper here: anything that zooms above the tape changes how Trip and Fractals render inside it.
- */
+// EXTERNAL: A scaling wrapper above the Vhs changes how Trip and Fractals render inside it.
 const Tape: Part = ({from}) => {
 	const frame = useReelFrame(from);
 	const k = kick(frame);
@@ -270,7 +261,7 @@ const Tape: Part = ({from}) => {
 				line={0.28 + 0.6 * tear}
 				period={1.2}
 			>
-				{/* Vhs re-captures a stale snapshot of its children's WebGL canvases, so a fresh key per frame forces a new capture: without it Trip and Fractals freeze. */}
+				{/* EXTERNAL: Vhs snapshots WebGL children once, so a new key each frame keeps them moving. */}
 				<AbsoluteFill key={frame}>
 					{second ? (
 						<Fractals
@@ -285,7 +276,6 @@ const Tape: Part = ({from}) => {
 					)}
 				</AbsoluteFill>
 			</Vhs>
-			{/* The rings sit over the tape: audio-reactive layers inside the Vhs stop following the music. */}
 			<AbsoluteFill
 				style={{
 					mixBlendMode: 'screen',
@@ -332,7 +322,6 @@ const Tape: Part = ({from}) => {
 	);
 };
 
-/** Molten Liquid behind a Ferrofluid that bristles on every kick. */
 const Metal: Part = ({from, length}) => {
 	const frame = useReelFrame(from);
 	const k = kick(frame);
@@ -403,7 +392,6 @@ export const parts: Record<string, Part> = {
 	metal: Metal,
 };
 
-/** The recap: a cut every eighth note, then all four at once, then the wall falls into itself. */
 export const Recap: Part = ({from, length}) => {
 	const frame = useReelFrame(from);
 	const eighth = BEAT / 2;
@@ -413,7 +401,6 @@ export const Recap: Part = ({from, length}) => {
 		end: Math.round((index + 1) * eighth),
 	}));
 	const wallStart = Math.round(BEAT * 2);
-	// The last beat has no kick: the wall rushes into its centre and whites out.
 	const fall = ramp(frame, from + BEAT * 3, from + length - 4 * TICK, Easing.in(Easing.quad));
 	const white = ramp(
 		frame,

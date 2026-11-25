@@ -1,4 +1,3 @@
-// Stack the wrapped and plain versions so the page can compare them in sync.
 import type {CSSProperties, FC, ReactNode} from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {Fisheye, Vhs, WetGlass} from '../../../../../packages/elements/dist/components';
@@ -14,11 +13,9 @@ import {
 const MONO = '"Geist Mono", ui-monospace, monospace';
 const SANS = 'Geist, Inter, system-ui, sans-serif';
 
-// Use whole cycles of this phase to keep motion seamless.
 const useLoop = () => useCurrentFrame() / WRAP_FRAMES;
 const TURN = Math.PI * 2;
 
-// A fixed scatter, so every render places the lights the same way.
 const scatter = (index: number) => {
 	const value = Math.sin(index * 127.1 + 311.7) * 43758.5453;
 	return value - Math.floor(value);
@@ -78,7 +75,6 @@ const CityLights = () => {
 	);
 };
 
-// SMPTE-style bars at 75%.
 const bars = ['#c0c0c0', '#c0c000', '#00c0c0', '#00c000', '#c000c0', '#c00000', '#0000c0'];
 const strip = ['#0000c0', '#131313', '#c000c0', '#131313', '#00c0c0', '#131313', '#c0c0c0'];
 const base = [
@@ -137,8 +133,6 @@ const Timecode = () => {
 	);
 };
 
-// Geist Mono sets every glyph 0.6em wide, so a row's length is known up front
-// and the scroll can turn exactly one length per loop.
 const MARQUEE_SIZE = 96;
 const MARQUEE_TRACK = 0.04;
 const rows = [

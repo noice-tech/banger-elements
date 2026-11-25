@@ -1,5 +1,7 @@
-// Shared by Studio and render scripts. Only catalog entries need static
-// posters and gallery loops; the remaining fixtures are smoke-rendered only.
+/**
+ * Fixtures for Studio and the render scripts. Entries with a slug are catalog Elements and get
+ * static posters and gallery loops. Entries with a null slug are only smoke-rendered.
+ */
 export const compositions = [
 	{id: 'Vhs', slug: 'vhs'},
 	{id: 'Fisheye', slug: 'fisheye'},
@@ -49,6 +51,5 @@ export const compositions = [
 	{id: 'Trip', slug: 'trip'},
 	{id: 'TripCustom', slug: null},
 	{id: 'TripAndCircle', slug: null},
-	// Shaders fill their composition, so a vertical one must be covered edge to edge.
 	{id: 'TripVertical', slug: null, width: 1080, height: 1920},
 ] as const;

@@ -141,7 +141,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId; distinguish decoded buffer revisions.
 	const instanceId = useId();
 	const revision = useRef(0);
 	const audioData = useMemo(
@@ -154,7 +153,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 				: null,
 		[result.audioData, instanceId],
 	);
-	// The current chunk can arrive before its retained neighbors.
 	const complete =
 		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
 	const {delayRender, continueRender} = useDelayRender();
@@ -221,7 +219,6 @@ function spectrumBars(input: AudioInput, count = 308) {
 	});
 }
 
-// All numeric entry points are bounded, including direct JSX and non-finite values.
 function bounded(value: number, min: number, max: number, fallback: number) {
 	return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 }
@@ -243,8 +240,6 @@ function tripBands(bars: readonly number[], inputGainDb: number) {
 	});
 }
 
-// Match the source's 32 × 32 environment sphere rather than stretching its UVs
-// across a quad. The default camera is at (0, 0, 5), with a 75-degree vertical FOV.
 function tripGeometry() {
 	const vertices: number[] = [];
 	const vertex = (x: number, y: number) => {
@@ -418,7 +413,6 @@ function drawTrip({gl, program, uniforms, vertexCount}: TripState, frame: TripFr
 	gl.uniform1f(uniforms.iThickness, bounded(frame.thickness, 0.01, 1.5, 1));
 	gl.uniform1f(uniforms.iPattern, bounded(frame.pattern, 0.7, 9, 0.7));
 	gl.uniform1f(uniforms.iIntensity, Math.trunc(bounded(frame.intensity, 0, 25, 10)));
-	// Three's original Color uniforms are linear even though Trip's final output is display RGB.
 	gl.uniform3fv(uniforms.iBaseColor, linearColor(frame.baseColor));
 	gl.uniform3fv(uniforms.iIntensifyColor, linearColor(frame.intensifyColor));
 	gl.disable(gl.BLEND);
@@ -600,7 +594,6 @@ void main()
 
 	color = clamp(color,0.0,1.0);
 
- // Direct canvas output: display RGB, no second sRGB encode.
  outColor = vec4(color, 1.0);
 }
 `;

@@ -31,8 +31,6 @@ for (const [slug, name, schema] of [
 				.slice(start)
 				.filter((call) => call.name === 'pixelStorei')
 				.map((call) => call.args);
-		// Remotion passes DOM-oriented canvases with flipSourceY: true. The shaders
-		// already sample with a top-left origin, so these are uploaded unflipped.
 		draw(state, source, {...props, time: 2}, 1280, 720, true);
 		assert.deepEqual(pixelStores(0), [
 			[gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true],
@@ -52,7 +50,6 @@ for (const [slug, name, schema] of [
 				[gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source],
 			],
 		);
-		// The viewport follows the effect pass size, which includes pixel density.
 		assert.deepEqual(
 			named('viewport').map((call) => call.args),
 			[

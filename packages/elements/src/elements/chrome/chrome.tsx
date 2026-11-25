@@ -283,11 +283,6 @@ function getPlan(size: number): RealFftPlan {
 	return plan;
 }
 
-/**
- * Hann-windowed amplitude spectrum of `size` samples centered on `center`.
- * Samples outside `samples` count as silence. Bin `k` is `k * sampleRate / size`
- * Hz; a full-scale sine centered on a bin reads 1.
- */
 function computeAmplitudeSpectrum({
 	samples,
 	center,
@@ -447,11 +442,6 @@ function getBandPlan(sampleRate: number, fftSize: number, count: number): BandPl
 	return plan;
 }
 
-/**
- * Resamples an amplitude spectrum onto `outputBarsCount` log-spaced bands from
- * 20 Hz to 22 kHz. Each band reads the loudest bin it covers, so a tone keeps
- * its level and position regardless of band width or sample rate.
- */
 function computeBars({
 	amplitudes,
 	sampleRate,
@@ -609,30 +599,25 @@ out vec4 outColor;
 
 vec2 iResolution = vec2(1920.0, 1080.0);
 
-// Flowing warp field - creates organic wave displacement
 vec2 flowingWarp(vec2 coord) {
   vec2 p = (coord + 3.0) * 4.0;
   float t = iGlobalTime * iWarpSpeed * 0.5;
 
-  // Layered sinusoidal feedback
   for (int i = 0; i < 3; i++) {
     p += cos(p.yx * 3.0 + vec2(t, 1.57)) / 3.0;
     p += sin(p.yx + t + vec2(1.57, 0.0)) / 2.0;
     p *= 1.3;
   }
 
-  // Subtle grain for metal texture
   p += fract(sin(p + vec2(13.0, 7.0)) * 5e5) * 0.03 - 0.015;
 
   return mod(p, 2.0) - 1.0;
 }
 
-// Surface height from warp field
 float surfaceHeight(vec2 coord) {
   return length(flowingWarp(coord)) * 0.7071;
 }
 
-// Calculate bump-mapped normal via gradient sampling
 vec3 calculateNormal(vec2 coord, float bumpScale) {
   vec2 eps = vec2(4.0 / iResolution.y, 0.0);
 
@@ -649,14 +634,12 @@ vec3 calculateNormal(vec2 coord, float bumpScale) {
   return normal;
 }
 
-// HSV to RGB conversion
 vec3 hsv2rgb(vec3 c) {
   vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
   vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
   return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
-// RGB to HSV conversion
 vec3 rgb2hsv(vec3 c) {
   vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
   vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
@@ -666,31 +649,23 @@ vec3 rgb2hsv(vec3 c) {
   return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
-// Spectrum reflection - chrome reflects the actual audio spectrum as colored bands
 vec3 spectrumReflection(vec3 reflectDir, float time) {
-  // Map reflection angle to spectrum position
   float angle = atan(reflectDir.y, reflectDir.x);
   float normalizedAngle = (angle + 3.14159) / 6.28318;
 
-  // Flow the reflection
   float flow = time * 0.08;
 
   vec3 reflection = vec3(0.0);
 
-  // Sample fewer bands for subtler effect
   for (float i = 0.0; i < 8.0; i++) {
     float bandOffset = i / 8.0;
     float sampleX = fract(normalizedAngle + bandOffset + flow);
 
-    // Sample raw sound texture - reduced intensity
     float amplitude = texture(iSoundTexture, vec2(sampleX, 0.5)).r * iResponsive * 1.2;
 
-    // Color based on frequency position - more muted
     vec3 bandColor = hsv2rgb(vec3(sampleX, 0.5, 0.9));
-    // Mix more with user colors
     bandColor = mix(bandColor, mix(iColor1, iColor2, sampleX), 0.7);
 
-    // Band intensity - narrower bands
     float bandWidth = 0.06 + amplitude * 0.03;
     float bandMask = smoothstep(bandWidth, 0.0, abs(fract(normalizedAngle * 8.0) - 0.5));
 
@@ -700,11 +675,9 @@ vec3 spectrumReflection(vec3 reflectDir, float time) {
   return reflection;
 }
 
-// Spectrum surface distortion - frequency data adds ripples to surface
 float spectrumRipple(vec2 coord, float time) {
   float ripple = 0.0;
 
-  // Sample spectrum at fewer positions for subtler effect
   for (float i = 0.0; i < 4.0; i++) {
     float angle = i / 4.0 * 6.28318;
     vec2 offset = vec2(cos(angle), sin(angle)) * 0.25;
@@ -712,7 +685,6 @@ float spectrumRipple(vec2 coord, float time) {
     float sampleX = fract(length(coord + offset) * 0.15 + time * 0.03 + i / 4.0);
     float amplitude = texture(iSoundTexture, vec2(sampleX, 0.5)).r * iResponsive;
 
-    // Create gentler ripples
     float dist = length(coord - offset * 1.5);
     float wave = sin(dist * 8.0 - time * 2.0 - amplitude * 3.0);
     ripple += wave * amplitude * 0.025;
@@ -721,75 +693,59 @@ float spectrumRipple(vec2 coord, float time) {
   return ripple;
 }
 
-// Spectrum color overlay on metal surface
 vec3 spectrumMetalColor(vec2 coord, float time) {
-  // Sample spectrum based on position
   float sampleX = fract(coord.x * 0.4 + 0.5 + time * 0.015);
   float sampleY = fract(coord.y * 0.25 + time * 0.02);
 
   float ampX = texture(iSoundTexture, vec2(sampleX, 0.5)).r * iResponsive;
   float ampY = texture(iSoundTexture, vec2(sampleY, 0.5)).r * iResponsive;
 
-  // Create subtler flowing color bands
   float hue = fract(sampleX + ampX * 0.2);
   float sat = 0.4 + ampY * 0.25;
   float val = 0.6 + (ampX + ampY) * 0.2;
 
   vec3 spectrumColor = hsv2rgb(vec3(hue, sat, val));
 
-  // Blend more with user colors
   spectrumColor = mix(spectrumColor, iColor1, 0.4 + ampX * 0.2);
   spectrumColor = mix(spectrumColor, iColor3, ampY * 0.2);
 
   return spectrumColor * (ampX + ampY) * 0.3;
 }
 
-// Procedural metallic color with audio-reactive color cycling
 vec3 metallicBlend(vec2 coord, float height, float colorShift, float bass, float mids, float highs) {
   vec2 warped = flowingWarp(coord);
 
-  // Create smooth blending weights based on warped coordinates
   float angle = atan(warped.y, warped.x) + colorShift;
 
-  // Bass pulses the color rotation
   angle += bass * 1.5;
 
   float blend1 = max(0.0, sin(angle));
-  float blend2 = max(0.0, sin(angle + 2.094)); // +120 degrees
-  float blend3 = max(0.0, sin(angle + 4.188)); // +240 degrees
+  float blend2 = max(0.0, sin(angle + 2.094));
+  float blend3 = max(0.0, sin(angle + 4.188));
   float total = blend1 + blend2 + blend3 + 0.001;
 
-  // Mix the three metal colors
   vec3 metal = (iColor1 * blend1 + iColor2 * blend2 + iColor3 * blend3) / total;
 
-  // Audio-reactive color manipulation
   vec3 hsv = rgb2hsv(metal);
 
-  // Mids shift the hue
   hsv.x = fract(hsv.x + mids * iColorCycle * 0.3);
 
-  // Highs increase saturation and brightness
   hsv.y = clamp(hsv.y + highs * 0.3, 0.0, 1.0);
   hsv.z = clamp(hsv.z + highs * 0.15, 0.0, 1.0);
 
-  // Bass adds warmth (shift toward orange/red)
   hsv.x = fract(hsv.x - bass * 0.05);
 
   metal = hsv2rgb(hsv);
 
-  // Darken in valleys, brighten on peaks
   metal *= height * 0.7 + 0.3;
 
   return metal;
 }
 
-// Sample texture with warped coordinates
 vec3 sampleTexture(vec2 coord, vec2 warpOffset) {
   vec2 texCoord = coord * iTextureScale + warpOffset * 0.125;
   vec3 texColor = texture(iTexture, texCoord).rgb;
-  // sRGB to linear approximation
   texColor *= texColor;
-  // Color processing for metallic look
   texColor = smoothstep(0.05, 0.75, pow(texColor, vec3(0.75, 0.8, 0.85)));
   return texColor;
 }
@@ -800,61 +756,46 @@ void main() {
 
   float t = iGlobalTime;
 
-  // Audio reactivity
   float bass = iLowFreq * iResponsive;
   float mids = iMidFreq * iResponsive;
   float highs = iHighFreq * iResponsive;
 
-  // Surface position
   vec3 surfacePos = vec3(uv * iWarpIntensity, 0.0);
 
-  // View direction (from camera to surface)
   vec3 viewDir = normalize(vec3(uv, 1.0));
 
-  // Moving light position - mids affect orbit speed
   float lightOrbit = t * 0.8 * iLightMovement * (1.0 + mids * 0.5);
   vec3 lightPos = vec3(cos(lightOrbit) * 0.5, sin(lightOrbit) * 0.2, -1.0);
 
-  // Add spectrum-driven ripples to surface position
   float ripple = spectrumRipple(surfacePos.xy, t);
   surfacePos.z += ripple;
 
-  // Calculate bump-mapped normal with ripple influence
   float bumpScale = iBumpStrength;
   vec3 normal = calculateNormal(surfacePos.xy, bumpScale);
-  // Add ripple gradient to normal - gentler effect
   vec2 rippleEps = vec2(0.01, 0.0);
   float rippleDx = spectrumRipple(surfacePos.xy + rippleEps.xy, t) - ripple;
   float rippleDy = spectrumRipple(surfacePos.xy + rippleEps.yx, t) - ripple;
   normal = normalize(normal + vec3(rippleDx, rippleDy, 0.0) * 10.0);
 
-  // Light direction and distance
   vec3 lightDir = lightPos - surfacePos;
   float lightDist = max(length(lightDir), 0.0001);
   lightDir /= lightDist;
 
-  // Light attenuation
   float atten = 1.0 / (1.0 + lightDist * lightDist * 0.15);
 
-  // Surface height affects attenuation (darker in crevices)
   float height = surfaceHeight(surfacePos.xy);
   atten *= height * 0.9 + 0.1;
 
-  // Diffuse lighting
   float diff = max(dot(normal, lightDir), 0.0);
   diff = pow(diff, 4.0) * 0.66 + pow(diff, 8.0) * 0.34;
 
-  // Specular highlighting - highs add extra sparkle
   float specPower = iSpecularPower;
   float spec = pow(max(dot(reflect(-lightDir, normal), -viewDir), 0.0), specPower);
 
-  // Highs create sparkle bursts
   spec *= 1.0 + highs * 2.0;
 
-  // Color shifting based on time and mids
   float colorShift = t * iColorCycle * 0.2 + mids * 2.0;
 
-  // Get metallic surface color with full audio reactivity
   vec3 proceduralColor = metallicBlend(surfacePos.xy, height, colorShift, bass, mids, highs);
   vec3 metalColor = proceduralColor;
 
@@ -864,33 +805,27 @@ void main() {
     metalColor = mix(proceduralColor, texColor, iTextureBlend);
   }
 
-  // Audio-reactive light color
   vec3 warmLight = vec3(1.0, 0.97, 0.92);
-  warmLight = mix(warmLight, vec3(1.0, 0.8, 0.6), bass * 0.5); // Warmer on bass
-  warmLight = mix(warmLight, vec3(0.9, 0.95, 1.0), highs * 0.3); // Cooler on highs
+  warmLight = mix(warmLight, vec3(1.0, 0.8, 0.6), bass * 0.5);
+  warmLight = mix(warmLight, vec3(0.9, 0.95, 1.0), highs * 0.3);
 
-  // Specular color shifts with mids
   vec3 specColor = vec3(1.0, 0.6, 0.2);
-  specColor = mix(specColor, vec3(0.8, 0.4, 1.0), mids * 0.5); // Purple tint on mids
+  specColor = mix(specColor, vec3(0.8, 0.4, 1.0), mids * 0.5);
 
   vec3 result = (metalColor * (diff * warmLight * 2.0 + 0.5) + specColor * spec * 2.0) * atten;
 
-  // === SPECTRUM REFLECTION - chrome reflects audio frequency bands ===
   vec3 reflectDir = reflect(viewDir, normal);
   vec3 specReflect = spectrumReflection(reflectDir, t);
   float fresnel = pow(1.0 - max(dot(-viewDir, normal), 0.0), 3.0);
   result += specReflect * fresnel * 1.0;
 
-  // === SPECTRUM METAL COLOR OVERLAY ===
   vec3 specMetalCol = spectrumMetalColor(surfacePos.xy, t);
   result += specMetalCol * (1.0 - fresnel) * 0.3;
 
-  // Environment reflection with audio-reactive color
   vec3 envColor = vec3(0.25, 0.5, 1.0);
-  envColor = mix(envColor, vec3(1.0, 0.3, 0.5), bass * 0.4); // Pink tint on bass
+  envColor = mix(envColor, vec3(1.0, 0.3, 0.5), bass * 0.4);
   result += result * pow(fresnel, 4.0) * envColor * 1.5;
 
-  // Gamma correction
   result = sqrt(clamp(result, 0.0, 1.0));
 
 

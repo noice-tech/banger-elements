@@ -23,8 +23,6 @@ const sources: Record<string, string> = {
 const element = (slug: string) => elements.find((entry) => entry.slug === slug)!;
 const byName = new Map(elements.map((entry) => [entry.name, entry.slug]));
 
-// The recipes import the collection's build for rendering. Readers install each
-// element as its own file, so show one import per element instead.
 const forReaders = (source: string) =>
 	source.replace(/^import \{([^}]+)\} from '[^']*packages\/elements\/dist\/components';$/m, (_, names: string) =>
 		names
@@ -188,8 +186,6 @@ const cards = recipes.map((recipe) => {
 			raf = requestAnimationFrame(tick);
 		};
 
-		// The page plays clips while they are on screen. Pausing one takes it out of
-		// that until it is played again, so it stays where it was left.
 		const play = () => {
 			if (!motion.matches) video.toggleAttribute('data-play-visible', true);
 			void video.play().catch(() => {});
@@ -222,7 +218,6 @@ const cards = recipes.map((recipe) => {
 		const sound = player.querySelector<HTMLButtonElement>('[data-recipe-sound]');
 		if (!sound) continue;
 		sounds.push({button: sound, video});
-		// One clip plays sound at a time. Turning it on is a request to hear it, even under reduced motion.
 		sound.addEventListener('click', () => {
 			const on = video.muted;
 			for (const other of sounds) {

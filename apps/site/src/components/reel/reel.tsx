@@ -15,7 +15,6 @@ import {Recap, TRACK, parts} from './parts';
 import {BAR, BEAT, DROP, OUTRO, REEL_FRAMES, SONG_FRAME, TICK, reelScenes} from './scenes';
 
 const MONTAGE = reelScenes[5]!.from;
-/** The recap cuts through the scenes on the eighth notes, then shows them all at once. */
 const recapOrder = ['drop', 'ride', 'tape', 'metal'] as const;
 
 const cuts = [
@@ -37,7 +36,6 @@ const label: CSSProperties = {
 
 const Hud = () => {
 	const frame = useCurrentFrame();
-	// The logo has the frame to itself.
 	if (frame >= OUTRO) return null;
 	const scene = [...reelScenes].reverse().find((candidate) => candidate.from <= frame)!;
 	const bar = Math.floor((frame - DROP) / BAR) + 1;
@@ -67,9 +65,7 @@ const useFont = () => {
 		font
 			.load()
 			.then((loaded) => document.fonts.add(loaded))
-			.catch(() => {
-				/* Fall back to the system monospace. */
-			})
+			.catch(() => {})
 			.finally(() => continueRender(handle));
 	}, [handle]);
 };
@@ -77,7 +73,6 @@ const useFont = () => {
 export const Reel = () => {
 	useFont();
 	const frame = useCurrentFrame();
-	// Every kick after the drop punches the picture in a little and fringes the lens. The logo stays clean.
 	const hit = kick(frame);
 	const fringe = frame >= OUTRO ? 0 : 1 + 6 * hit;
 	const punch = 1 + 0.04 * hit;
@@ -87,7 +82,6 @@ export const Reel = () => {
 			frame >= at ? strength * Math.max(0, 1 - (frame - at) / (7 * TICK)) : 0,
 		),
 	);
-	// The recap whites out into the logo; the logo fades to black so the loop wraps into the dark count-in.
 	const out = interpolate(frame, [REEL_FRAMES - 18 * TICK, REEL_FRAMES - 2 * TICK], [0, 1], {
 		extrapolateLeft: 'clamp',
 		extrapolateRight: 'clamp',

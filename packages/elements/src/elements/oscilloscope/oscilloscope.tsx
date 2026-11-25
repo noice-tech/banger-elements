@@ -156,7 +156,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		windowInSeconds: decodeWindowSeconds,
 	});
 	const {audioData} = result;
-	// The current chunk can arrive before its retained neighbors.
 	const complete =
 		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
 	const {delayRender, continueRender} = useDelayRender();
@@ -179,7 +178,6 @@ const detectorFilter = Float64Array.from({length: FILTER_RADIUS * 2 + 1}, (_, i)
 const filterSum = detectorFilter.reduce((sum, value) => sum + value, 0);
 for (let i = 0; i < detectorFilter.length; i++) detectorFilter[i] /= filterSum;
 
-// Source-anchored triggering.
 function findPitchWindow(
 	waveform: Float32Array,
 	sampleRate: number,

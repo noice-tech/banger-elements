@@ -1,4 +1,3 @@
-// The player and code printer consume the same tree from buildScene().
 import catalog from '../../../../../packages/elements/dist/catalog.json';
 import {
 	SCENE_BARS,
@@ -20,7 +19,6 @@ export const formats = {
 
 export type Finish = 'none' | 'vhs' | 'wet-glass' | 'fisheye';
 
-/** Finishes wrap the visual layers but leave the text overlay untouched. */
 export const finishes = {
 	none: {label: 'None', props: {}},
 	vhs: {label: 'VHS', props: {strength: 0.75, glitch: 0.04, line: 0.25}},
@@ -35,7 +33,6 @@ export type Palette = {
 	readonly c: string;
 };
 
-/** A prop value the printer writes as code rather than as its value, like `W`. */
 export type Expr = {readonly expr: string; readonly value: number};
 export type PropValue = string | number | boolean | Expr;
 export type Style = Readonly<Record<string, string | number>>;
@@ -44,9 +41,7 @@ export type ElementNode = {
 	readonly kind: 'element';
 	readonly slug: string;
 	readonly name: string;
-	/** Spreads the shared `audio` props: source, offset and the frame size. */
 	readonly shared: boolean;
-	/** The one layer that plays the track in a render. */
 	readonly playAudio: boolean;
 	readonly props: Readonly<Record<string, PropValue>>;
 	readonly style?: Style;
@@ -83,7 +78,6 @@ export type SceneSpec = {
 	readonly timing: SceneTiming;
 	readonly title: string;
 	readonly use: string;
-	/** The first line of the generated code. */
 	readonly about: string;
 	readonly background: string;
 	readonly palettes: readonly Palette[];

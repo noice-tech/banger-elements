@@ -277,9 +277,7 @@ out vec4 outColor;
 
 vec2 iResolution = vec2(1920.0, 1080.0);
 
-// CC0 - Neonwave sunrise
-//  Inspired by a tweet by I wanted to create something that looked
-//  a bit like the tweet. This is the result.
+// EXTERNAL: Ported from the CC0 shader "Neonwave sunrise".
 
 #define RESOLUTION    iResolution
 #define TIME          iGlobalTime
@@ -296,7 +294,6 @@ vec3 hsv2rgb(vec3 c) {
   return c.z * mix(hsv2rgb_K.xxx, clamp(p - hsv2rgb_K.xxx, 0.0, 1.0), c.y);
 }
 
-//  Macro version of above to enable compile-time constants
 #define HSV2RGB(c)  (c.z * mix(hsv2rgb_K.xxx, clamp(abs(fract(c.xxx + hsv2rgb_K.xyz) * 6.0 - hsv2rgb_K.www) - hsv2rgb_K.xxx, 0.0, 1.0), c.y))
 
 
@@ -313,8 +310,6 @@ vec3 alphaBlend(vec3 back, vec4 front) {
 
 
 float tanh_approx(float x) {
-  //  Found this somewhere on the interwebs
-  //  return tanh(x);
   float x2 = x*x;
   return clamp(x*(27.0 + x2)/(27.0+9.0*x2), -1.0, 1.0);
 }
@@ -336,7 +331,6 @@ float vnoise(vec2 p) {
   vec2 f = fract(p);
 
   vec2 u = f*f*(3.0-2.0*f);
-//  vec2 u = f;
 
   float a = hash(i + vec2(0.0,0.0));
   float b = hash(i + vec2(1.0,0.0));
@@ -429,9 +423,8 @@ vec4 plane(vec3 ro, vec3 rd, vec3 pp, vec3 npp, vec3 off, float n) {
   vec3 hn;
   vec2 p = (pp-off*2.0*vec3(1.0, 1.0, 0.0)).xy;
 
-  // Apply arc-like distortion
-  float distortionStrength = -0.25; // Adjust this value to change the strength of the distortion
-  vec2 center = vec2(0.5, 0.5); // The center of the distortion. Adjust this value to change the center.
+  float distortionStrength = -0.25;
+  vec2 center = vec2(0.5, 0.5);
   float distanceFromCenter = length(p - center);
   p -= distortionStrength * pow(distanceFromCenter, 2.0) * normalize(p - center);
 
@@ -503,7 +496,6 @@ const vec3 ldir   = normalize(lpos);
 
 vec4 moon(vec3 ro, vec3 rd) {
   const vec4 mdim   = vec4(1E5*vec3(0., 0.4, 1.0), 20000.0);
-  // const vec3 mcol0  = HSV2RGB(vec3(0.75, 0.7, 1.0));
   vec3 mcol0  = iStartColor;
   const vec3 mcol3  = HSV2RGB(vec3(0.75, 0.55, 1.0));
 
@@ -557,8 +549,6 @@ vec4 moon(vec3 ro, vec3 rd) {
 
 
 vec3 skyColor(vec3 ro, vec3 rd) {
-  // const vec3 acol   = HSV2RGB(vec3(0.6, 0.9, 0.075));
-
   vec3 acol;
   const vec3 lpos   = 1E6*vec3(0., -0.15, 1.0);
 
@@ -588,14 +578,13 @@ vec3 skyColor(vec3 ro, vec3 rd) {
   }
 
   col += smoothstep(-0.4, 0.0, (sp.x-PI*0.5))*acol;
-  col += tanh(lcol*li); // line
+  col += tanh(lcol*li);
   return col;
 }
 
 vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
   float lp = length(p);
   vec2 np = p + 2.0/RESOLUTION.y;
-//  float rdd = (2.0-1.0*tanh_approx(lp));  // Playing around with rdd can give interesting distortions
   float rdd = 2.0;
   vec3 rd = normalize(p.x*uu + p.y*vv + rdd*ww);
   vec3 nrd = normalize(np.x*uu + np.y*vv + rdd*ww);
@@ -615,7 +604,6 @@ vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
   const float cutOff = 0.95;
   bool cutOut = false;
 
-  // Steps from nearest to furthest plane and accumulates the color
   for (int i = 1; i <= furthest; ++i) {
     float pz = planeDist*nz + planeDist*float(i);
 
@@ -633,7 +621,6 @@ vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
       float nz = pp.z-ro.z;
       float fadeIn = smoothstep(maxDist, fadeDist, pd);
       pcol.xyz = mix(skyCol, pcol.xyz, fadeIn);
-//      pcol.w *= fadeOut;
       pcol = clamp(pcol, 0.0, 1.0);
 
       acol = alphaBlend(pcol, acol);
@@ -646,8 +633,6 @@ vec3 color(vec3 ww, vec3 uu, vec3 vv, vec3 ro, vec2 p) {
   }
 
   vec3 col = alphaBlend(skyCol, acol);
-// To debug cutouts due to transparency
-//  col += cutOut ? vec3(1.0, -1.0, 0.0) : vec3(0.0);
   return col;
 }
 
@@ -687,7 +672,6 @@ void main() {
   p.x *= RESOLUTION.x/RESOLUTION.y;
   vec3 col = vec3(0.0);
   col = effect(p, q);
-  //col *= smoothstep(0.0, 0.0, TIME-abs(q.y));
   col = aces_approx(col);
   col = sRGB(col);
 

@@ -1,5 +1,7 @@
-// The banger. / ELEMENTS wordmark outlines from assets/brand/banger-elements.svg, one entry per letter.
-// Every box is in the lockup's own units: the viewBox is -1432 -826 5217 1331.
+/**
+ * One letter outline of the banger. / ELEMENTS wordmark from assets/brand/banger-elements.svg.
+ * The box is in the lockup's own units, and the lockup viewBox is -1432 -826 5217 1331.
+ */
 export type Letter = {
 	readonly d: string;
 	readonly x: number;

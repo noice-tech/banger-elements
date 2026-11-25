@@ -1,4 +1,3 @@
-// Render comparison clips and posters. Usage: node scripts/wrap.mjs [slug,...]
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, rmSync} from 'node:fs';
 import {createRequire} from 'node:module';
@@ -18,7 +17,6 @@ const out = path.join(workspace, 'static/wrap');
 mkdirSync(out, {recursive: true});
 
 const only = process.argv[2]?.split(',');
-/** A frame where every demo has settled: rain on the glass, type mid-scroll. */
 const POSTER_FRAME = 40;
 
 const render = (args) => {

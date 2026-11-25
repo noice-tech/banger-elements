@@ -238,8 +238,6 @@ function hasCompleteAudioWindow(audioData: MediaUtilsAudioData, offset: number, 
 }
 
 function useVisualizerAudio(src: string, time: number, fps: number) {
-	// Request the oldest needed history, even on a direct seek past audio EOF.
-	// Include one analysis frame for rounding at the history boundary.
 	const analysisTime = Math.max(0, time - (MOMENTUM_HISTORY_FRAMES + 1) / fps);
 	const result = useWindowedAudioData({
 		src,

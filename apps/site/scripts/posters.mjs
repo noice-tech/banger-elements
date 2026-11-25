@@ -1,5 +1,3 @@
-// First run bun run smoke. The maintained fixture uses only the hosted default
-// audio and no artwork; never substitute local user media for these posters.
 import {mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';

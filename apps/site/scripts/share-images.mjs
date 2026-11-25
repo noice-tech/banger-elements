@@ -1,6 +1,3 @@
-// First run bun run smoke. Builds the 1200x630 Open Graph images from the frame 96 smoke
-// renders: one per Element, plus collages for the home and category pages. Transparent
-// visualizers sit on the preview stage color so they read on any platform.
 import {mkdir, readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -31,7 +28,6 @@ const jpeg = (image, name) =>
 
 await mkdir(out, {recursive: true});
 
-// One frame per Element, letterboxed to 1200x630.
 for (const {slug} of catalog) {
 	const frame = await sharp(render(slug))
 		.resize({width: WIDTH, height: HEIGHT, fit: 'contain', background: STAGE})
@@ -39,7 +35,6 @@ for (const {slug} of catalog) {
 	await jpeg(sharp(frame), slug);
 }
 
-// Collages: a grid of 16:9 tiles centered on the card.
 const collage = async (slugs, columns, name) => {
 	const rows = Math.ceil(slugs.length / columns);
 	const tileWidth = Math.floor((WIDTH - 2 * PAD - (columns - 1) * GAP) / columns);
@@ -65,8 +60,7 @@ const collage = async (slugs, columns, name) => {
 	);
 };
 
-// Same order as elementCategories[].featured in src/data/elements.ts, which Node can't
-// import directly because it imports JSON without an import attribute.
+// EXTERNAL: Node can't import src/data/elements.ts, so this copies its elementCategories featured order.
 const featured = {
 	visualizers: ['ferrofluid', 'halo', 'spectre', 'circle', 'waveform', 'audio-particles'],
 	shaders: ['pulse', 'cathedral', 'liquid', 'chrome', 'neuron', 'matrix'],

@@ -1,12 +1,10 @@
-// The package entry declares Starlight's `locals.starlightRoute` type.
+// EXTERNAL: This empty type import loads Starlight's `locals.starlightRoute` type.
 import type {} from '@astrojs/starlight';
 import {defineRouteMiddleware} from '@astrojs/starlight/route-data';
 
 const SITE = 'https://banger-elements.dev';
-// Docs with a Markdown twin in src/pages; other docs routes (such as 404) point at llms.txt.
 const MARKDOWN_TWINS = new Set(['getting-started']);
 
-// Docs pages: match the showcase pages' extensionless URLs, share image and Markdown twin.
 export const onRequest = defineRouteMiddleware((context) => {
 	const route = context.locals.starlightRoute;
 	const clean = (url: string) => url.replace(/(index)?\.html$/, '');

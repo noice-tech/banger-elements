@@ -261,7 +261,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 		fps,
 		windowInSeconds: decodeWindowSeconds,
 	});
-	// media-utils caches analysis by resultId; distinguish decoded buffer revisions.
 	const instanceId = useId();
 	const revision = useRef(0);
 	const audioData = useMemo(
@@ -271,7 +270,6 @@ function useVisualizerAudio(src: string, time: number, fps: number) {
 				: null,
 		[result.audioData, instanceId],
 	);
-	// The current chunk can arrive before its retained neighbors.
 	const complete =
 		audioData === null || hasCompleteAudioWindow(audioData, result.dataOffsetInSeconds, time);
 	const {delayRender, continueRender} = useDelayRender();
@@ -290,7 +288,6 @@ type AudioInput = {
 	readonly fps: number;
 };
 
-// Preserve every log-spaced slot, including silence and frequencies above Nyquist.
 function computeBars({
 	allVisualizationValues,
 	sampleRate = 44100,
@@ -757,7 +754,6 @@ type DataTexture = {
 	data: Uint8Array;
 };
 
-// Adapt the known Banger GLSL sources to WebGL2, without Three's injected built-ins.
 function shaderSource(source: string, fragment: boolean) {
 	let code = source
 		.replace(/\bvarying\b/g, fragment ? 'in' : 'out')
@@ -873,7 +869,6 @@ function setupCircle(canvas: HTMLCanvasElement, fragment: string): CircleState {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		// These treatment constants do not change between frames.
 		gl.uniform1f(gl.getUniformLocation(program, 'iRainbowSpeed'), 1);
 		gl.uniform1f(gl.getUniformLocation(program, 'iRainbowSaturation'), 0.85);
 		gl.uniform1f(gl.getUniformLocation(program, 'iRainbowBrightness'), 0.85);
@@ -923,7 +918,6 @@ function drawCircle({gl, program, texture, uniforms}: CircleState, frame: Circle
 	gl.viewport(0, 0, frame.width, frame.height);
 	gl.clearColor(0, 0, 0, 0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
-	// WebGL ignores null locations for uniforms optimized out of a variant.
 	gl.uniform1f(uniforms.time, frame.sourceTime);
 	gl.uniform2f(uniforms.resolution, frame.width, frame.height);
 	gl.uniform3fv(uniforms.startColor, linearColor(frame.startColor));

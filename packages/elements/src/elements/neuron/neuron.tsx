@@ -255,11 +255,6 @@ function getPlan(size: number): RealFftPlan {
 	return plan;
 }
 
-/**
- * Hann-windowed amplitude spectrum of `size` samples centered on `center`.
- * Samples outside `samples` count as silence. Bin `k` is `k * sampleRate / size`
- * Hz; a full-scale sine centered on a bin reads 1.
- */
 function computeAmplitudeSpectrum({
 	samples,
 	center,
@@ -419,11 +414,6 @@ function getBandPlan(sampleRate: number, fftSize: number, count: number): BandPl
 	return plan;
 }
 
-/**
- * Resamples an amplitude spectrum onto `outputBarsCount` log-spaced bands from
- * 20 Hz to 22 kHz. Each band reads the loudest bin it covers, so a tone keeps
- * its level and position regardless of band width or sample rate.
- */
 function computeBars({
 	amplitudes,
 	sampleRate,
@@ -582,7 +572,6 @@ vec2 iResolution = vec2(1920.0, 1080.0);
 
 int materialId = 0;
 
-// Sample frequency from sound texture
 float getFreq(float x) {
   return texture(iSoundTexture, vec2(clamp(x, 0.0, 1.0), 0.5)).r * iResponsive;
 }
@@ -646,33 +635,25 @@ vec3 calcNormal(vec3 p, float bassOffset) {
   );
 }
 
-// Neural synapse spark - bright flashes at frequency peaks
 float synapseSpark(vec3 p, float time) {
-  // Create grid of potential synapse points
   vec3 cellId = floor(p * 3.0);
   vec3 cellUv = fract(p * 3.0) - 0.5;
 
-  // Hash for randomness per cell
   float hash = fract(sin(dot(cellId, vec3(127.1, 311.7, 74.7))) * 43758.5453);
 
-  // Each cell samples a different frequency band
   float freqBand = hash;
   float freq = getFreq(freqBand);
 
-  // Spark triggers when frequency exceeds threshold
   float threshold = 0.4 + hash * 0.3;
   float spark = smoothstep(threshold, threshold + 0.1, freq);
 
-  // Distance falloff from cell center
   float dist = length(cellUv);
   spark *= smoothstep(0.5, 0.0, dist);
 
   return spark;
 }
 
-// Pulse wave that travels through structure based on audio
 float pulseWave(vec3 p, float time, float freq) {
-  // Wave travels along z-axis
   float wave = sin(p.z * 2.0 - time * 3.0 + freq * 10.0);
   wave = smoothstep(0.7, 1.0, wave);
   return wave * freq;
@@ -689,7 +670,6 @@ vec3 traceScene(vec3 ro, vec3 rd, float bass, float mids, float highs) {
     float d = march(ro, rd, bassOffset);
     if (d > FAR_DIST) break;
 
-    // Fog
     float fog = 1.0 - exp(-0.008 * d * d * iFog);
     accum += throughput * fog * vec3(0.0);
     throughput *= 1.0 - fog;
@@ -697,25 +677,19 @@ vec3 traceScene(vec3 ro, vec3 rd, float bass, float mids, float highs) {
     vec3 p = ro + rd * d;
     vec3 n = calcNormal(p, bassOffset);
 
-    // Sample multiple frequency bands from sound texture
     float freqLow = getFreq(0.1);
     float freqMid = getFreq(0.4);
     float freqHigh = getFreq(0.8);
 
-    // Position-based frequency sampling - different parts react to different frequencies
     float posFreq = getFreq(fract(p.z * 0.05));
     float posFreq2 = getFreq(fract(p.x * 0.03 + 0.5));
 
-    // Depth-based frequency - closer = higher frequencies
     float depthNorm = clamp(d / FAR_DIST, 0.0, 1.0);
     float depthFreq = getFreq(1.0 - depthNorm);
 
-    // Add surface detail to normal
     float detailAmt = 0.1 + highs * 0.05 + posFreq * 0.03;
     n = normalize(n + pow(abs(cos(p * 64.0)), vec3(16.0)) * detailAmt);
 
-    // === SPECTRUM-DRIVEN LIGHTING ===
-    // Three colored lights, each driven by a frequency band
     vec3 lightPos1 = vec3(10.0, -10.0, -10.0 + ro.z);
     vec3 lightPos2 = vec3(-8.0, 8.0, -5.0 + ro.z);
     vec3 lightPos3 = vec3(0.0, -12.0, -8.0 + ro.z);
@@ -728,15 +702,13 @@ vec3 traceScene(vec3 ro, vec3 rd, float bass, float mids, float highs) {
     float diff2 = max(0.0, dot(n, lightDir2));
     float diff3 = max(0.0, dot(n, lightDir3));
 
-    // Light intensities driven by frequency bands
-    float intensity1 = 0.5 + freqLow * 1.5;   // Bass drives warm light
-    float intensity2 = 0.3 + freqMid * 1.2;   // Mids drive cool light
-    float intensity3 = 0.2 + freqHigh * 1.0;  // Highs drive accent light
+    float intensity1 = 0.5 + freqLow * 1.5;
+    float intensity2 = 0.3 + freqMid * 1.2;
+    float intensity3 = 0.2 + freqHigh * 1.0;
 
-    // Light colors
-    vec3 lightCol1 = vec3(1.0, 0.6, 0.3) * intensity1;  // Warm orange (bass)
-    vec3 lightCol2 = vec3(0.3, 0.6, 1.0) * intensity2;  // Cool blue (mids)
-    vec3 lightCol3 = vec3(1.0, 0.3, 0.8) * intensity3;  // Pink accent (highs)
+    vec3 lightCol1 = vec3(1.0, 0.6, 0.3) * intensity1;
+    vec3 lightCol2 = vec3(0.3, 0.6, 1.0) * intensity2;
+    vec3 lightCol3 = vec3(1.0, 0.3, 0.8) * intensity3;
 
     float spec = max(0.0, dot(reflect(-lightDir1, n), -rd));
     float fres = 1.0 - max(0.0, dot(-rd, n));
@@ -745,39 +717,29 @@ vec3 traceScene(vec3 ro, vec3 rd, float bass, float mids, float highs) {
     vec3 col = vec3(0.0);
     vec3 alb = vec3(0.0);
 
-    // Combine spectrum-driven lights
     col += lightCol1 * diff1;
     col += lightCol2 * diff2;
     col += lightCol3 * diff3;
     col += vec3(0.3, 0.25, 0.25) * pow(spec, 4.0) * 8.0;
 
-    // === NEURAL SYNAPSE SPARKS ===
     float spark = synapseSpark(p, time);
     vec3 sparkColor = mix(iColor1, iGlowColor, 0.5);
     col += sparkColor * spark * 3.0;
 
-    // === PULSE WAVES ===
-    // Bass creates deep pulse waves
     float bassPulse = pulseWave(p, time, freqLow);
     col += iColor1 * bassPulse * 0.4;
 
-    // Highs create faster shimmer waves
     float highPulse = pulseWave(p * 2.0, time * 2.0, freqHigh);
     col += iGlowColor * highPulse * 0.3;
 
-    // === FREQUENCY BAND SURFACE GLOW ===
-    // Different surface regions glow based on spectrum
     float surfaceFreq = getFreq(fract(length(p.xy) * 0.1));
     float glowMask = smoothstep(0.3, 0.6, surfaceFreq);
 
-    // Freckle pattern with frequency activation
     float freck = dot(cos(p * 23.0), vec3(1.0));
 
     if (materialId == 1) {
       alb = iColor1;
-      // Freckles light up based on position frequency
       alb *= max(0.6, step(2.5, freck) + posFreq * 0.4);
-      // Add frequency-driven surface glow
       alb += iGlowColor * glowMask * 0.15;
     }
     if (materialId == 2) {
@@ -789,18 +751,14 @@ vec3 traceScene(vec3 ro, vec3 rd, float bass, float mids, float highs) {
     col *= alb;
     col *= calcAO(p, n, bassOffset);
 
-    // === RIM GLOW driven by spectrum ===
-    // Rim lighting color shifts based on dominant frequency
     vec3 rimColor = mix(iColor1, iGlowColor, freqHigh);
     rimColor = mix(rimColor, iColor2, freqLow * 0.5);
     col += rimColor * pow(fres, 3.0) * (0.25 + depthFreq * 0.2);
 
-    // Depth-based neural activity glow
     col += iGlowColor * depthFreq * 0.1;
 
     accum += throughput * col;
 
-    // Reflection
     rd = reflect(rd, n);
     ro = p + n * 0.01;
     throughput *= iReflection * pow(fres, 1.0);
@@ -815,44 +773,35 @@ void main() {
 
   float t = iGlobalTime;
 
-  // Audio
   float bass = iLowFreq * iResponsive;
   float mids = iMidFreq * iResponsive;
   float highs = iHighFreq * iResponsive;
 
-  // Offset to center the gyroid tunnel visually (compensates for gyroid asymmetry)
   vec2 centerOffset = vec2(1.5, 0.1) / iScale;
 
-  // Camera movement - sway and drift controlled by iCameraMovement, accelerated by iSpeed
   float camMove = iCameraMovement;
-  float speedMult = 0.5 + iSpeed * 0.5; // Movement speed scales with iSpeed
+  float speedMult = 0.5 + iSpeed * 0.5;
   float sway = sin(t * 0.3 * speedMult) * 0.15 * camMove;
   float drift = cos(t * 0.2 * speedMult) * 0.1 * camMove;
   float vertBob = sin(t * 0.4 * speedMult) * 0.08 * camMove + cos(t * 0.25 * speedMult) * 0.05 * camMove;
 
-  // Camera position with movement
   vec3 ro = vec3(centerOffset.x + sway, centerOffset.y + drift + vertBob, -t * iSpeed);
   vec3 rd = normalize(vec3(uv, -1.0));
 
-  // Camera rotation - subtle tilt and roll, also accelerated by iSpeed
   float tilt = sin(t * 0.25 * speedMult) * 0.04 * camMove;
   float roll = cos(t * 0.15 * speedMult) * 0.03 * camMove;
   float pitch = sin(t * 0.18 * speedMult) * 0.025 * camMove;
 
-  // Bass adds extra wobble to rotation
   float bassWobble = 0.02 * camMove;
 
   rd.xy *= rot2d(tilt + bassWobble);
   rd.xz *= rot2d(roll);
   rd.yz *= rot2d(pitch);
 
-  // Trace
   vec3 col = traceScene(ro, rd, bass, mids, highs);
 
-  // Vignette
   col *= smoothstep(0.0, 1.0, 1.2 - length(uv * 0.9));
 
-  // Gamma
   col = pow(clamp(col, 0.0, 1.0), vec3(0.4545));
 
 

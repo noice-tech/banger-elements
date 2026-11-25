@@ -42,7 +42,6 @@ test('the cached spectrum is exactly what visualizeAudio returns', () => {
 test('consecutive frames and layers with their own copy of the audio share spectra', () => {
 	const cached = cacheVisualizer(visualizeAudio);
 	const first = track(2);
-	// Each element decodes its own buffer: same content, different identity and result id.
 	const copy = {
 		...first,
 		resultId: 'other-layer',
@@ -51,10 +50,8 @@ test('consecutive frames and layers with their own copy of the audio share spect
 
 	cached(params(first, 60));
 	assert.deepEqual(cached.stats, {hits: 0, misses: 3});
-	// Next frame at the same rate reuses two of the three windows.
 	cached(params(first, 61));
 	assert.deepEqual(cached.stats, {hits: 2, misses: 4});
-	// Another layer reading the same moment reuses all of them.
 	assert.deepEqual(cached(params(copy, 61)), visualizeAudio(params(first, 61)));
 	assert.deepEqual(cached.stats, {hits: 5, misses: 4});
 });
@@ -76,7 +73,6 @@ test('the cache stays bounded and unsmoothed calls pass through', () => {
 	const cached = cacheVisualizer(visualizeAudio, 6);
 	const audio = track(5);
 	for (let frame = 10; frame < 40; frame += 3) cached(params(audio, frame));
-	// Evicted windows are computed again, still correctly.
 	assert.deepEqual(cached(params(audio, 10)), visualizeAudio(params(audio, 10)));
 	const raw = {...params(audio, 20), smoothing: false};
 	const before = {...cached.stats};

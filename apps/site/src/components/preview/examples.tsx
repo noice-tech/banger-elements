@@ -532,7 +532,6 @@ export const examples = {
 		controls: [
 			color('baseColor', 'Base color'),
 			color('intensifyColor', 'Intensify color'),
-			// A native range with min 0.01 / step 0.05 silently snaps the source default 1 to 1.01.
 			range('thickness', 'Thickness', 0.01, 1.5, 0.01),
 			range('pattern', 'Pattern', 0.7, 9, 0.25),
 			range('intensity', 'Raymarch intensity', 0, 25, 0.5),

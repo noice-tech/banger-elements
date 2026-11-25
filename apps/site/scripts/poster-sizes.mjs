@@ -1,6 +1,3 @@
-// Derive the small poster sizes from static/posters/*.webp. Usage: node scripts/poster-sizes.mjs
-// thumbs/ (448 px) serve the 224 px filmstrip on high-density screens; icons/ (96 px) serve the
-// 28-32 px chips. Full posters stay for tiles and element pages, so nothing small loads a big file.
 import {mkdir, readdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';

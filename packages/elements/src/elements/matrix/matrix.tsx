@@ -263,11 +263,6 @@ function getPlan(size: number): RealFftPlan {
 	return plan;
 }
 
-/**
- * Hann-windowed amplitude spectrum of `size` samples centered on `center`.
- * Samples outside `samples` count as silence. Bin `k` is `k * sampleRate / size`
- * Hz; a full-scale sine centered on a bin reads 1.
- */
 function computeAmplitudeSpectrum({
 	samples,
 	center,
@@ -427,11 +422,6 @@ function getBandPlan(sampleRate: number, fftSize: number, count: number): BandPl
 	return plan;
 }
 
-/**
- * Resamples an amplitude spectrum onto `outputBarsCount` log-spaced bands from
- * 20 Hz to 22 kHz. Each band reads the loudest bin it covers, so a tone keeps
- * its level and position regardless of band width or sample rate.
- */
 function computeBars({
 	amplitudes,
 	sampleRate,

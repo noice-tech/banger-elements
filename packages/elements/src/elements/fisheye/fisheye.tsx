@@ -168,12 +168,6 @@ function cleanupFisheyeWebGl({gl, program, vao, buffer, texture}: FisheyeWebGlSt
 	gl.deleteProgram(program);
 }
 
-/**
- * Upload the effect source as premultiplied alpha, matching the context. The
- * shaders sample with a top-left origin, which is how DOM-oriented canvases
- * arrive (`flipSourceY` is true). Only sources that are already flipped for
- * WebGL need to be flipped back.
- */
 function uploadSource(gl: WebGL2RenderingContext, source: TexImageSource, flipSourceY: boolean) {
 	gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, !flipSourceY);
@@ -212,7 +206,6 @@ const fisheyeEffect = createEffect<FisheyeEffectParams, FisheyeWebGlState>({
 	apply: ({source, width, height, params, state, flipSourceY}) =>
 		drawFisheyeWebGl(state, source as TexImageSource, params, width, height, flipSourceY),
 	cleanup: cleanupFisheyeWebGl,
-	// The Element's own Interactive.create() schema already exposes these controls.
 	schema: {},
 	validateParams: () => undefined,
 });
@@ -389,8 +382,7 @@ const FisheyeInner: React.FC<FisheyeProps> = ({
 				boxSizing: 'border-box',
 				width: drawingWidth,
 				height: drawingHeight,
-				// Avoid isolation here: with overflow: hidden it makes Chrome 158 drop the
-				// HtmlInCanvas paint record during renders.
+				// EXTERNAL: Chrome 158 drops the HtmlInCanvas paint if this div has isolation and overflow hidden.
 				overflow: 'hidden',
 				...style,
 			}}

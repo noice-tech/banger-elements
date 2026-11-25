@@ -1,4 +1,3 @@
-// Shared by the reel composition and the timeline under the clip.
 export const REEL_FPS = 60;
 /** A thirtieth of a second, in frames: the reel's fades, decays and hits are counted in these. */
 export const TICK = REEL_FPS / 30;
@@ -28,7 +27,5 @@ export const reelScenes: readonly ReelScene[] = [
 ];
 
 export const DROP = at(1);
-/** The kick runs on every beat from the drop. The last beat of the recap is a kick-less riser. */
 export const KICKS_END = Math.round(at(8) + BEAT * 3);
-/** The riser lands on a fresh kick: the logo's hit. */
 export const OUTRO = at(9);

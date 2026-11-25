@@ -59,7 +59,6 @@ test('WetGlass fallback draws the droplet field at half size and returns it as a
 	assert.deepEqual([target.width, target.height], [640, 360]);
 	assert.ok(calls.some((call) => call.name === 'drawArrays'));
 	assert.deepEqual(calls.find((call) => call.name === 'viewport')?.args, [0, 0, 640, 360]);
-	// The droplet field is laid out for the full-size element, not the smaller map.
 	assert.deepEqual(calls.find((call) => call.name === 'uniform2f')?.args.slice(1), [1280, 720]);
 });
 

@@ -36,7 +36,6 @@ import {compositions} from './fixtures/compositions';
 
 const components = {
 	Ferrofluid,
-	// Enlarge Ferrofluid to fill about 80% of the gallery card.
 	FerrofluidPreview: () => (
 		<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
 			<Ferrofluid width={1280 * 1.44} height={720 * 1.44} style={{flex: 'none'}} />

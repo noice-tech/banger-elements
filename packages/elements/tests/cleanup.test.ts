@@ -124,7 +124,6 @@ test('waveform: audio tail remains available until it scrolls offscreen, even on
 		for (const remaining of [windowInSeconds / 2, windowInSeconds / 4, 0]) {
 			const sourceTime = 42 + windowInSeconds / 2 - remaining;
 			let requestedTime = -1;
-			// Fresh hook state for every frame: no prior playback buffer to rely on.
 			const {useVisualizerAudio: runAudioHook} = loadHelpers('waveform', ['useVisualizerAudio'], {
 				react: {
 					...require('react'),
@@ -432,7 +431,6 @@ for (const [element, helper] of [
 				Buffer.from(expected.bassHistory.data),
 			);
 		}
-		// Switching composition FPS must not reuse history from the previous frame grid.
 		const at30 = {...input, fps: 30};
 		const cold30 = load()(at30);
 		const warm30 = warm(at30);

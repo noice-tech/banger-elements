@@ -3,7 +3,6 @@ import {AbsoluteFill} from 'remotion';
 import type {BuiltScene, PropValue, SceneNode} from './model';
 
 type AnyElement = ComponentType<Record<string, unknown>>;
-/** The components a scene may use, by slug. Renders pass every element; the site loads them lazily. */
 export type ElementRegistry = Readonly<Partial<Record<string, AnyElement>>>;
 
 const value = (prop: PropValue) => (typeof prop === 'object' ? prop.value : prop);
@@ -26,7 +25,6 @@ const renderNode = (
 	const component = elements[node.slug];
 	if (!component) throw new Error(`Scene element not registered: ${node.slug}`);
 	const props: Record<string, unknown> = node.shared ? {...shared} : {};
-	// Live, the stage plays the track itself so a layer can change without a gap.
 	if (node.playAudio && !live) props.playAudio = true;
 	for (const [name, prop] of Object.entries(node.props)) props[name] = value(prop);
 	if (node.style) props.style = node.style;

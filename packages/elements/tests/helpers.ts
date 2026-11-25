@@ -5,7 +5,6 @@ import ts from 'typescript';
 import * as MediaUtils from '@remotion/media-utils';
 import * as Media from '@remotion/media';
 
-// Expose private helpers only in memory: shipped Elements remain standalone.
 export function loadHelpers(
 	element: string,
 	names: string[],
