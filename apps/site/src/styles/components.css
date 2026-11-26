@@ -140,8 +140,7 @@ summary {
 	cursor: pointer;
 }
 /* Remotion's control buttons have no side padding, so the default ring is a tall sliver. */
-.preview-stage button:focus-visible,
-.recipe-screen button:focus-visible {
+.preview-stage button:focus-visible {
 	outline-offset: 0;
 	border-radius: 8px;
 }

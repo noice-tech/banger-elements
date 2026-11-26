@@ -151,13 +151,13 @@ test('static navigation, assets and fragment targets resolve without a backend',
 	}
 });
 
-test('each example has its rendered assets in a Remotion player, and only audible examples offer volume', async () => {
+test('each example plays its rendered clip in a native video with controls', async () => {
 	const html = await readFile(path.join(dist, 'examples.html'), 'utf8');
-	for (const {id, silent} of recipes) {
+	for (const {id} of recipes) {
 		const card = new RegExp(`<article[^>]*id="${id}"[^>]*>([\\s\\S]*?)</article>`).exec(html)?.[1];
 		assert.ok(card, id);
-		assert.ok(card.includes('component-export="RecipePlayer"'), id);
-		assert.equal(card.includes('&quot;silent&quot;:[0,true]'), Boolean(silent), id);
+		const video = /<video[^>]*>/.exec(card)?.[0] ?? '';
+		assert.ok(/\scontrols[\s>]/.test(video) && video.includes('data-play-visible'), id);
 		assert.ok(card.includes(`/recipes/${id}.webm`), id);
 		assert.ok(card.includes(`/recipes/${id}.webp`), id);
 		const clip = await readFile(path.join(dist, 'recipes', `${id}.webm`));
