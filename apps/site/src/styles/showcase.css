@@ -841,6 +841,19 @@ body.showcase {
 	padding: 0.75rem 0.75rem 0.55rem;
 	border-top: 1px solid var(--line);
 }
+.scene-credit {
+	flex-basis: 100%;
+	margin: 0;
+	color: var(--text-3);
+	font-size: 0.78rem;
+}
+.scene-credit a {
+	text-decoration: none;
+}
+.scene-credit a:hover {
+	color: var(--text-2);
+	text-decoration: underline;
+}
 .scene-layers {
 	display: flex;
 	flex-wrap: wrap;

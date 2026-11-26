@@ -26,11 +26,10 @@ const shadow = (color: string) => `0 2px 28px ${color}`;
 
 export const scenes: readonly SceneSpec[] = [
 	{
-		timing: timing('neon-and-kickboxing'),
-		title: 'Neon and Kickboxing',
+		timing: timing('rocket'),
+		title: 'Rocket',
 		use: 'Release teaser',
-		about:
-			'A release teaser for Neon and Kickboxing by Kevin MacLeod, from where the band comes back in',
+		about: 'A release teaser for Rocket by Kevin MacLeod, from where the band comes back in',
 		background: '#07020f',
 		palettes: [
 			{name: 'Outrun', a: '#9333ea', b: '#ff2bd6', c: '#36d6ff'},
@@ -65,7 +64,7 @@ export const scenes: readonly SceneSpec[] = [
 			}),
 		],
 		overlay: ({px, W}) => {
-			const title = Math.min(px(48), Math.round(W * 0.044));
+			const title = Math.min(px(80), Math.round(W * 0.075));
 			return [
 				fill(
 					{
@@ -87,7 +86,7 @@ export const scenes: readonly SceneSpec[] = [
 							paddingLeft: Math.round(title * 0.11),
 							whiteSpace: 'nowrap',
 						},
-						'NEON AND KICKBOXING',
+						'ROCKET',
 					),
 					box(
 						{marginTop: px(22), fontSize: px(18), fontWeight: 600, letterSpacing: px(8)},
@@ -101,8 +100,7 @@ export const scenes: readonly SceneSpec[] = [
 		timing: timing('breakdown'),
 		title: 'Breakdown',
 		use: 'Visualizer upload',
-		about:
-			'A visualizer for the breakdown of Neon and Kickboxing by Kevin MacLeod, where the bass drops out',
+		about: 'A visualizer for the breakdown of Rocket by Kevin MacLeod, where the highs drop out',
 		background: '#04030a',
 		palettes: [
 			{name: 'Violet', a: '#7c3aed', b: '#c4b5fd', c: '#51e8cc'},
@@ -150,7 +148,7 @@ export const scenes: readonly SceneSpec[] = [
 					bottom: px(52),
 					textShadow: shadow('rgb(0 0 0 / 0.6)'),
 				},
-				box({fontSize: px(46), fontWeight: 700, letterSpacing: -px(1.5)}, 'Neon and Kickboxing'),
+				box({fontSize: px(46), fontWeight: 700, letterSpacing: -px(1.5)}, 'Rocket'),
 				box({marginTop: px(6), fontSize: px(22), color: palette.b}, 'Kevin MacLeod'),
 			),
 		],

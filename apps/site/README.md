@@ -18,7 +18,7 @@ Open http://localhost:3300.
 - `src/pages/` — home, collection, element and example pages
 - `src/components/` — previews, controls, navigation, and Studio integration
 - `src/components/recipes/` — example compositions and their render settings; `bun run --filter @banger-elements/site recipes episode-clip` refreshes the audiogram's video and poster.
-- `src/components/scenes/` — the home page scenes: data the live player renders and prints as code. `scripts/scenes.mjs` refreshes their posters and waveforms. The first two scenes use [“Neon and Kickboxing” by Kevin MacLeod](https://archive.org/details/freepd), which he dedicated to the public domain ([CC0](https://creativecommons.org/publicdomain/zero/1.0/)) on FreePD
+- `src/components/scenes/` — the home page scenes: data the live player renders and prints as code. `scripts/scenes.mjs` refreshes their posters and waveforms. The first two scenes use [“Rocket” by Kevin MacLeod](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100568) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)), credited under the stage and in the copied code
 - `src/components/wrap/` — the "Wrap anything" demos: each effect over plain children, rendered stacked on the unwrapped children so the page can split them. `scripts/wrap.mjs` renders them to `static/wrap/`
 - `src/content/docs/` — Getting started
 - `static/` — branding, fonts, posters, and preview videos

@@ -2,7 +2,7 @@
 export const SCENE_FPS = 30;
 export const SCENE_BARS = 8;
 
-export type TrackId = 'neon-and-kickboxing' | 'demo';
+export type TrackId = 'rocket' | 'demo';
 
 export type Track = {
 	/** The full track, relative to the site's static directory. */
@@ -13,16 +13,27 @@ export type Track = {
 	readonly bpm: number;
 	/** The first downbeat, in seconds. Bars are counted from here. */
 	readonly downbeat: number;
+	/** The attribution its license asks for, shown with the scene and in its code. */
+	readonly credit?: {
+		readonly source: string;
+		readonly license: string;
+		readonly licenseUrl: string;
+	};
 };
 
 export const tracks: Record<TrackId, Track> = {
-	'neon-and-kickboxing': {
-		asset: 'audio/tracks/neon-and-kickboxing.mp3',
-		file: 'neon-and-kickboxing.mp3',
-		title: 'Neon and Kickboxing',
+	rocket: {
+		asset: 'audio/tracks/rocket.mp3',
+		file: 'rocket.mp3',
+		title: 'Rocket',
 		artist: 'Kevin MacLeod',
-		bpm: 132,
-		downbeat: 0.03,
+		bpm: 116,
+		downbeat: 0.024,
+		credit: {
+			source: 'https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100568',
+			license: 'CC BY 4.0',
+			licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+		},
 	},
 	demo: {
 		asset: 'audio/tracks/banger-demo-song.mp3',
@@ -45,13 +56,8 @@ export type SceneTiming = {
 };
 
 export const sceneTimings: readonly SceneTiming[] = [
-	{
-		id: 'neon-and-kickboxing',
-		component: 'NeonAndKickboxing',
-		track: 'neon-and-kickboxing',
-		bar: 48,
-	},
-	{id: 'breakdown', component: 'Breakdown', track: 'neon-and-kickboxing', bar: 40},
+	{id: 'rocket', component: 'Rocket', track: 'rocket', bar: 36},
+	{id: 'breakdown', component: 'Breakdown', track: 'rocket', bar: 28},
 	{id: 'the-drop', component: 'TheDrop', track: 'demo', bar: 0},
 	{id: 'after-hours', component: 'AfterHours', track: 'demo', bar: 16},
 ];

@@ -94,6 +94,11 @@ export const printScene = (built: BuiltScene): string => {
 	return [
 		`// ${spec.about}.`,
 		`// ${width} × ${height} at ${fps} fps, ${bars} bars at ${track.bpm} BPM. Put the track in public/${track.file}.`,
+		...(track.credit
+			? [
+					`// Music: "${track.title}" by ${track.artist}, ${track.credit.license}: ${track.credit.source}`,
+				]
+			: []),
 		`import {AbsoluteFill, staticFile} from 'remotion';`,
 		...[...names]
 			.sort(([, a], [, b]) => a.localeCompare(b))
