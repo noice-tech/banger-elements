@@ -8,14 +8,14 @@ interface Props {
 }
 const category = elementCategories.find((entry) => entry.id === Astro.props.category)!;
 const count = elements.filter((entry) => entry.category === category.id).length;
-const description = `${category.description} Explore open-source ${category.title.toLowerCase()} for Remotion, preview and customize each element, and use the source in your project.`;
+const description = `${category.description} Open one to play it and change its settings, then add it to Remotion Studio.`;
 ---
 <Showcase title={`${category.title} for Remotion`} description={description} pageClass="page-category" image={`/share/${category.id}.jpg`} imageAlt={`A grid of Banger Elements ${category.title.toLowerCase()}`} markdown={`/${category.id}.md`}>
 	<div class="wrap">
 		<header class="page-hero">
 			<nav class="kicker" aria-label="Breadcrumb"><a href="/#collection">Collection</a><span aria-hidden="true">/</span><span aria-current="page">{category.title}</span><span class="kicker-count">{count}</span></nav>
 			<h1>{category.title} <span class="tone">for Remotion.</span></h1>
-			<p class="lede">{category.description} Preview each one live, tune it, and make the source your own.</p>
+			<p class="lede">{category.description} Open one to play it and change its settings.</p>
 		</header>
 		<Collection category={category.id} />
 	</div>

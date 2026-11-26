@@ -38,7 +38,7 @@ const release = {
 };
 ---
 <Showcase
-	title="Banger Elements — audio-reactive visuals for Remotion"
+	title="Banger Elements | Audio-reactive visuals for Remotion"
 	description={pitch}
 	pageClass="page-home"
 	markdown="/index.md"
@@ -133,7 +133,7 @@ const release = {
 	<section class="section" id="collection" aria-labelledby="collection-title">
 		<div class="wrap">
 			<div class="section-head">
-				<h2 id="collection-title" class="section-title">The collection. <span class="tone">Visualizers for the beat, shaders for the room, effects for everything else.</span></h2>
+				<h2 id="collection-title" class="section-title">The collection. <span class="tone">Visualizers draw the audio, shaders fill the background, and effects wrap any layer.</span></h2>
 			</div>
 			<Collection />
 		</div>
@@ -152,7 +152,7 @@ const release = {
 				{wraps.map((demo, index) => (
 <div class="band-code" data-effect-code={demo.slug} hidden={index !== 0}><pre><code>&lt;<span class="tc">{demo.name}</span>{Object.entries(demo.props).map(([key, value]) => <Fragment> <span class="tp">{key}</span>={'{'}<span class="tn">{value}</span>{'}'}</Fragment>)}&gt;
 {demo.children.map((child) => <Fragment>  &lt;<span class="tc">{child}</span> /&gt;
-</Fragment>)}&lt;/<span class="tc">{demo.name}</span>&gt;</code></pre><p>Inside: {demo.inside}. No audio, no elements.</p></div>
+</Fragment>)}&lt;/<span class="tc">{demo.name}</span>&gt;</code></pre><p>Inside: {demo.inside}. The effect needs no audio and no other elements.</p></div>
 				))}
 				<a class="arrow-link" href="/effects">See all effects <span aria-hidden="true">→</span></a>
 			</div>
