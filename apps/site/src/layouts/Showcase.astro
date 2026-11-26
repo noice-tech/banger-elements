@@ -69,15 +69,30 @@ const fullTitle = title.includes('Banger Elements') ? title : `${title} | Banger
 		<script>
 			const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 			const visible = new Set<HTMLVideoElement>();
+			const pausedByUser = new WeakSet<HTMLVideoElement>();
+			const pausedHere = new WeakSet<HTMLVideoElement>();
 			const videos = () => Array.from(document.querySelectorAll<HTMLVideoElement>('video[data-play-visible]'));
+			const pause = (video: HTMLVideoElement) => {
+				if (video.paused) return;
+				pausedHere.add(video);
+				video.pause();
+			};
 			const sync = () => {
 				for (const video of videos()) {
-					const hiddenByFilter = Boolean(video.closest('[hidden]'));
-					if (!motion.matches && !document.hidden && visible.has(video) && !hiddenByFilter) {
-						void video.play().catch(() => {});
-					} else video.pause();
+					const onScreen = !document.hidden && visible.has(video) && !video.closest('[hidden]');
+					if (!onScreen) pause(video);
+					else if (video.controls && (motion.matches || pausedByUser.has(video))) continue;
+					else if (motion.matches) pause(video);
+					else void video.play().catch(() => {});
 				}
 			};
+			for (const video of videos()) {
+				if (!video.controls) continue;
+				video.addEventListener('pause', () => {
+					if (!pausedHere.delete(video)) pausedByUser.add(video);
+				});
+				video.addEventListener('play', () => pausedByUser.delete(video));
+			}
 			const observer = new IntersectionObserver(
 				(entries) => {
 					for (const entry of entries) {

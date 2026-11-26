@@ -1,6 +1,5 @@
 ---
 import Showcase from '../layouts/Showcase.astro';
-import {RecipePlayer} from '../components/RecipePlayer';
 import {elements} from '../data/elements';
 import {highlightLine} from '../components/highlight';
 import {DEMO_SONG, RECIPE_FPS, recipes} from '../components/recipes/recipes';
@@ -86,17 +85,20 @@ const cards = recipes.map((recipe) => {
 		{cards.map((card) => (
 			<article class="recipe" id={card.id} data-shape={card.shape} aria-labelledby={`${card.id}-title`}>
 				<div class="recipe-player" style={`--ratio: ${card.width} / ${card.height}`}>
-					<RecipePlayer
-						src={`/recipes/${card.id}.webm`}
+					<video
+						class="recipe-screen"
+						controls
+						muted
+						loop
+						playsinline
+						preload="none"
 						poster={`/recipes/${card.id}.webp`}
-						title={card.title}
-						width={card.width}
-						height={card.height}
-						fps={RECIPE_FPS}
-						durationInFrames={card.durationInFrames}
-						silent={card.silent}
-						client:visible={{rootMargin: '400px'}}
-					/>
+						aria-label={`${card.title} video`}
+						data-play-visible
+						data-one-voice
+					>
+						<source src={`/recipes/${card.id}.webm`} type="video/webm" />
+					</video>
 				</div>
 				<div class="recipe-body">
 					<p class="recipe-use">{card.use}</p>
@@ -141,6 +143,14 @@ const cards = recipes.map((recipe) => {
 	</div>
 </Showcase>
 <script>
+	const voices = Array.from(document.querySelectorAll<HTMLVideoElement>('video[data-one-voice]'));
+	for (const video of voices) {
+		video.addEventListener('volumechange', () => {
+			if (video.muted) return;
+			for (const other of voices) if (other !== video) other.muted = true;
+		});
+	}
+
 	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-copy-recipe]')) {
 		const lines = button.closest('details')!.querySelectorAll('.line');
 		let reset: number | undefined;
