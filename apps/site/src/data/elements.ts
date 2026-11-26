@@ -5,13 +5,13 @@ export const elementCategories = [
 	{
 		id: 'visualizers',
 		title: 'Visualizers',
-		description: 'Waveforms, spectrums and reactive forms.',
+		description: 'Waveforms, spectrums, rings, fluid and particles drawn from your audio.',
 		featured: ['ferrofluid', 'halo', 'spectre', 'circle', 'waveform', 'audio-particles'],
 	},
 	{
 		id: 'shaders',
 		title: 'Shaders',
-		description: 'Immersive backgrounds, procedural worlds and evolving textures.',
+		description: 'Full-frame backgrounds that react to your track.',
 		featured: ['pulse', 'cathedral', 'liquid', 'chrome', 'neuron', 'matrix'],
 	},
 	{

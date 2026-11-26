@@ -216,7 +216,7 @@ body.showcase {
 .announce:focus-within {
 	border-color: var(--line-strong);
 }
-/* Two links share the pill: the newest elements, then the newest feature. */
+/* Two links share the pill: the newest elements, then banger.show. */
 .announce-link {
 	display: inline-flex;
 	align-items: center;
@@ -263,34 +263,15 @@ body.showcase {
 .examples-more:focus-visible .deck img {
 	transform: translateY(-1px) rotate(calc(var(--i) * 1.6deg));
 }
-.announce-command {
-	padding: 0.2rem 0.65rem;
-	border: 1px solid var(--line);
-	border-radius: 999px;
-	background: var(--surface-2);
-	color: var(--text);
-	font: 0.72rem/1.2 var(--font-mono);
-	white-space: nowrap;
-}
-.announce-link:hover .announce-command,
-.announce-link:focus-visible .announce-command {
-	border-color: var(--line-strong);
-}
-.announce-text strong {
+.announce-text strong,
+.announce-maker strong {
 	color: var(--text);
 	font-weight: 500;
 }
-.announce-version {
-	color: var(--text-3);
-	font: 0.72rem/1.2 var(--font-mono);
+.announce-maker {
 	white-space: nowrap;
 }
-@media (max-width: 680px) {
-	.announce-version {
-		display: none;
-	}
-}
-/* Phones keep the posters and the command, which carry the news on their own. */
+/* Phones keep the posters and the banger.show link, which fit on one line. */
 @media (max-width: 480px) {
 	.deck img:nth-child(n + 5) {
 		display: none;
