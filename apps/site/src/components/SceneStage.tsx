@@ -209,7 +209,9 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 					});
 					await fade.finished.catch(() => {});
 				}
-				if (!cancelled) setSceneId(selection.id);
+				if (cancelled) return;
+				playerRef.current?.seekTo(0);
+				setSceneId(selection.id);
 			},
 			(error: unknown) => {
 				if (!cancelled) setLoadError(error instanceof Error ? error.message : String(error));
@@ -245,15 +247,6 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 			poster: next.format === 'wide' ? `/scenes/${id}.webp` : null,
 		});
 	};
-
-	const firstScene = useRef(true);
-	useEffect(() => {
-		if (firstScene.current) {
-			firstScene.current = false;
-			return;
-		}
-		playerRef.current?.seekTo(0);
-	}, [sceneId]);
 
 	useEffect(() => {
 		if (copy === 'idle') return;
@@ -356,7 +349,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 						))}
 					</div>
 					<div className="stage-transport">
-						<PlayButton playing={playing} onClick={() => playerRef.current?.toggle()} />
+						<PlayButton playing={playing} onClick={(event) => playerRef.current?.toggle(event)} />
 						<TrackWave
 							generation={playerKey}
 							key={sceneId}
@@ -371,7 +364,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 						<SoundButton
 							playing={playing}
 							muted={muted}
-							onClick={() => toggleSound(playerRef.current)}
+							onClick={(event) => toggleSound(playerRef.current, event)}
 						/>
 					</div>
 				</div>

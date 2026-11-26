@@ -1,5 +1,6 @@
 ---
 import Showcase from '../layouts/Showcase.astro';
+import {RecipePlayer} from '../components/RecipePlayer';
 import {elements} from '../data/elements';
 import {highlightLine} from '../components/highlight';
 import {DEMO_SONG, RECIPE_FPS, recipes} from '../components/recipes/recipes';
@@ -36,7 +37,6 @@ const shapeOf = (width: number, height: number) => {
 	if (width === height) return 'square';
 	return width > height ? 'wide' : 'tall';
 };
-const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
 const cards = recipes.map((recipe) => {
 	const code = forReaders(sources[recipe.id]!).trimEnd();
@@ -51,7 +51,6 @@ const cards = recipes.map((recipe) => {
 		...recipe,
 		shape: shapeOf(recipe.width, recipe.height),
 		format: `${recipe.width * scale} × ${recipe.height * scale}`,
-		seconds,
 		length: `${Number(seconds.toFixed(1))} s`,
 		command: `npx remotion render ${recipe.component} ${flags.join(' ')}`,
 		audio: `/${recipe.audioFile ?? DEMO_SONG}`,
@@ -86,26 +85,18 @@ const cards = recipes.map((recipe) => {
 
 		{cards.map((card) => (
 			<article class="recipe" id={card.id} data-shape={card.shape} aria-labelledby={`${card.id}-title`}>
-				<div class="recipe-player" style={`--ratio: ${card.width} / ${card.height}`} data-player>
-					<video muted loop playsinline preload="none" poster={`/recipes/${card.id}.webp`} data-play-visible>
-						<source src={`/recipes/${card.id}.webm`} type="video/webm" />
-					</video>
-					<div class="player-bar">
-						<button class="player-button" type="button" aria-label="Play" data-player-toggle>
-							<svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4a.6.6 0 0 0 .9.5l8.2-5.2a.6.6 0 0 0 0-1L5.4 2.3a.6.6 0 0 0-.9.5z" fill="currentColor"></path></svg>
-							<svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="0.8" fill="currentColor"></rect><rect x="9.5" y="2.5" width="3" height="11" rx="0.8" fill="currentColor"></rect></svg>
-						</button>
-						<input class="player-seek" type="range" min="0" max={card.seconds} step="any" value="0" aria-label={`Seek ${card.title}`} data-player-seek />
-						<span class="player-time" aria-hidden="true" data-player-time>0:00 / {clock(card.seconds)}</span>
-						{!card.silent && <button class="player-button" type="button" aria-pressed="false" data-recipe-sound>
-							<svg viewBox="0 0 16 16" aria-hidden="true">
-								<path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor"></path>
-								<path class="sound-waves" d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
-								<path class="sound-muted" d="m10.5 6 4 4m0-4-4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></path>
-							</svg>
-							<span class="sr-only">Sound</span>
-						</button>}
-					</div>
+				<div class="recipe-player" style={`--ratio: ${card.width} / ${card.height}`}>
+					<RecipePlayer
+						src={`/recipes/${card.id}.webm`}
+						poster={`/recipes/${card.id}.webp`}
+						title={card.title}
+						width={card.width}
+						height={card.height}
+						fps={RECIPE_FPS}
+						durationInFrames={card.durationInFrames}
+						silent={card.silent}
+						client:visible={{rootMargin: '400px'}}
+					/>
 				</div>
 				<div class="recipe-body">
 					<p class="recipe-use">{card.use}</p>
@@ -162,74 +153,6 @@ const cards = recipes.map((recipe) => {
 			}
 			window.clearTimeout(reset);
 			reset = window.setTimeout(() => (button.textContent = 'Copy code'), 1600);
-		});
-	}
-
-	const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-	const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
-	const sounds: {button: HTMLButtonElement; video: HTMLVideoElement}[] = [];
-
-	for (const player of document.querySelectorAll<HTMLElement>('[data-player]')) {
-		const video = player.querySelector('video')!;
-		const toggle = player.querySelector<HTMLButtonElement>('[data-player-toggle]')!;
-		const seek = player.querySelector<HTMLInputElement>('[data-player-seek]')!;
-		const time = player.querySelector<HTMLElement>('[data-player-time]')!;
-		const total = Number(seek.max);
-		let raf = 0;
-
-		const paint = () => {
-			const at = Math.min(video.currentTime, total);
-			seek.value = String(at);
-			seek.style.setProperty('--progress', String(at / total));
-			seek.setAttribute('aria-valuetext', `${clock(at)} of ${clock(total)}`);
-			time.textContent = `${clock(at)} / ${clock(total)}`;
-		};
-		const tick = () => {
-			paint();
-			raf = requestAnimationFrame(tick);
-		};
-
-		const play = () => {
-			if (!motion.matches) video.toggleAttribute('data-play-visible', true);
-			void video.play().catch(() => {});
-		};
-		const pause = () => {
-			video.removeAttribute('data-play-visible');
-			video.pause();
-		};
-		const flip = () => (video.paused ? play() : pause());
-
-		video.addEventListener('play', () => {
-			player.toggleAttribute('data-playing', true);
-			toggle.setAttribute('aria-label', 'Pause');
-			cancelAnimationFrame(raf);
-			raf = requestAnimationFrame(tick);
-		});
-		video.addEventListener('pause', () => {
-			player.toggleAttribute('data-playing', false);
-			toggle.setAttribute('aria-label', 'Play');
-			cancelAnimationFrame(raf);
-			paint();
-		});
-		toggle.addEventListener('click', flip);
-		video.addEventListener('click', flip);
-		seek.addEventListener('input', () => {
-			video.currentTime = Number(seek.value);
-			paint();
-		});
-
-		const sound = player.querySelector<HTMLButtonElement>('[data-recipe-sound]');
-		if (!sound) continue;
-		sounds.push({button: sound, video});
-		sound.addEventListener('click', () => {
-			const on = video.muted;
-			for (const other of sounds) {
-				other.video.muted = true;
-				other.button.setAttribute('aria-pressed', 'false');
-			}
-			video.muted = !on;
-			sound.setAttribute('aria-pressed', String(on));
-			if (on && video.paused) play();
 		});
 	}
 </script>

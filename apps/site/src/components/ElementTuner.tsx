@@ -236,7 +236,7 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 						))}
 					</div>
 					<div className="stage-transport">
-						<PlayButton playing={playing} onClick={() => playerRef.current?.toggle()} />
+						<PlayButton playing={playing} onClick={(event) => playerRef.current?.toggle(event)} />
 						<TrackWave
 							generation={playerKey}
 							playerRef={playerRef}
@@ -249,7 +249,7 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 						<SoundButton
 							playing={playing}
 							muted={muted}
-							onClick={() => toggleSound(playerRef.current)}
+							onClick={(event) => toggleSound(playerRef.current, event)}
 						/>
 					</div>
 				</div>
