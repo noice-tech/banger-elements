@@ -458,6 +458,13 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 						<span aria-hidden="true">{'</>'}</span>
 						{codeOpen ? 'Hide the code' : 'Get the code'}
 					</button>
+					{full.track.credit ? (
+						<p className="scene-credit">
+							Music: <a href={full.track.credit.source}>{full.track.title}</a> by{' '}
+							{full.track.artist},{' '}
+							<a href={full.track.credit.licenseUrl}>{full.track.credit.license}</a>
+						</p>
+					) : null}
 				</div>
 				<div className="scene-code code-window" id={codeId} hidden={!codeOpen}>
 					<div className="code-window-bar">
