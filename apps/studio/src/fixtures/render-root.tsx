@@ -73,7 +73,7 @@ registerRoot(() => (
 				fps={RECIPE_FPS}
 				width={recipe.width}
 				height={recipe.height}
-				defaultProps={{audioSrc: recipe.audioFile ? staticFile(recipe.audioFile) : DEMO_SONG}}
+				defaultProps={{audioSrc: staticFile(recipe.audioFile ?? DEMO_SONG)}}
 			/>
 		))}
 		{wrapDemos.map((demo) => (

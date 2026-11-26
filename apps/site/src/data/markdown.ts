@@ -1,4 +1,5 @@
 import fields from '../../../../packages/elements/dist/fields.json';
+import {elementTextureFile} from './element-payloads';
 import {elementCategories, elements} from './elements';
 
 const SITE = 'https://banger-elements.dev';
@@ -40,6 +41,11 @@ const sizeNote = (element: Element) => {
 	return `Draws in a ${element.width}×${element.height} box with a transparent background. Change \`width\` and \`height\` to resize it.`;
 };
 
+const texture = (element: Element) => {
+	const file = elementTextureFile(element.slug);
+	return file ? ` The texture is copied to \`${file}\`.` : '';
+};
+
 const install = (element: Element) =>
 	[
 		'## Install',
@@ -50,7 +56,7 @@ const install = (element: Element) =>
 		`npx remotion elements use ${pageUrl(element.slug)} --composition <composition-id> --yes`,
 		'```',
 		'',
-		`Replace \`<composition-id>\` with the ID of the composition. The command writes \`${element.slug}.element.tsx\` next to the composition, installs the packages it imports and inserts \`<${element.name}>\` at frame 0.${element.category === 'effects' ? '' : ' It also copies the demo track to `public/banger-elements/`, so the Element plays before you set your own audio.'} Add \`--dry-run\` to see the plan first.`,
+		`Replace \`<composition-id>\` with the ID of the composition. The command writes \`${element.slug}.element.tsx\` next to the composition, installs the packages it imports and inserts \`<${element.name}>\` at frame 0.${element.category === 'effects' ? '' : ' It also copies the demo track to `public/banger-elements/`, so the Element plays before you set your own audio.'}${texture(element)} Add \`--dry-run\` to see the plan first.`,
 		'',
 		`To install by hand, download [${element.slug}.tsx](${SITE}/elements/${element.slug}.tsx), save it as \`${element.slug}.element.tsx\` and import \`{${element.name}}\` from it. Installed Elements need Remotion 4.0.536 or later. Keep every \`@remotion/*\` package on the same version as \`remotion\`.`,
 	].join('\n');

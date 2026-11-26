@@ -4,6 +4,7 @@ import '../styles/components.css';
 import '../styles/showcase.css';
 import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
+import StudioMode from '../components/StudioMode.astro';
 
 interface Props {
 	title: string;
@@ -33,6 +34,7 @@ const fullTitle = title.includes('Banger Elements') ? title : `${title} | Banger
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<StudioMode />
 		<title>{fullTitle}</title>
 		<meta name="description" content={description} />
 		<meta name="color-scheme" content="dark" />

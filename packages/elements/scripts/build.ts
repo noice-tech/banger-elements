@@ -10,11 +10,33 @@ import {sourceSettings} from './source-settings';
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(workspace, 'dist');
 
-const demoAudio = {
-	path: 'banger-elements/remotion-made-this-picture-move.mp3',
-	type: 'url',
-	url: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
-} as const;
+const downloads = [
+	{
+		path: 'banger-elements/remotion-made-this-picture-move.mp3',
+		type: 'url',
+		url: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
+	},
+	{
+		path: 'banger-elements/rain.jpg',
+		type: 'url',
+		url: 'https://cdn.banger.show/assets/rain.jpg',
+	},
+] as const;
+
+function installedAssets(slug: string, settings: ReturnType<typeof sourceSettings>) {
+	const props = Object.entries(settings).flatMap(([prop, {value}]) => {
+		if (typeof value !== 'string' || !/^https?:\/\//.test(value)) return [];
+		const asset = downloads.find((download) => download.url === value);
+		if (!asset) throw new Error(`${slug}: add ${value} to downloads so Studio copies it`);
+		return [{prop, asset}];
+	});
+	return {
+		assets: props.map(({asset}) => asset),
+		initialProps: props.length
+			? Object.fromEntries(props.map(({prop, asset}) => [prop, staticFileRef(asset.path)]))
+			: null,
+	};
+}
 
 await rm(dist, {recursive: true, force: true});
 await mkdir(path.join(dist, 'elements'), {recursive: true});
@@ -28,7 +50,6 @@ for (const entry of catalog) {
 	);
 	const settings = sourceSettings(sourceCode);
 	const fillsComposition = sourceCode.includes(`layout: 'absolute-fill'`);
-	const usesDemoAudio = settings.audioSrc?.value === demoAudio.url;
 	const payload = createElementPayload({
 		displayName: entry.slug === 'vhs' ? 'VHS' : entry.name.replace(/([a-z])([A-Z])/g, '$1 $2'),
 		slug: `banger-elements/${entry.slug}`,
@@ -43,8 +64,7 @@ for (const entry of catalog) {
 		dimensions: fillsComposition ? null : {width: entry.width, height: entry.height},
 		durationInFrames: 480,
 		installationMode: 'component-owned-sequence',
-		assets: usesDemoAudio ? [demoAudio] : [],
-		initialProps: usesDemoAudio ? {audioSrc: staticFileRef(demoAudio.path)} : null,
+		...installedAssets(entry.slug, settings),
 	});
 	fields[entry.slug] = schemaFields(sourceCode);
 	await writeFile(path.join(dist, 'elements', `${entry.slug}.tsx`), sourceCode);

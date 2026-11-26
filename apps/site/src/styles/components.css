@@ -563,3 +563,17 @@ input[type='range']:focus-visible {
 	box-shadow: var(--shadow-raised);
 	color: var(--text);
 }
+
+/* Inside Remotion Studio's Browse Elements ------------------------------- */
+[data-studio] .site-foot,
+[data-studio] .site-footer,
+[data-studio] .icon-link,
+[data-studio] .mobile-menu-panel a[href^='https://'],
+[data-studio] .install-help,
+[data-studio] .page-home main > :not(#collection),
+[data-studio] .page-home #collection .section-head {
+	display: none;
+}
+[data-studio] .page-home #collection {
+	padding-top: clamp(2rem, 5vw, 3rem);
+}

@@ -1,5 +1,5 @@
 import {createElement, type ComponentType, type ReactNode} from 'react';
-import {AbsoluteFill} from 'remotion';
+import {AbsoluteFill, staticFile} from 'remotion';
 import type {BuiltScene, PropValue, SceneNode} from './model';
 
 type AnyElement = ComponentType<Record<string, unknown>>;
@@ -43,7 +43,7 @@ export const SceneComposition = ({
 	live?: boolean;
 }) => {
 	const shared = {
-		audioSrc: audioSrc ?? scene.track.src,
+		audioSrc: audioSrc ?? staticFile(scene.track.asset),
 		audioOffsetInSeconds: scene.start,
 		playAudio: false,
 		width: scene.width,

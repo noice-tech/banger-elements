@@ -54,7 +54,7 @@ const cards = recipes.map((recipe) => {
 		seconds,
 		length: `${Number(seconds.toFixed(1))} s`,
 		command: `npx remotion render ${recipe.component} ${flags.join(' ')}`,
-		audio: recipe.audioFile ? `/${recipe.audioFile}` : DEMO_SONG,
+		audio: `/${recipe.audioFile ?? DEMO_SONG}`,
 		lines: code.split('\n').map(highlightLine),
 		layerEntries: recipe.layers.map(element),
 	};

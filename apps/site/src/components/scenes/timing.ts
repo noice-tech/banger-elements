@@ -5,7 +5,8 @@ export const SCENE_BARS = 8;
 export type TrackId = 'time-travel' | 'demo';
 
 export type Track = {
-	readonly src: string;
+	/** The full track, relative to the site's static directory. */
+	readonly asset: string;
 	readonly file: string;
 	readonly title: string;
 	readonly artist: string;
@@ -16,7 +17,7 @@ export type Track = {
 
 export const tracks: Record<TrackId, Track> = {
 	'time-travel': {
-		src: 'https://cdn.banger.show/assets/time-travel.mp3',
+		asset: 'audio/tracks/time-travel.mp3',
 		file: 'time-travel.mp3',
 		title: 'Time Travel',
 		artist: 'Tequila Funk',
@@ -24,7 +25,7 @@ export const tracks: Record<TrackId, Track> = {
 		downbeat: 0.08,
 	},
 	demo: {
-		src: 'https://cdn.banger.show/assets/banger-demo-song-min.mp3',
+		asset: 'audio/tracks/banger-demo-song.mp3',
 		file: 'track.mp3',
 		title: 'Demo Song',
 		artist: 'Banger',

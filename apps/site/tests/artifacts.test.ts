@@ -5,7 +5,7 @@ import test from 'node:test';
 import {ELEMENT_PAYLOAD_MIME_TYPE, StudioProtocolInternals} from '@remotion/studio-protocol';
 import sharp from 'sharp';
 import {recipes} from '../src/components/recipes/recipes';
-import {sceneClip, sceneTimings} from '../src/components/scenes/timing';
+import {sceneClip, sceneTimings, tracks} from '../src/components/scenes/timing';
 
 const workspace = path.resolve(import.meta.dirname, '..');
 const repository = path.resolve(workspace, '../..');
@@ -190,10 +190,22 @@ test('static output includes only the intentional demo audio and video assets', 
 	const clips = [
 		...sceneTimings.map((timing) => sceneClip(timing).src.slice(1)),
 		...new Set(recipes.flatMap(({audioFile}) => (audioFile ? [audioFile] : []))),
+		...Object.values(tracks).map((track) => track.asset),
 		'audio/tuner.mp3',
 	];
 	const media = files.filter((file) => /\.(mp3|wav|mp4|mov|m4a)$/i.test(file));
 	assert.deepEqual(media.map((file) => file.replaceAll('\\', '/')).sort(), clips.sort());
+});
+
+test('every page switches to Studio mode before it paints inside Remotion Studio', async () => {
+	const pages = (await readdir(dist, {recursive: true})).filter((file) => file.endsWith('.html'));
+	assert.ok(pages.length > catalog.length);
+	for (const file of pages) {
+		const html = await readFile(path.join(dist, file), 'utf8');
+		const check = html.indexOf("get('remotion-studio') === 'true' || window.parent !== window");
+		assert.ok(check > 0, `${file}: Studio check`);
+		assert.ok(check < html.indexOf('</head>'), `${file}: Studio check runs in <head>`);
+	}
 });
 
 test('every page has a 1200x630 share image and an extensionless canonical URL', async () => {
