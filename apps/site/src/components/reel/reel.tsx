@@ -11,7 +11,8 @@ import {
 import {Audio} from '@remotion/media';
 import {Aberration, kick} from './fx';
 import {Outro} from './outro';
-import {Recap, TRACK, parts} from './parts';
+import {DEMO_SONG} from '../recipes/recipes';
+import {Recap, parts} from './parts';
 import {BAR, BEAT, DROP, OUTRO, REEL_FRAMES, SONG_FRAME, TICK, reelScenes} from './scenes';
 
 const MONTAGE = reelScenes[5]!.from;
@@ -90,7 +91,7 @@ export const Reel = () => {
 	return (
 		<AbsoluteFill style={{background: '#000'}}>
 			<Audio
-				src={TRACK}
+				src={staticFile(DEMO_SONG)}
 				trimBefore={SONG_FRAME}
 				volume={(audioFrame) =>
 					interpolate(audioFrame, [REEL_FRAMES - 20 * TICK, REEL_FRAMES - 2 * TICK], [1, 0], {

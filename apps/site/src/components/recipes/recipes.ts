@@ -1,6 +1,7 @@
 // /examples shows the same TSX that `bun run recipes` renders.
 export const RECIPE_FPS = 60;
-export const DEMO_SONG = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
+/** The demo song, relative to the site's static directory. */
+export const DEMO_SONG = 'audio/tracks/banger-demo-song.mp3';
 
 export type Recipe = {
 	readonly id: string;

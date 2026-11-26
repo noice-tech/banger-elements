@@ -30,12 +30,13 @@ const RATE = 8000;
 
 const levelsOf = (timing) => {
 	const track = tracks[timing.track];
+	const source = path.join(workspace, 'static', track.asset);
 	const seconds = SCENE_BARS * barSeconds(track);
 	const result = spawnSync(
 		'ffmpeg',
 		[
 			...['-loglevel', 'error', '-ss', String(sceneStart(timing)), '-t', String(seconds)],
-			...['-i', track.src, '-ac', '1', '-ar', String(RATE), '-f', 'f32le', '-'],
+			...['-i', source, '-ac', '1', '-ar', String(RATE), '-f', 'f32le', '-'],
 		],
 		{maxBuffer: 64 * 1024 * 1024},
 	);

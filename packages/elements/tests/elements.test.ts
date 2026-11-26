@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import {setStudioDragData, StudioProtocolInternals} from '@remotion/studio-protocol';
 import ts from 'typescript';
+import {sourceSettings} from '../scripts/source-settings';
 import {catalog} from '../src/catalog';
 import {loadHelpers} from './helpers';
 
@@ -102,12 +103,16 @@ for (const entry of catalog) {
 			assert.deepEqual(payload.element.assets, []);
 			assert.equal(payload.element.initialProps, null);
 		} else {
-			assert.equal(payload.element.assets.length, 1);
+			const hosted = Object.entries(sourceSettings(sourceCode)).flatMap(([prop, {value}]) =>
+				typeof value === 'string' && /^https?:\/\//.test(value) ? [prop] : [],
+			);
+			assert.ok(hosted.includes('audioSrc'));
+			assert.equal(payload.element.assets.length, hosted.length);
 			StudioProtocolInternals.assertElementAssetReferences({
 				assets: payload.element.assets,
 				initialProps: payload.element.initialProps,
 			});
-			assert.deepEqual(Object.keys(payload.element.initialProps ?? {}), ['audioSrc']);
+			assert.deepEqual(Object.keys(payload.element.initialProps ?? {}).sort(), hosted.sort());
 		}
 	});
 }

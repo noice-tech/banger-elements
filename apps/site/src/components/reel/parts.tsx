@@ -1,5 +1,5 @@
 import type {CSSProperties, FC} from 'react';
-import {AbsoluteFill, Easing, Sequence, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Easing, Sequence, staticFile, useVideoConfig} from 'remotion';
 import {
 	AudioParticles,
 	Circle,
@@ -15,6 +15,7 @@ import {
 	Vhs,
 	Waveform,
 } from '../../../../../packages/elements/dist/components';
+import {DEMO_SONG} from '../recipes/recipes';
 import {
 	Cut,
 	CutScale,
@@ -28,13 +29,12 @@ import {
 } from './fx';
 import {BAR, BEAT, REEL_FPS, SONG_FRAME, TICK} from './scenes';
 
-export const TRACK = 'https://cdn.banger.show/assets/banger-demo-song-min.mp3';
 const W = 1280;
 const H = 720;
 export const fill: CSSProperties = {position: 'absolute', inset: 0};
 
 export const layer = (from: number) => ({
-	audioSrc: TRACK,
+	audioSrc: staticFile(DEMO_SONG),
 	audioOffsetInSeconds: (SONG_FRAME + from) / REEL_FPS,
 	playAudio: false,
 	width: W,

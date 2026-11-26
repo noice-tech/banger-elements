@@ -6,6 +6,7 @@ import {sceneClip, sceneTimings, tracks} from '../src/components/scenes/timing.t
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(workspace, 'static/audio');
+const source = (track) => path.join(workspace, 'static', tracks[track].asset);
 mkdirSync(out, {recursive: true});
 
 const only = process.argv[2]?.split(',');
@@ -18,7 +19,7 @@ for (const timing of sceneTimings) {
 		'ffmpeg',
 		[
 			...['-loglevel', 'error', '-y', '-ss', String(clip.from), '-t', String(clip.seconds)],
-			...['-i', tracks[timing.track].src, '-vn', '-map_metadata', '-1'],
+			...['-i', source(timing.track), '-vn', '-map_metadata', '-1'],
 			...(delay > 0 ? ['-af', `adelay=${delay}|${delay}`] : []),
 			...['-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-movflags', '+faststart', file],
 		],
@@ -34,13 +35,12 @@ const TUNER_SECONDS = 50;
 const TUNER_TAIL_SECONDS = 2;
 const TUNER_SLICES = 512;
 if (!only || only.includes('tuner')) {
-	const source = tracks.demo.src;
 	const file = path.join(out, 'tuner.mp3');
 	const encode = spawnSync(
 		'ffmpeg',
 		[
 			...['-loglevel', 'error', '-y', '-t', String(TUNER_SECONDS + TUNER_TAIL_SECONDS)],
-			...['-i', source, '-vn', '-map_metadata', '-1'],
+			...['-i', source('demo'), '-vn', '-map_metadata', '-1'],
 			...['-c:a', 'libmp3lame', '-b:a', '128k', '-ar', '44100', file],
 		],
 		{stdio: 'inherit'},
@@ -49,7 +49,7 @@ if (!only || only.includes('tuner')) {
 	const decode = spawnSync(
 		'ffmpeg',
 		[
-			...['-loglevel', 'error', '-t', String(TUNER_SECONDS), '-i', source],
+			...['-loglevel', 'error', '-t', String(TUNER_SECONDS), '-i', source('demo')],
 			...['-af', 'pan=mono|c0=c0', '-ar', '8000', '-f', 'f32le', '-'],
 		],
 		{maxBuffer: 64 * 1024 * 1024},

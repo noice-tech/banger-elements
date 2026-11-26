@@ -6,7 +6,7 @@ import GitHubIcon from '../components/GitHubIcon.astro';
 import {elements, elementCategories} from '../data/elements';
 import {previewDurationInSeconds} from '../components/preview/player';
 import {highlightCode} from '../components/highlight';
-import {elementPayloadHtml, elementPayloadMimeType} from '../data/element-payloads';
+import {elementPayloadHtml, elementPayloadMimeType, elementTextureFile} from '../data/element-payloads';
 export function getStaticPaths() {
 	return elements.map(entry => ({params: {element: entry.slug}, props: {entry}}));
 }
@@ -31,6 +31,7 @@ const siblings = elements.filter(element => element.category === entry.category)
 const position = siblings.findIndex(element => element.slug === entry.slug);
 const next = siblings.length > 1 ? siblings[(position + 1) % siblings.length]! : elements.find(element => element.slug !== entry.slug)!;
 const duration = previewDurationInSeconds(entry.slug as PreviewKind);
+const texture = elementTextureFile(entry.slug);
 ---
 <Showcase title={entry.title} description={entry.description} pageClass="page-element" searchable image={`/share/${entry.slug}.jpg`} imageAlt={`${entry.title}: ${entry.tagline}`} markdown={`/${entry.slug}.md`}>
 	<link slot="head" rel="alternate" type="application/vnd.remotion.element+json" href={`/elements/${entry.slug}.json`} />
@@ -87,7 +88,7 @@ const duration = previewDurationInSeconds(entry.slug as PreviewKind);
 				<p>Match child dimensions to the wrapper and position stacked layers absolutely. Each Element keeps its own Sequence; moving the wrapper moves the group. Select the wrapper in Studio for effect controls. Set <code>{bypassKey}</code> to zero for a clean bypass.</p>
 			</> : <>
 				<p>The Studio protocol handles source installation and insertion, so this workflow does not require a manual import. Confirm the request in Studio, then select the inserted Element to adjust its Interactive controls.</p>
-				<p>No props are required. With the demo track, Studio copies it to <code>public/banger-elements/</code> so the Element plays offline. With your own track, the installed source uses the audio URL from your preview. Local files need a hosted URL before installation. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track, or copy the configured JSX from the preview controls for use with the original source.</p>
+				<p>No props are required. With the demo track, Studio copies it to <code>public/banger-elements/</code> so the Element plays offline.{texture && <> Studio also copies the texture to <code>{texture}</code>, unless you set your own image in the preview.</>} With your own track, the installed source uses the audio URL from your preview. Local files need a hosted URL before installation. See <a href="/getting-started.html#audio-setup">audio setup</a> to use your own track, or copy the configured JSX from the preview controls for use with the original source.</p>
 				{entry.category === 'shaders' && <p>{entry.title} fills the composition you install it into, at any aspect ratio. If you change the preview's width or height, the installed Element keeps that fixed size instead.</p>}
 			</>}
 			<details class="reference-section" open><summary><h2 id="controls">Key controls</h2></summary><ul>{entry.controls.map(control => <li>{control}</li>)}</ul>{isWrapper ? <p>{entry.title} exposes size and transform controls, but no audio controls. The Demo audio tab changes only the preview children. Copy configured JSX to reuse your effect settings around your own content.</p> : <p>Visualizers and shaders expose <code>audioSrc</code>, <code>audioOffsetInSeconds</code>, <code>playAudio</code>, <code>inputGainDb</code>, <code>width</code> and <code>height</code>. Select the Element itself in Studio to see its Interactive controls.</p>}</details>

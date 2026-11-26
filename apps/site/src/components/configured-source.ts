@@ -25,11 +25,14 @@ export function configuredPayload(
 		sourceCode = sourceCode.slice(0, edit.start) + edit.text + sourceCode.slice(edit.end);
 	}
 
-	const ownAudio =
-		'audioSrc' in props && props.audioSrc !== template.sourceSettings.audioSrc?.value;
 	const initialProps: Record<string, unknown> = {...template.element.initialProps};
-	if (ownAudio) delete initialProps.audioSrc;
-	const assets = ownAudio ? [] : template.element.assets;
+	let assets = template.element.assets;
+	for (const prop of Object.keys(initialProps)) {
+		const setting = template.sourceSettings[prop];
+		if (!setting || !(prop in props) || props[prop] === setting.value) continue;
+		delete initialProps[prop];
+		assets = assets.filter((asset) => asset.type !== 'url' || asset.url !== setting.value);
+	}
 
 	const size = {width: Number(props.width), height: Number(props.height)};
 	const fills = template.element.dimensions === null;

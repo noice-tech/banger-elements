@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
+import {StudioProtocolInternals} from '@remotion/studio-protocol';
 import {configuredPayload, type SourcePayload} from '../src/components/configured-source';
 import {examples, defaultAudioFor} from '../src/components/preview/examples';
 import {sourceSettings} from '../../../packages/elements/scripts/source-settings';
@@ -68,7 +69,7 @@ test('each element generates source defaults directly from its preview settings'
 	}
 });
 
-test('the demo track is installed as a project asset until the user picks their own audio', () => {
+test('each downloaded asset stays in the payload until the user replaces it in the preview', () => {
 	for (const {slug, category} of catalog) {
 		if (category === 'effects') continue;
 		const template: SourcePayload = JSON.parse(
@@ -77,25 +78,42 @@ test('the demo track is installed as a project asset until the user picks their 
 				'utf8',
 			),
 		);
-		const demo = template.sourceSettings.audioSrc!.value;
-		const [asset] = template.element.assets;
-		assert.equal(asset?.type === 'url' && asset.url, demo, slug);
-		assert.deepEqual(template.element.initialProps?.audioSrc, {
-			__remotion_element_asset: asset!.path,
-		});
-
+		const downloaded = Object.keys(template.element.initialProps ?? {});
+		assert.ok(downloaded.includes('audioSrc'), slug);
 		const example = examples[slug as keyof typeof examples];
-		const base = {...example.props, width: example.width, height: example.height};
-		const withDemo = configuredPayload(template, {...base, audioSrc: demo as string});
-		assert.deepEqual(withDemo.element.assets, template.element.assets, slug);
-		assert.deepEqual(
-			withDemo.element.initialProps?.audioSrc,
-			template.element.initialProps?.audioSrc,
-		);
+		const base = {
+			...example.props,
+			width: example.width,
+			height: example.height,
+			...Object.fromEntries(
+				downloaded.map((prop) => [prop, template.sourceSettings[prop]!.value as string]),
+			),
+		};
+		assert.deepEqual(configuredPayload(template, base).element.assets, template.element.assets);
 
-		const own = configuredPayload(template, {...base, audioSrc: 'https://example.com/track.mp3'});
-		assert.deepEqual(own.element.assets, [], slug);
-		assert.equal(own.element.initialProps?.audioSrc, undefined, slug);
-		assert.ok(own.element.sourceCode.includes('"https://example.com/track.mp3"'), slug);
+		for (const prop of downloaded) {
+			const url = template.sourceSettings[prop]!.value;
+			const asset = template.element.assets.find(
+				(entry) => entry.type === 'url' && entry.url === url,
+			);
+			assert.ok(asset, `${slug}: ${prop} has a download`);
+			assert.deepEqual(template.element.initialProps?.[prop], {
+				__remotion_element_asset: asset.path,
+			});
+
+			const own = configuredPayload(template, {...base, [prop]: `https://example.com/${prop}`});
+			const label: string = `${slug}: ${prop}`;
+			assert.deepEqual(
+				own.element.assets,
+				template.element.assets.filter((entry) => entry !== asset),
+				label,
+			);
+			assert.equal(own.element.initialProps?.[prop], undefined, label);
+			assert.ok(own.element.sourceCode.includes(`"https://example.com/${prop}"`), label);
+			StudioProtocolInternals.assertElementAssetReferences({
+				assets: own.element.assets,
+				initialProps: own.element.initialProps,
+			});
+		}
 	}
 });
