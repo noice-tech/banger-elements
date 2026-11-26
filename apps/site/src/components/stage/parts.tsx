@@ -7,6 +7,7 @@ import {
 	useState,
 	type CSSProperties,
 	type RefObject,
+	type SyntheticEvent,
 } from 'react';
 import type {PlayerRef} from '@remotion/player';
 
@@ -41,15 +42,22 @@ export function usePlayerStatus(
 	return {playing, muted};
 }
 
-export const toggleSound = (player: PlayerRef | null) => {
+/** Pass the click event along: Safari only lets audio start inside the gesture that asked for it. */
+export const toggleSound = (player: PlayerRef | null, event: SyntheticEvent) => {
 	if (!player) return;
 	if (player.isMuted()) {
 		player.unmute();
-		if (!player.isPlaying()) player.play();
+		if (!player.isPlaying()) player.play(event);
 	} else player.mute();
 };
 
-export function PlayButton({playing, onClick}: {playing: boolean; onClick: () => void}) {
+export function PlayButton({
+	playing,
+	onClick,
+}: {
+	playing: boolean;
+	onClick: (event: SyntheticEvent) => void;
+}) {
 	return (
 		<button
 			type="button"
@@ -81,17 +89,35 @@ export function SoundButton({
 }: {
 	playing: boolean;
 	muted: boolean;
-	onClick: () => void;
+	onClick: (event: SyntheticEvent) => void;
 }) {
 	return (
-		<button type="button" className="stage-sound" aria-pressed={!muted} onClick={onClick}>
-			<span className="stage-meter" aria-hidden="true" data-live={playing && !muted}>
-				<i />
-				<i />
-				<i />
-				<i />
-			</span>
-			{muted ? 'Sound on' : 'Sound off'}
+		<button
+			type="button"
+			className="stage-sound"
+			aria-label="Sound"
+			aria-pressed={!muted}
+			data-live={playing && !muted}
+			title={muted ? 'Turn sound on' : 'Turn sound off'}
+			onClick={onClick}
+		>
+			<svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true">
+				<path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor" />
+				{muted ? (
+					<path
+						d="m10.5 6 4 4m0-4-4 4"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="1.4"
+						strokeLinecap="round"
+					/>
+				) : (
+					<g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+						<path className="stage-sound-wave" d="M10.5 5.5a3.5 3.5 0 0 1 0 5" />
+						<path className="stage-sound-wave" d="M12.5 3.5a6.3 6.3 0 0 1 0 9" />
+					</g>
+				)}
+			</svg>
 		</button>
 	);
 }
