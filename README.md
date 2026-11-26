@@ -1,8 +1,8 @@
 # Banger Elements
 
-Audio-reactive visualizers, shaders and effects for [Remotion](https://remotion.dev), from the makers of [banger.show](https://banger.show).
+Visualizers and shaders for [Remotion](https://remotion.dev) that react to your music, plus effects to wrap them in. From the makers of [banger.show](https://banger.show).
 
-Each element is one TSX file. You preview it on the site, change its settings, and then send it to Remotion Studio or download it. Your project gets the source file, not a package to install and keep updated.
+The visualizers and shaders read your track frame by frame, so a kick or a drop changes what you see. You play each element on the site with music, change its settings, and then install it in Remotion Studio like any other [Remotion Element](https://www.remotion.dev/docs/elements), or download the TSX file.
 
 ![A grid of 12 element previews: Synthwave, Ferrofluid, Flowers, Trip, Liquid, Pulsar, Chrome, Halo, Rail, Kaleidoscope, Wet Glass and Neuron](docs/assets/preview.webp)
 
