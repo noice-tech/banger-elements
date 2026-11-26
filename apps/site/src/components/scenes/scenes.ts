@@ -26,10 +26,11 @@ const shadow = (color: string) => `0 2px 28px ${color}`;
 
 export const scenes: readonly SceneSpec[] = [
 	{
-		timing: timing('time-travel'),
-		title: 'Time Travel',
+		timing: timing('neon-and-kickboxing'),
+		title: 'Neon and Kickboxing',
 		use: 'Release teaser',
-		about: 'A release teaser for Time Travel by Tequila Funk, from where the band comes back in',
+		about:
+			'A release teaser for Neon and Kickboxing by Kevin MacLeod, from where the band comes back in',
 		background: '#07020f',
 		palettes: [
 			{name: 'Outrun', a: '#9333ea', b: '#ff2bd6', c: '#36d6ff'},
@@ -64,7 +65,7 @@ export const scenes: readonly SceneSpec[] = [
 			}),
 		],
 		overlay: ({px, W}) => {
-			const title = Math.min(px(80), Math.round(W * 0.075));
+			const title = Math.min(px(48), Math.round(W * 0.044));
 			return [
 				fill(
 					{
@@ -74,7 +75,7 @@ export const scenes: readonly SceneSpec[] = [
 						textAlign: 'center',
 						textShadow: shadow('rgb(10 0 30 / 0.85)'),
 					},
-					box({fontSize: px(20), fontWeight: 600, letterSpacing: px(10)}, 'TEQUILA FUNK'),
+					box({fontSize: px(20), fontWeight: 600, letterSpacing: px(10)}, 'KEVIN MACLEOD'),
 					box(
 						{
 							marginTop: px(12),
@@ -86,7 +87,7 @@ export const scenes: readonly SceneSpec[] = [
 							paddingLeft: Math.round(title * 0.11),
 							whiteSpace: 'nowrap',
 						},
-						'TIME TRAVEL',
+						'NEON AND KICKBOXING',
 					),
 					box(
 						{marginTop: px(22), fontSize: px(18), fontWeight: 600, letterSpacing: px(8)},
@@ -101,7 +102,7 @@ export const scenes: readonly SceneSpec[] = [
 		title: 'Breakdown',
 		use: 'Visualizer upload',
 		about:
-			'A visualizer for the breakdown of Time Travel by Tequila Funk, where the bass drops out',
+			'A visualizer for the breakdown of Neon and Kickboxing by Kevin MacLeod, where the bass drops out',
 		background: '#04030a',
 		palettes: [
 			{name: 'Violet', a: '#7c3aed', b: '#c4b5fd', c: '#51e8cc'},
@@ -149,8 +150,8 @@ export const scenes: readonly SceneSpec[] = [
 					bottom: px(52),
 					textShadow: shadow('rgb(0 0 0 / 0.6)'),
 				},
-				box({fontSize: px(46), fontWeight: 700, letterSpacing: -px(1.5)}, 'Time Travel'),
-				box({marginTop: px(6), fontSize: px(22), color: palette.b}, 'Tequila Funk'),
+				box({fontSize: px(46), fontWeight: 700, letterSpacing: -px(1.5)}, 'Neon and Kickboxing'),
+				box({marginTop: px(6), fontSize: px(22), color: palette.b}, 'Kevin MacLeod'),
 			),
 		],
 	},

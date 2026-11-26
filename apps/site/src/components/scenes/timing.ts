@@ -2,7 +2,7 @@
 export const SCENE_FPS = 30;
 export const SCENE_BARS = 8;
 
-export type TrackId = 'time-travel' | 'demo';
+export type TrackId = 'neon-and-kickboxing' | 'demo';
 
 export type Track = {
 	/** The full track, relative to the site's static directory. */
@@ -16,13 +16,13 @@ export type Track = {
 };
 
 export const tracks: Record<TrackId, Track> = {
-	'time-travel': {
-		asset: 'audio/tracks/time-travel.mp3',
-		file: 'time-travel.mp3',
-		title: 'Time Travel',
-		artist: 'Tequila Funk',
-		bpm: 100,
-		downbeat: 0.08,
+	'neon-and-kickboxing': {
+		asset: 'audio/tracks/neon-and-kickboxing.mp3',
+		file: 'neon-and-kickboxing.mp3',
+		title: 'Neon and Kickboxing',
+		artist: 'Kevin MacLeod',
+		bpm: 132,
+		downbeat: 0.03,
 	},
 	demo: {
 		asset: 'audio/tracks/banger-demo-song.mp3',
@@ -45,8 +45,13 @@ export type SceneTiming = {
 };
 
 export const sceneTimings: readonly SceneTiming[] = [
-	{id: 'time-travel', component: 'TimeTravel', track: 'time-travel', bar: 32},
-	{id: 'breakdown', component: 'Breakdown', track: 'time-travel', bar: 48},
+	{
+		id: 'neon-and-kickboxing',
+		component: 'NeonAndKickboxing',
+		track: 'neon-and-kickboxing',
+		bar: 48,
+	},
+	{id: 'breakdown', component: 'Breakdown', track: 'neon-and-kickboxing', bar: 40},
 	{id: 'the-drop', component: 'TheDrop', track: 'demo', bar: 0},
 	{id: 'after-hours', component: 'AfterHours', track: 'demo', bar: 16},
 ];
