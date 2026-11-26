@@ -18,20 +18,44 @@ The [examples page](https://banger-elements.dev/examples) has four finished comp
 
 ## Getting started
 
+Elements need Remotion 4.0.536 or later. Downloaded files import only React, `remotion`, `@remotion/media` and `@remotion/media-utils`.
+
+### Install from the site
+
 1. Open your Remotion project in Studio.
 2. Pick an element on the [site](https://banger-elements.dev) and adjust its preview settings.
-3. Click Install in Studio and confirm the request in Studio. The installed file uses your preview settings as its defaults. You can also download the TSX.
+3. Click **Install in Studio** and confirm the request in Studio. The installed file uses your preview settings as its defaults. You can also download the TSX.
 4. Pass your audio to a visualizer or shader, or move your existing layers inside an effect.
 
-To get the whole collection in Studio's Browse Elements panel, use Add Library to Studio and restart Studio, or run `npx remotion elements add-library https://banger-elements.dev` (Remotion 4.0.547 or later).
+### Install from the command line
 
-You can also install an element from its page URL with `npx remotion elements use https://banger-elements.dev/halo`.
+Pass an element's page URL and your composition ID (Remotion 4.0.542 or later). The CLI installs the element with its original defaults.
+
+```bash
+npx remotion elements use https://banger-elements.dev/halo --composition MyComposition
+```
+
+### Add the whole collection
+
+To browse every element in Studio's Browse Elements panel, click **Add Library to Studio** on the site, or run this from your project (Remotion 4.0.547 or later):
+
+```bash
+npx remotion elements add-library https://banger-elements.dev
+```
+
+Restart Studio afterwards to see the collection.
+
+### Size and rendering
 
 Shaders fill whatever composition you place them in, including vertical and square ones. Visualizers and effects draw in a 1280×720 box that you can resize with `width` and `height`.
 
-For coding agents, [llms.txt](https://banger-elements.dev/llms.txt) indexes the collection, and every page has a Markdown version at its URL plus `.md`, such as [halo.md](https://banger-elements.dev/halo.md).
+WebGL elements may need `--gl=angle` when you render, or `--gl=swangle` on a machine without a GPU.
 
-Elements need Remotion 4.0.536 or later. Downloaded files import only React, `remotion`, `@remotion/media` and `@remotion/media-utils`. WebGL elements may need `--gl=angle` when you render, or `--gl=swangle` on a machine without a GPU. The [getting started guide](apps/site/src/content/docs/getting-started.mdx) covers audio setup, timing, effects and rendering.
+The [getting started guide](apps/site/src/content/docs/getting-started.mdx) covers audio setup, timing, effects and rendering.
+
+### For coding agents
+
+[llms.txt](https://banger-elements.dev/llms.txt) indexes the collection, and every page has a Markdown version at its URL plus `.md`, such as [halo.md](https://banger-elements.dev/halo.md).
 
 ## Run locally
 
