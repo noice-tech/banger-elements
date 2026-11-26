@@ -136,6 +136,15 @@ summary {
 .preview-stage[data-ready='true'] .preview-player {
 	opacity: 1;
 }
+.preview-stage .__remotion-player {
+	cursor: pointer;
+}
+/* Remotion's control buttons have no side padding, so the default ring is a tall sliver. */
+.preview-stage button:focus-visible,
+.recipe-screen button:focus-visible {
+	outline-offset: 0;
+	border-radius: 8px;
+}
 .preview-caption {
 	display: flex;
 	flex-wrap: wrap;

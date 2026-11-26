@@ -38,7 +38,9 @@ import {
 	StageError,
 	isContextLoss,
 	TrackWave,
+	togglePlay,
 	toggleSound,
+	isPictureClick,
 	usePlayerRecovery,
 	usePlayerStatus,
 	useVisiblePlayback,
@@ -284,7 +286,12 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 				<img src={`/scenes/${sceneId}.webp`} alt="" />
 			</div>
 			<div className="stage-frame">
-				<div className="stage-screen" data-ready={ready} data-format={state.format}>
+				<div
+					className="stage-screen"
+					data-ready={ready}
+					data-format={state.format}
+					onClick={(event) => isPictureClick(event) && togglePlay(playerRef, event)}
+				>
 					{wide ? (
 						<img
 							key={sceneId}
@@ -312,7 +319,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 										initiallyMuted
 										numberOfSharedAudioTags={0}
 										loop
-										clickToPlay
+										clickToPlay={false}
 										doubleClickToFullscreen={false}
 										style={{width: '100%', aspectRatio: '16 / 9'}}
 										errorFallback={({error}) => (
@@ -349,7 +356,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 						))}
 					</div>
 					<div className="stage-transport">
-						<PlayButton playing={playing} onClick={(event) => playerRef.current?.toggle(event)} />
+						<PlayButton playing={playing} onClick={(event) => togglePlay(playerRef, event)} />
 						<TrackWave
 							generation={playerKey}
 							key={sceneId}
@@ -364,7 +371,7 @@ export default function SceneStage({titles}: {titles: Record<string, string>}) {
 						<SoundButton
 							playing={playing}
 							muted={muted}
-							onClick={(event) => toggleSound(playerRef.current, event)}
+							onClick={(event) => toggleSound(playerRef, event)}
 						/>
 					</div>
 				</div>

@@ -26,7 +26,9 @@ import {
 	isContextLoss,
 	Swatches,
 	TrackWave,
+	togglePlay,
 	toggleSound,
+	isPictureClick,
 	usePlayerRecovery,
 	usePlayerStatus,
 	useVisiblePlayback,
@@ -183,7 +185,11 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 				<img src={`/tuner/${selected}.webp`} alt="" loading="lazy" />
 			</div>
 			<div className="stage-frame">
-				<div className="stage-screen" data-ready={ready}>
+				<div
+					className="stage-screen"
+					data-ready={ready}
+					onClick={(event) => isPictureClick(event) && togglePlay(playerRef, event)}
+				>
 					<img
 						className="stage-poster"
 						src={`/tuner/${selected}.webp`}
@@ -207,7 +213,7 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 								initiallyMuted
 								numberOfSharedAudioTags={0}
 								loop
-								clickToPlay
+								clickToPlay={false}
 								doubleClickToFullscreen={false}
 								style={{width: '100%', aspectRatio: '16 / 9'}}
 								errorFallback={({error}) => (
@@ -236,7 +242,7 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 						))}
 					</div>
 					<div className="stage-transport">
-						<PlayButton playing={playing} onClick={(event) => playerRef.current?.toggle(event)} />
+						<PlayButton playing={playing} onClick={(event) => togglePlay(playerRef, event)} />
 						<TrackWave
 							generation={playerKey}
 							playerRef={playerRef}
@@ -249,7 +255,7 @@ export default function ElementTuner({picks}: {picks: readonly Pick[]}) {
 						<SoundButton
 							playing={playing}
 							muted={muted}
-							onClick={(event) => toggleSound(playerRef.current, event)}
+							onClick={(event) => toggleSound(playerRef, event)}
 						/>
 					</div>
 				</div>

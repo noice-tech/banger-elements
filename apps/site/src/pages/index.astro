@@ -142,7 +142,6 @@ const release = {
 	<section class="band" aria-labelledby="effects-title">
 		<div class="wrap band-grid">
 			<div class="band-copy">
-				<p class="kicker">Effects</p>
 				<h2 id="effects-title" class="section-title">Wrap anything. <span class="tone">Effects filter whatever sits inside them.</span></h2>
 				<div class="effect-switch" role="group" aria-label="Choose an effect">
 					{wraps.map((demo, index) => (
@@ -312,6 +311,110 @@ const release = {
 		}
 	}
 
+	const filmstrip = document.querySelector<HTMLElement>('.filmstrip');
+	const filmTrack = filmstrip?.querySelector<HTMLElement>('.filmstrip-track');
+	const filmRow = filmTrack?.querySelector<HTMLElement>('.filmstrip-row');
+	if (filmstrip && filmTrack && filmRow && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		const ROW_CROSSING_MS = 110_000;
+		const SPEED_EASE_MS = 450;
+		const MAX_FLING_PX_PER_MS = 3;
+		let loop = filmRow.offsetWidth;
+		let offset = 0;
+		let speed = 0;
+		let hovered = false;
+		let focused = false;
+		let frame = 0;
+		let last = 0;
+		let drag: {id: number; x: number; y: number; from: number; active: boolean; at: number; speed: number} | null =
+			null;
+		let swallowClick = false;
+		const place = () => {
+			filmTrack.style.transform = `translate3d(${-(((offset % loop) + loop) % loop)}px, 0, 0)`;
+		};
+		const tick = (now: number) => {
+			const step = Math.min(64, now - (last || now));
+			last = now;
+			if (!drag?.active) {
+				const cruise = hovered || focused ? 0 : loop / ROW_CROSSING_MS;
+				speed += (cruise - speed) * (1 - Math.exp(-step / SPEED_EASE_MS));
+				offset += speed * step;
+				place();
+			}
+			frame = requestAnimationFrame(tick);
+		};
+		const start = () => {
+			if (frame) return;
+			last = 0;
+			frame = requestAnimationFrame(tick);
+		};
+		const stop = () => {
+			cancelAnimationFrame(frame);
+			frame = 0;
+		};
+		new IntersectionObserver(([entry]) => (entry?.isIntersecting ? start() : stop())).observe(filmstrip);
+		new ResizeObserver(() => {
+			loop = filmRow.offsetWidth || loop;
+		}).observe(filmRow);
+
+		filmstrip.addEventListener('pointerenter', (event) => {
+			if (event.pointerType === 'mouse') hovered = true;
+		});
+		filmstrip.addEventListener('pointerleave', () => {
+			hovered = false;
+		});
+		filmstrip.addEventListener('focusin', () => {
+			focused = true;
+		});
+		filmstrip.addEventListener('focusout', () => {
+			focused = false;
+		});
+		filmstrip.addEventListener('dragstart', (event) => event.preventDefault());
+		filmstrip.addEventListener('pointerdown', (event) => {
+			if (!event.isPrimary || event.button !== 0) return;
+			drag = {id: event.pointerId, x: event.clientX, y: event.clientY, from: offset, active: false, at: event.timeStamp, speed: 0};
+		});
+		filmstrip.addEventListener('pointermove', (event) => {
+			if (drag?.id !== event.pointerId) return;
+			const across = event.clientX - drag.x;
+			if (!drag.active) {
+				if (Math.abs(across) < 6 || Math.abs(across) < Math.abs(event.clientY - drag.y)) return;
+				drag.active = true;
+				drag.from = offset + across;
+				filmstrip.setPointerCapture(event.pointerId);
+				filmstrip.toggleAttribute('data-dragging', true);
+			}
+			const next = drag.from - across;
+			const elapsed = event.timeStamp - drag.at;
+			if (elapsed > 0) drag.speed = drag.speed * 0.3 + ((next - offset) / elapsed) * 0.7;
+			drag.at = event.timeStamp;
+			offset = next;
+			place();
+		});
+		const release = (event: PointerEvent) => {
+			if (drag?.id !== event.pointerId) return;
+			if (drag.active) {
+				const fresh = event.timeStamp - drag.at < 80;
+				speed = fresh ? Math.max(-MAX_FLING_PX_PER_MS, Math.min(MAX_FLING_PX_PER_MS, drag.speed)) : 0;
+				swallowClick = event.type === 'pointerup';
+				if (swallowClick) window.setTimeout(() => (swallowClick = false), 300);
+				filmstrip.removeAttribute('data-dragging');
+			}
+			drag = null;
+		};
+		filmstrip.addEventListener('pointerup', release);
+		filmstrip.addEventListener('pointercancel', release);
+		filmstrip.addEventListener(
+			'click',
+			(event) => {
+				if (!swallowClick) return;
+				swallowClick = false;
+				event.preventDefault();
+				event.stopPropagation();
+			},
+			true,
+		);
+	}
+
 	const compare = document.querySelector<HTMLElement>('[data-compare]');
 	const compareVideo = compare?.querySelector('video');
 	const canvas = compare?.querySelector('canvas');
@@ -362,6 +465,41 @@ const release = {
 		};
 		loadPoster(compareVideo.poster);
 		range.addEventListener('input', setSplit);
+
+		// EXTERNAL: iOS Safari drags a range only from its thumb, which is invisible here.
+		let drag: {id: number; x: number; y: number; active: boolean} | null = null;
+		const follow = (event: PointerEvent) => {
+			const box = compare.getBoundingClientRect();
+			const share = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width));
+			range.value = String(Math.round(share * 200) / 2);
+			setSplit();
+		};
+		compare.addEventListener('pointerdown', (event) => {
+			if (!event.isPrimary || event.button !== 0) return;
+			const active = event.pointerType === 'mouse';
+			drag = {id: event.pointerId, x: event.clientX, y: event.clientY, active};
+			if (active) {
+				compare.setPointerCapture(event.pointerId);
+				follow(event);
+			}
+		});
+		compare.addEventListener('pointermove', (event) => {
+			if (drag?.id !== event.pointerId) return;
+			if (!drag.active) {
+				const across = Math.abs(event.clientX - drag.x);
+				if (across < 4 || across < Math.abs(event.clientY - drag.y)) return;
+				drag.active = true;
+				compare.setPointerCapture(event.pointerId);
+			}
+			follow(event);
+		});
+		compare.addEventListener('pointerup', (event) => {
+			if (drag?.id === event.pointerId && !drag.active) follow(event);
+			drag = null;
+		});
+		compare.addEventListener('pointercancel', () => {
+			drag = null;
+		});
 		compareVideo.addEventListener('play', () => {
 			cancelAnimationFrame(frame);
 			tick();

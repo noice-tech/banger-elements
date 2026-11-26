@@ -377,6 +377,7 @@ body.showcase {
 	aspect-ratio: 16 / 9;
 	border-radius: 15px;
 	background: var(--stage);
+	cursor: pointer;
 }
 .stage-poster {
 	position: absolute;
@@ -942,17 +943,17 @@ body.showcase {
 .filmstrip {
 	margin-top: clamp(4rem, 8vw, 6.5rem);
 	overflow: hidden;
+	touch-action: pan-y;
 	-webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
 	mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
 }
 .filmstrip-track {
 	display: flex;
 	width: max-content;
-	animation: marquee 110s linear infinite;
 }
-.filmstrip:hover .filmstrip-track,
-.filmstrip:focus-within .filmstrip-track {
-	animation-play-state: paused;
+.filmstrip[data-dragging] {
+	cursor: grabbing;
+	user-select: none;
 }
 .filmstrip-row {
 	display: flex;
@@ -998,11 +999,6 @@ body.showcase {
 }
 .filmstrip-row a:focus-visible {
 	outline-offset: -2px;
-}
-@keyframes marquee {
-	to {
-		transform: translateX(-50%);
-	}
 }
 
 /* Sections ---------------------------------------------------------------- */
@@ -1461,10 +1457,6 @@ body.showcase {
 	align-items: center;
 	gap: clamp(2.5rem, 6vw, 5rem);
 }
-.band .kicker {
-	margin-bottom: 1.1rem;
-	color: var(--accent-hi);
-}
 .band .tone {
 	color: #8e83a3;
 }
@@ -1517,6 +1509,7 @@ body.showcase {
 .compare {
 	touch-action: pan-y;
 	user-select: none;
+	cursor: ew-resize;
 }
 .compare video {
 	inset: 0 0 auto;
@@ -1582,7 +1575,7 @@ body.showcase {
 	height: 100%;
 	margin: 0;
 	opacity: 0;
-	cursor: ew-resize;
+	pointer-events: none;
 }
 .compare:has(input:focus-visible) .compare-handle::after {
 	outline: 2px solid var(--accent-hi);
@@ -2651,9 +2644,6 @@ body.showcase {
 	}
 	.filmstrip {
 		overflow-x: auto;
-	}
-	.filmstrip-track {
-		animation: none;
 	}
 	.halo-word-glow {
 		display: none;
