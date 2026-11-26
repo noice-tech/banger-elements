@@ -9,6 +9,7 @@ import {
 	type RefObject,
 	type SyntheticEvent,
 } from 'react';
+import {flushSync} from 'react-dom';
 import type {PlayerRef} from '@remotion/player';
 
 const formatTime = (seconds: number) =>
@@ -42,14 +43,31 @@ export function usePlayerStatus(
 	return {playing, muted};
 }
 
-/** Pass the click event along: Safari only lets audio start inside the gesture that asked for it. */
-export const toggleSound = (player: PlayerRef | null, event: SyntheticEvent) => {
-	if (!player) return;
-	if (player.isMuted()) {
-		player.unmute();
-		if (!player.isPlaying()) player.play(event);
-	} else player.mute();
+// EXTERNAL: play() reads muted at call time, and Safari needs audio started inside the click.
+const playWithSound = (playerRef: RefObject<PlayerRef | null>, event: SyntheticEvent) => {
+	if (!playerRef.current) return;
+	if (playerRef.current.isMuted()) flushSync(() => playerRef.current?.unmute());
+	playerRef.current?.play(event);
 };
+
+export const togglePlay = (playerRef: RefObject<PlayerRef | null>, event: SyntheticEvent) => {
+	if (playerRef.current?.isPlaying()) playerRef.current.pause();
+	else playWithSound(playerRef, event);
+};
+
+export const toggleSound = (playerRef: RefObject<PlayerRef | null>, event: SyntheticEvent) => {
+	const player = playerRef.current;
+	if (!player) return;
+	if (!player.isMuted()) player.mute();
+	else if (player.isPlaying()) player.unmute();
+	else playWithSound(playerRef, event);
+};
+
+/** Click-to-play on the picture. The Player's own clickToPlay starts on
+ * pointerdown, which is not a user activation on touch screens, so iOS Safari
+ * refuses to start audio from it. */
+export const isPictureClick = (event: SyntheticEvent) =>
+	!(event.target as Element).closest('button, a, input, [role="slider"]');
 
 export function PlayButton({
 	playing,

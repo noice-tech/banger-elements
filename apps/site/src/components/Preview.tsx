@@ -9,6 +9,7 @@ import {usePreviewAudio, usePreviewArtwork} from './preview/use-preview-assets';
 import type {PreviewProps} from './preview/types';
 import {isWrapper as isWrapperElement} from './preview-config';
 import {previewDurationInSeconds, usePlayerReady} from './preview/player';
+import {isPictureClick} from './stage/parts';
 
 export type {PreviewKind} from './preview/examples';
 
@@ -33,6 +34,8 @@ export default function Preview({
 		() => ({...example.props, width: example.width, height: example.height}),
 		[example],
 	);
+	// EXTERNAL: Remotion fades controls in on hover; on touch the first tap only revealed them.
+	const [touchOnly] = useState(() => window.matchMedia('(hover: none)').matches);
 	const [customProps, setCustomProps] = useState<PreviewProps>(initialProps);
 	const audio = usePreviewAudio(selected);
 	const artwork = usePreviewArtwork();
@@ -83,7 +86,15 @@ export default function Preview({
 						installTarget,
 					)
 				: null}
-			<div className="preview-stage" data-ready={ready}>
+			<div
+				className="preview-stage"
+				data-ready={ready}
+				onClick={(event) => {
+					const target = event.target as Element;
+					if (target.closest('.__remotion-player') && isPictureClick(event))
+						playerRef.current?.toggle(event);
+				}}
+			>
 				<Player
 					ref={playerRef}
 					className="preview-player"
@@ -96,6 +107,10 @@ export default function Preview({
 					durationInFrames={durationInSeconds * 60}
 					initialFrame={0}
 					controls
+					alwaysShowControls={touchOnly}
+					clickToPlay={false}
+					// EXTERNAL: with this on, Remotion focuses the play button on every play or pause.
+					spaceKeyToPlayOrPause={false}
 					style={{width: '100%', aspectRatio: '16 / 9'}}
 					errorFallback={({error}) => (
 						<p role="alert">
