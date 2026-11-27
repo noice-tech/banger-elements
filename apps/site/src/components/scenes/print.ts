@@ -79,8 +79,6 @@ const printNode = (node: SceneNode | string, depth: number): string[] => {
 	return [...lines, `${indent(depth)}>`, ...body, indent(depth) + close];
 };
 
-export const sceneFileName = (built: BuiltScene) => `${built.spec.timing.component}.tsx`;
-
 export const printScene = (built: BuiltScene): string => {
 	const {spec, track, start, width, height, fps, bars, durationInFrames, root} = built;
 	const component = spec.timing.component;

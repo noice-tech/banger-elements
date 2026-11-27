@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useRef, useState, type SyntheticEvent} from 'react';
 import {Player, type PlayerRef} from '@remotion/player';
 import {createPortal} from 'react-dom';
 import StudioActions from './StudioActions';
@@ -9,9 +9,11 @@ import {usePreviewAudio, usePreviewArtwork} from './preview/use-preview-assets';
 import type {PreviewProps} from './preview/types';
 import {isWrapper as isWrapperElement} from './preview-config';
 import {previewDurationInSeconds, usePlayerReady} from './preview/player';
-import {isPictureClick} from './stage/parts';
 
 export type {PreviewKind} from './preview/examples';
+
+const isPictureClick = (event: SyntheticEvent) =>
+	!(event.target as Element).closest('button, a, input, [role="slider"]');
 
 export default function Preview({
 	slug,

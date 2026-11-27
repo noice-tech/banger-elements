@@ -4,18 +4,13 @@ interface Props {
 	title: string;
 	tagline: string;
 	description: string;
-	layout?: string;
-	featured?: boolean;
-	hidden?: boolean;
 }
-const {slug, title, tagline, description, layout = '', featured = true, hidden = false} = Astro.props;
+const {slug, title, tagline, description} = Astro.props;
 ---
 <a
-	class:list={['tile', layout]}
+	class="tile"
 	href={`/${slug}.html`}
 	data-search={`${title} ${tagline} ${description}`.toLowerCase()}
-	data-featured={featured ? 'true' : 'false'}
-	hidden={hidden}
 >
 	<video muted loop playsinline preload="none" poster={`/posters/${slug}.webp`} aria-hidden="true" data-play-visible>
 		<source src={`/previews/${slug}.webm`} type="video/webm" />

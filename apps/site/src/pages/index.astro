@@ -1,38 +1,16 @@
 ---
 import Showcase from '../layouts/Showcase.astro';
 import Collection from '../components/Collection.astro';
-import SceneStage from '../components/SceneStage';
-import ElementTuner from '../components/ElementTuner';
-import type {PreviewKind} from '../components/Preview';
-import {elements, elementCategories} from '../data/elements';
-import {REEL_FPS, REEL_FRAMES, reelScenes} from '../components/reel/scenes';
+import {elements} from '../data/elements';
 import {recipes} from '../components/recipes/recipes';
-import {wrapDemos} from '../components/wrap/demos';
 import {shaderDetails} from '../data/shader-updates';
 
-const byCategory = elementCategories.map((category) => elements.filter((entry) => entry.category === category.id));
-const filmstrip = Array.from({length: Math.max(...byCategory.map((list) => list.length))}).flatMap((_, index) =>
-	byCategory.map((list) => list[index]).filter((entry) => entry !== undefined),
-);
-const pick = (slug: string) => {
-	const entry = elements.find((element) => element.slug === slug)!;
-	return {slug: entry.slug as PreviewKind, title: entry.title, name: entry.name};
-};
-const tunerPicks = [pick('ferrofluid'), pick('halo'), pick('trip'), pick('liquid')];
-const titles = Object.fromEntries(elements.map((entry) => [entry.slug, entry.title]));
-const reelLayerCount = new Set(reelScenes.filter((scene) => scene.id !== 'recap').flatMap((scene) => scene.layers)).size;
-const wraps = wrapDemos.map((demo) => {
-	const entry = elements.find((element) => element.slug === demo.slug)!;
-	return {...demo, title: entry.title, name: entry.name};
-});
 const featuredExample = recipes.find((recipe) => recipe.id === 'release-reel')!;
 const otherExamples = recipes.filter((recipe) => recipe !== featuredExample);
 const divisor = (a: number, b: number): number => (b === 0 ? a : divisor(b, a % b));
 const shape = divisor(featuredExample.width, featuredExample.height);
 const featuredRatio = `${featuredExample.width / shape}:${featuredExample.height / shape}`;
-const effectCount = elements.filter((entry) => entry.category === 'effects').length;
-const reactiveCount = elements.length - effectCount;
-const pitch = `${reactiveCount} visualizers and shaders for Remotion that react to your music, plus ${effectCount} effects to wrap them in.`;
+const pitch = 'Visualizers and shaders for Remotion that react to your music, plus effects to wrap them in.';
 const release = {
 	added: ['wet-glass', ...Object.keys(shaderDetails)].map((slug) => elements.find((entry) => entry.slug === slug)!),
 };
@@ -43,8 +21,14 @@ const release = {
 	pageClass="page-home"
 	markdown="/index.md"
 >
-	<section class="hero">
+	<section class="hero" aria-labelledby="hero-title">
 		<div class="wrap hero-copy">
+			<h1 id="hero-title">
+				Audio-reactive
+				<span class="halo-word"><span class="halo-word-glow" aria-hidden="true"><video muted loop playsinline preload="auto" tabindex="-1" disablepictureinpicture data-play-visible><source src="/hero/word.webm" type="video/webm" /></video></span>visuals</span>
+				for Remotion.
+			</h1>
+			<p class="lede">Visualizers and shaders that react to your music, plus effects to wrap them in.</p>
 			<div class="announce">
 				<a class="announce-link" href="/wet-glass.html" aria-label={`Wet Glass and ${release.added.length - 1} shaders`}>
 					<span class="deck" aria-hidden="true">
@@ -56,115 +40,13 @@ const release = {
 						<strong>Wet Glass</strong> and {release.added.length - 1} shaders
 					</span>
 				</a>
-				<a class="announce-link announce-maker" href="https://banger.show/">
-					<span>From the makers of <strong>banger.show</strong></span>
-				</a>
 			</div>
-			<h1>
-				Give your sound
-				<span class="tone">
-					a
-					<span class="halo-word"><span class="halo-word-glow" aria-hidden="true"><video muted loop playsinline preload="auto" tabindex="-1" disablepictureinpicture data-play-visible><source src="/hero/shape.webm" type="video/webm" /></video></span>shape.</span>
-				</span>
-			</h1>
-			<p class="lede">
-				{pitch} The visualizers and shaders read your track frame by frame, so a kick or a drop changes what you see.
-			</p>
-			<div class="hero-ctas">
-				<a class="button primary large" href="#collection">Browse the collection</a>
-				<a class="button ghost large" href="/examples.html">See examples</a>
-			</div>
-		</div>
-		<div class="wrap wrap-wide">
-			<SceneStage titles={titles} client:visible={{rootMargin: '300px'}} />
 		</div>
 	</section>
 
-	<section class="filmstrip" aria-label="Every element">
-		<div class="filmstrip-track">
-			{[0, 1].map((copy) => (
-				<ul class="filmstrip-row" aria-hidden={copy === 1 ? 'true' : undefined}>
-					{filmstrip.map((entry) => (
-						<li>
-							<a href={`/${entry.slug}.html`} tabindex={copy === 1 ? -1 : undefined}>
-								<img src={`/posters/thumbs/${entry.slug}.webp`} alt="" width="224" height="126" loading="lazy" decoding="async" />
-								<span>{entry.title}</span>
-							</a>
-						</li>
-					))}
-				</ul>
-			))}
-		</div>
-	</section>
-
-	<section class="section how" aria-labelledby="how">
-		<div class="wrap how-grid">
-			<div>
-				<h2 id="how" class="section-title">Try it with real music. <span class="tone">See how each element reacts before you use it.</span></h2>
-				<ol class="steps">
-					<li>
-						<span class="step-number">01</span>
-						<div>
-							<h3>Play it</h3>
-							<p>Press play and the element reacts to the song in your browser.</p>
-						</div>
-					</li>
-					<li>
-						<span class="step-number">02</span>
-						<div>
-							<h3>Tune it</h3>
-							<p>Change its settings while the music plays, until it fits your track.</p>
-						</div>
-					</li>
-					<li>
-						<span class="step-number">03</span>
-						<div>
-							<h3>Add it to Studio</h3>
-							<p>Install it in Studio or drag it onto your canvas, like any other <a href="https://www.remotion.dev/docs/elements">Remotion Element</a>. Your settings become its defaults.</p>
-						</div>
-					</li>
-				</ol>
-				<a class="arrow-link" href="/getting-started.html">Read the getting started guide <span aria-hidden="true">→</span></a>
-			</div>
-			<ElementTuner picks={tunerPicks} client:visible />
-		</div>
-	</section>
-
-	<section class="section" id="collection" aria-labelledby="collection-title">
+	<section class="section" id="collection" aria-label="Elements">
 		<div class="wrap">
-			<div class="section-head">
-				<h2 id="collection-title" class="section-title">The collection. <span class="tone">Visualizers draw the audio, shaders fill the background, and effects wrap any layer.</span></h2>
-			</div>
 			<Collection />
-		</div>
-	</section>
-
-	<section class="band" aria-labelledby="effects-title">
-		<div class="wrap band-grid">
-			<div class="band-copy">
-				<h2 id="effects-title" class="section-title">Wrap anything. <span class="tone">Effects filter whatever sits inside them.</span></h2>
-				<div class="effect-switch" role="group" aria-label="Choose an effect">
-					{wraps.map((demo, index) => (
-						<button type="button" data-effect={demo.slug} data-name={demo.name} aria-pressed={index === 0 ? 'true' : 'false'}>{demo.title}</button>
-					))}
-				</div>
-				{wraps.map((demo, index) => (
-<div class="band-code" data-effect-code={demo.slug} hidden={index !== 0}><pre><code>&lt;<span class="tc">{demo.name}</span>{Object.entries(demo.props).map(([key, value]) => <Fragment> <span class="tp">{key}</span>={'{'}<span class="tn">{value}</span>{'}'}</Fragment>)}&gt;
-{demo.children.map((child) => <Fragment>  &lt;<span class="tc">{child}</span> /&gt;
-</Fragment>)}&lt;/<span class="tc">{demo.name}</span>&gt;</code></pre><p>Inside: {demo.inside}. The effect needs no audio and no other elements.</p></div>
-				))}
-				<a class="arrow-link" href="/effects">See all effects <span aria-hidden="true">→</span></a>
-			</div>
-			<div class="band-shot compare" data-compare style="--split: 50%">
-				<video muted loop playsinline preload="none" poster={`/wrap/${wraps[0]!.slug}.webp`} aria-hidden="true" data-play-visible>
-					<source src={`/wrap/${wraps[0]!.slug}.webm`} type="video/webm" />
-				</video>
-				<canvas aria-hidden="true"></canvas>
-				<span class="compare-tag compare-before" aria-hidden="true">Children</span>
-				<span class="compare-tag compare-after" aria-hidden="true" data-compare-label>&lt;{wraps[0]!.name}&gt;</span>
-				<span class="compare-handle" aria-hidden="true"></span>
-				<input type="range" min="0" max="100" step="0.5" value="50" aria-label="Split between the plain children and the effect" />
-			</div>
 		</div>
 	</section>
 
@@ -201,326 +83,9 @@ const release = {
 		</div>
 	</section>
 
-	<section class="section closing" aria-labelledby="closing-title">
-		<div class="wrap closing-inner">
-			<h2 id="closing-title">Make something <span class="tone">loud.</span></h2>
-			<p class="lede">
-				{reelLayerCount} elements, one track, cut on the beat. Every frame below is a Remotion render, layered the way you
-				would in your own project.
-			</p>
-			<figure class="reel" data-reel>
-				<div class="reel-stage">
-					<video muted loop playsinline preload="none" poster="/reel/reel.webp" data-play-visible>
-						<source src="/reel/reel.webm" type="video/webm" />
-					</video>
-				</div>
-				<div class="reel-bar">
-					<div class="reel-timeline" role="group" aria-label="Scenes in the reel" style={`--frames: ${REEL_FRAMES}`}>
-						<ol>
-							{reelScenes.map((scene, index) => (
-								<li style={`--span: ${scene.to - scene.from}`}>
-									<button
-										type="button"
-										data-seek={scene.from / REEL_FPS}
-										aria-current={index === 0 ? 'true' : undefined}
-									>
-										<span class="reel-index">{String(index + 1).padStart(2, '0')}</span>
-										<span class="reel-layers">{scene.layers.join(' × ')}</span>
-									</button>
-								</li>
-							))}
-						</ol>
-						<span class="reel-playhead" aria-hidden="true"></span>
-					</div>
-					<button class="reel-sound" type="button" aria-pressed="false" data-reel-sound>
-						<svg viewBox="0 0 16 16" aria-hidden="true">
-							<path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor"></path>
-							<path
-								class="reel-sound-waves"
-								d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.4"
-								stroke-linecap="round"></path>
-							<path
-								class="reel-sound-muted"
-								d="m10.5 6 4 4m0-4-4 4"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.4"
-								stroke-linecap="round"></path>
-						</svg>
-						<span>Sound</span>
-					</button>
-				</div>
-				<figcaption class="reel-now" aria-live="off">{reelScenes[0]!.layers.join(' × ')}</figcaption>
-			</figure>
-			<div class="hero-ctas">
-				<a class="button primary large" href="/visualizers">Start with a visualizer</a>
-				<a class="button ghost large" href="https://github.com/noice-tech/banger-elements">Star on GitHub</a>
-			</div>
-		</div>
-	</section>
 </Showcase>
+
 <script>
 	const glow = document.querySelector<HTMLVideoElement>('.halo-word-glow video');
 	glow?.addEventListener('playing', () => glow.toggleAttribute('data-playing', true), {once: true});
-
-	const reel = document.querySelector<HTMLElement>('[data-reel]');
-	const reelVideo = reel?.querySelector('video');
-	if (reel && reelVideo) {
-		const sound = reel.querySelector<HTMLButtonElement>('[data-reel-sound]')!;
-		const timeline = reel.querySelector<HTMLElement>('.reel-timeline')!;
-		const now = reel.querySelector<HTMLElement>('.reel-now')!;
-		const seekers = Array.from(reel.querySelectorAll<HTMLButtonElement>('[data-seek]'));
-		const starts = seekers.map((button) => Number(button.dataset.seek));
-		const follow = () => {
-			const duration = reelVideo.duration || 1;
-			const time = reelVideo.currentTime;
-			timeline.style.setProperty('--progress', String(time / duration));
-			const current = starts.filter((start) => start <= time + 0.01).length - 1;
-			seekers.forEach((button, index) => {
-				if (index === current) button.setAttribute('aria-current', 'true');
-				else button.removeAttribute('aria-current');
-			});
-			now.textContent = seekers[current]?.querySelector('.reel-layers')?.textContent ?? '';
-		};
-		let frame = 0;
-		const tick = () => {
-			follow();
-			frame = requestAnimationFrame(tick);
-		};
-		reelVideo.addEventListener('play', () => {
-			cancelAnimationFrame(frame);
-			tick();
-		});
-		reelVideo.addEventListener('pause', () => cancelAnimationFrame(frame));
-		reelVideo.addEventListener('seeked', follow);
-		sound.addEventListener('click', () => {
-			reelVideo.muted = !reelVideo.muted;
-			sound.setAttribute('aria-pressed', String(!reelVideo.muted));
-			if (!reelVideo.muted && reelVideo.paused) void reelVideo.play().catch(() => {});
-		});
-		for (const button of seekers) {
-			button.addEventListener('click', () => {
-				reelVideo.currentTime = Number(button.dataset.seek);
-				follow();
-				if (reelVideo.paused) void reelVideo.play().catch(() => {});
-			});
-		}
-	}
-
-	const filmstrip = document.querySelector<HTMLElement>('.filmstrip');
-	const filmTrack = filmstrip?.querySelector<HTMLElement>('.filmstrip-track');
-	const filmRow = filmTrack?.querySelector<HTMLElement>('.filmstrip-row');
-	if (filmstrip && filmTrack && filmRow && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-		const ROW_CROSSING_MS = 110_000;
-		const SPEED_EASE_MS = 450;
-		const MAX_FLING_PX_PER_MS = 3;
-		let loop = filmRow.offsetWidth;
-		let offset = 0;
-		let speed = 0;
-		let hovered = false;
-		let focused = false;
-		let frame = 0;
-		let last = 0;
-		let drag: {id: number; x: number; y: number; from: number; active: boolean; at: number; speed: number} | null =
-			null;
-		let swallowClick = false;
-		const place = () => {
-			filmTrack.style.transform = `translate3d(${-(((offset % loop) + loop) % loop)}px, 0, 0)`;
-		};
-		const tick = (now: number) => {
-			const step = Math.min(64, now - (last || now));
-			last = now;
-			if (!drag?.active) {
-				const cruise = hovered || focused ? 0 : loop / ROW_CROSSING_MS;
-				speed += (cruise - speed) * (1 - Math.exp(-step / SPEED_EASE_MS));
-				offset += speed * step;
-				place();
-			}
-			frame = requestAnimationFrame(tick);
-		};
-		const start = () => {
-			if (frame) return;
-			last = 0;
-			frame = requestAnimationFrame(tick);
-		};
-		const stop = () => {
-			cancelAnimationFrame(frame);
-			frame = 0;
-		};
-		new IntersectionObserver(([entry]) => (entry?.isIntersecting ? start() : stop())).observe(filmstrip);
-		new ResizeObserver(() => {
-			loop = filmRow.offsetWidth || loop;
-		}).observe(filmRow);
-
-		filmstrip.addEventListener('pointerenter', (event) => {
-			if (event.pointerType === 'mouse') hovered = true;
-		});
-		filmstrip.addEventListener('pointerleave', () => {
-			hovered = false;
-		});
-		filmstrip.addEventListener('focusin', () => {
-			focused = true;
-		});
-		filmstrip.addEventListener('focusout', () => {
-			focused = false;
-		});
-		filmstrip.addEventListener('dragstart', (event) => event.preventDefault());
-		filmstrip.addEventListener('pointerdown', (event) => {
-			if (!event.isPrimary || event.button !== 0) return;
-			drag = {id: event.pointerId, x: event.clientX, y: event.clientY, from: offset, active: false, at: event.timeStamp, speed: 0};
-		});
-		filmstrip.addEventListener('pointermove', (event) => {
-			if (drag?.id !== event.pointerId) return;
-			const across = event.clientX - drag.x;
-			if (!drag.active) {
-				if (Math.abs(across) < 6 || Math.abs(across) < Math.abs(event.clientY - drag.y)) return;
-				drag.active = true;
-				drag.from = offset + across;
-				filmstrip.setPointerCapture(event.pointerId);
-				filmstrip.toggleAttribute('data-dragging', true);
-			}
-			const next = drag.from - across;
-			const elapsed = event.timeStamp - drag.at;
-			if (elapsed > 0) drag.speed = drag.speed * 0.3 + ((next - offset) / elapsed) * 0.7;
-			drag.at = event.timeStamp;
-			offset = next;
-			place();
-		});
-		const release = (event: PointerEvent) => {
-			if (drag?.id !== event.pointerId) return;
-			if (drag.active) {
-				const fresh = event.timeStamp - drag.at < 80;
-				speed = fresh ? Math.max(-MAX_FLING_PX_PER_MS, Math.min(MAX_FLING_PX_PER_MS, drag.speed)) : 0;
-				swallowClick = event.type === 'pointerup';
-				if (swallowClick) window.setTimeout(() => (swallowClick = false), 300);
-				filmstrip.removeAttribute('data-dragging');
-			}
-			drag = null;
-		};
-		filmstrip.addEventListener('pointerup', release);
-		filmstrip.addEventListener('pointercancel', release);
-		filmstrip.addEventListener(
-			'click',
-			(event) => {
-				if (!swallowClick) return;
-				swallowClick = false;
-				event.preventDefault();
-				event.stopPropagation();
-			},
-			true,
-		);
-	}
-
-	const compare = document.querySelector<HTMLElement>('[data-compare]');
-	const compareVideo = compare?.querySelector('video');
-	const canvas = compare?.querySelector('canvas');
-	const range = compare?.querySelector<HTMLInputElement>('input[type="range"]');
-	const compareLabel = compare?.querySelector<HTMLElement>('[data-compare-label]');
-	const context = canvas?.getContext('2d');
-	if (compare && compareVideo && canvas && range && compareLabel && context) {
-		let poster = new Image();
-		let frame = 0;
-		const split = () => Number(range.value) / 100;
-		const draw = () => {
-			const {clientWidth: width, clientHeight: height} = canvas;
-			const scale = window.devicePixelRatio || 1;
-			if (canvas.width !== Math.round(width * scale)) canvas.width = Math.round(width * scale);
-			if (canvas.height !== Math.round(height * scale)) canvas.height = Math.round(height * scale);
-			context.clearRect(0, 0, canvas.width, canvas.height);
-			const live = compareVideo.readyState >= 2;
-			const source = live ? compareVideo : poster;
-			const sourceWidth = live ? compareVideo.videoWidth : poster.naturalWidth;
-			const sourceHeight = (live ? compareVideo.videoHeight : poster.naturalHeight) / 2;
-			if (!sourceWidth || !sourceHeight) return;
-			const share = split();
-			if (share <= 0) return;
-			context.drawImage(
-				source,
-				0,
-				sourceHeight,
-				sourceWidth * share,
-				sourceHeight,
-				0,
-				0,
-				canvas.width * share,
-				canvas.height,
-			);
-		};
-		const tick = () => {
-			draw();
-			frame = compareVideo.paused ? 0 : requestAnimationFrame(tick);
-		};
-		const setSplit = () => {
-			compare.style.setProperty('--split', `${range.value}%`);
-			draw();
-		};
-		const loadPoster = (src: string) => {
-			poster = new Image();
-			poster.addEventListener('load', draw);
-			poster.src = src;
-		};
-		loadPoster(compareVideo.poster);
-		range.addEventListener('input', setSplit);
-
-		// EXTERNAL: iOS Safari drags a range only from its thumb, which is invisible here.
-		let drag: {id: number; x: number; y: number; active: boolean} | null = null;
-		const follow = (event: PointerEvent) => {
-			const box = compare.getBoundingClientRect();
-			const share = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width));
-			range.value = String(Math.round(share * 200) / 2);
-			setSplit();
-		};
-		compare.addEventListener('pointerdown', (event) => {
-			if (!event.isPrimary || event.button !== 0) return;
-			const active = event.pointerType === 'mouse';
-			drag = {id: event.pointerId, x: event.clientX, y: event.clientY, active};
-			if (active) {
-				compare.setPointerCapture(event.pointerId);
-				follow(event);
-			}
-		});
-		compare.addEventListener('pointermove', (event) => {
-			if (drag?.id !== event.pointerId) return;
-			if (!drag.active) {
-				const across = Math.abs(event.clientX - drag.x);
-				if (across < 4 || across < Math.abs(event.clientY - drag.y)) return;
-				drag.active = true;
-				compare.setPointerCapture(event.pointerId);
-			}
-			follow(event);
-		});
-		compare.addEventListener('pointerup', (event) => {
-			if (drag?.id === event.pointerId && !drag.active) follow(event);
-			drag = null;
-		});
-		compare.addEventListener('pointercancel', () => {
-			drag = null;
-		});
-		compareVideo.addEventListener('play', () => {
-			cancelAnimationFrame(frame);
-			tick();
-		});
-		for (const event of ['loadeddata', 'seeked', 'pause']) compareVideo.addEventListener(event, draw);
-		new ResizeObserver(draw).observe(canvas);
-
-		const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-effect]'));
-		for (const button of buttons) {
-			button.addEventListener('click', () => {
-				const slug = button.dataset.effect!;
-				for (const other of buttons) other.setAttribute('aria-pressed', String(other === button));
-				for (const code of document.querySelectorAll<HTMLElement>('[data-effect-code]')) {
-					code.hidden = code.dataset.effectCode !== slug;
-				}
-				compareLabel.textContent = `<${button.dataset.name}>`;
-				compareVideo.poster = `/wrap/${slug}.webp`;
-				compareVideo.querySelector('source')!.src = `/wrap/${slug}.webm`;
-				compareVideo.load();
-				loadPoster(compareVideo.poster);
-				document.dispatchEvent(new Event('showcase:sync-media'));
-			});
-		}
-	}
 </script>

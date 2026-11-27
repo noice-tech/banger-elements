@@ -50,10 +50,10 @@ if (still) {
 		'render',
 		'scripts/hero-word/root.tsx',
 		'HeroWord',
-		path.join(output, 'shape.webm'),
+		path.join(output, 'word.webm'),
 		'--codec=vp9',
 		'--crf=36',
 		'--muted',
 	]);
-	console.log('Updated static/hero/shape.webm.');
+	console.log('Updated static/hero/word.webm.');
 }

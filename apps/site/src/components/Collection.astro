@@ -1,73 +1,59 @@
 ---
 import ElementTile from './site/ElementTile.astro';
-import {bentoClass} from '../data/bento';
 import {elements, elementCategories} from '../data/elements';
 
 interface Props {
 	category?: (typeof elementCategories)[number]['id'];
 }
 const {category: selectedCategory} = Astro.props;
-const overview = !selectedCategory;
-const categories = overview
-	? elementCategories
-	: elementCategories.filter((category) => category.id === selectedCategory);
+const all = !selectedCategory;
+const categories = all ? elementCategories : elementCategories.filter((category) => category.id === selectedCategory);
+const tabs = [
+	{href: '/', title: 'All', current: all},
+	...elementCategories.map((category) => ({
+		href: `/${category.id}`,
+		title: category.title,
+		current: selectedCategory === category.id,
+	})),
+];
 ---
-<div class="collection" data-overview={overview ? 'true' : 'false'}>
-	{!overview && (
-		<div class="collection-toolbar">
-			<nav class="collection-filters" aria-label="Categories">
-				{elementCategories.map((category) => (
-					<a href={`/${category.id}`} aria-current={selectedCategory === category.id ? 'page' : undefined}>
-						{category.title}
-						<span>{elements.filter((entry) => entry.category === category.id).length}</span>
-					</a>
-				))}
-			</nav>
-			<label class="collection-search">
-				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-				<span class="sr-only">Filter elements</span>
-				<input type="search" placeholder="Filter by name or mood" autocomplete="off" />
-			</label>
-		</div>
-	)}
+<div class="collection">
+	<div class="collection-toolbar">
+		<nav class="collection-filters" aria-label="Categories">
+			{tabs.map((tab) => (
+				<a href={tab.href} aria-current={tab.current ? 'page' : undefined}>
+					{tab.title}
+				</a>
+			))}
+		</nav>
+		<label class="collection-search">
+			<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+			<span class="sr-only">Filter elements</span>
+			<input type="search" placeholder="Filter by name or mood" autocomplete="off" />
+		</label>
+	</div>
 	<p class="collection-status sr-only" role="status" aria-live="polite"></p>
 	{categories.map((category) => {
 		const entries = elements.filter((entry) => entry.category === category.id);
 		const featured: readonly string[] = category.featured;
 		const rank = (slug: string) => (featured.includes(slug) ? featured.indexOf(slug) : featured.length);
 		const ordered = [...entries].sort((a, b) => rank(a.slug) - rank(b.slug));
-		const laidOut = overview ? ordered.filter((entry) => featured.includes(entry.slug)) : ordered;
 		return (
 			<section class="collection-category" data-section={category.id} aria-labelledby={category.id}>
-				{overview && (
-					<header class="category-heading">
-						<h3 id={category.id}>
-							{category.title}
-							<span class="count">{entries.length}</span>
-						</h3>
-						<p>{category.description}</p>
-						<a class="arrow-link" href={`/${category.id}`}>
-							View all {entries.length}
-							<span aria-hidden="true">→</span>
-						</a>
-					</header>
+				{all ? (
+					<h2 id={category.id} class="category-heading">{category.title}</h2>
+				) : (
+					<h2 id={category.id} class="sr-only">{category.title}</h2>
 				)}
-				{!overview && <h2 id={category.id} class="sr-only">{category.title}</h2>}
-				<div class="bento">
-					{(overview ? laidOut : ordered).map((entry) => {
-						const index = laidOut.indexOf(entry);
-						return (
-							<ElementTile
-								slug={entry.slug}
-								title={entry.title}
-								tagline={entry.tagline}
-								description={entry.description}
-								layout={index >= 0 ? bentoClass(index, laidOut.length) : ''}
-								featured={featured.includes(entry.slug)}
-								hidden={index < 0}
-							/>
-						);
-					})}
+				<div class="collection-grid">
+					{ordered.map((entry) => (
+						<ElementTile
+							slug={entry.slug}
+							title={entry.title}
+							tagline={entry.tagline}
+							description={entry.description}
+						/>
+					))}
 				</div>
 			</section>
 		);
@@ -82,18 +68,20 @@ const categories = overview
 	const root = document.querySelector<HTMLElement>('.collection');
 	const search = root?.querySelector<HTMLInputElement>('.collection-search input');
 	if (root && search) {
-		const grids = Array.from(root.querySelectorAll<HTMLElement>('.bento'));
+		const grids = Array.from(root.querySelectorAll<HTMLElement>('.collection-grid'));
 		const status = root.querySelector<HTMLElement>('.collection-status')!;
 		const empty = root.querySelector<HTMLElement>('.collection-empty')!;
 		const render = () => {
 			const query = search.value.trim().toLowerCase();
 			let count = 0;
 			for (const grid of grids) {
-				grid.toggleAttribute('data-filtering', Boolean(query));
+				let matches = 0;
 				for (const tile of grid.querySelectorAll<HTMLElement>('.tile')) {
 					tile.hidden = !(tile.dataset.search ?? '').includes(query);
-					if (!tile.hidden) count++;
+					if (!tile.hidden) matches++;
 				}
+				grid.closest<HTMLElement>('.collection-category')!.hidden = matches === 0;
+				count += matches;
 			}
 			empty.hidden = count > 0;
 			status.textContent = query ? `${count} matching ${count === 1 ? 'element' : 'elements'}.` : '';
