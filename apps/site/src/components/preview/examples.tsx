@@ -7,6 +7,7 @@ import {FisheyePreview, fisheyePreviewDefaults} from './fisheye';
 import {VhsPreview, vhsPreviewDefaults} from './vhs';
 import {WetGlassPreview, wetGlassPreviewDefaults} from './wet-glass';
 import {shaderExamples} from './shader-updates';
+import catalog from '../../../../../packages/elements/dist/catalog.json';
 import {
 	Waveform,
 	Spectre,
@@ -42,7 +43,10 @@ type PreviewExample<C extends ComponentType<Props>> = {
 };
 
 const DEFAULT_AUDIO = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3';
-const HALO_AUDIO = DEFAULT_AUDIO;
+const DEMO_SONG_AUDIO = 'https://banger-elements.dev/audio/tracks/banger-demo-song.mp3';
+/** The site hosts the demo song, so its own pages load it from the same origin. */
+export const playbackAudio = (src: string) =>
+	src === DEMO_SONG_AUDIO ? '/audio/tracks/banger-demo-song.mp3' : src;
 const AUDIO_PARTICLES_AUDIO =
 	'https://raw.githubusercontent.com/remotion-dev/remotion/main/packages/template-recorder/public/sounds/utope-rhythmic-reverie.mp3';
 const colorMode = select('colorMode', 'Color mode', [
@@ -887,39 +891,11 @@ export const examples = {
 	} satisfies PreviewExample<typeof HaloAndParticles>,
 } as const;
 export type PreviewKind = keyof typeof examples;
+const demoSongKinds = new Set<PreviewKind>(['waveform', 'ferrofluid']);
 export const defaultAudioFor = (kind: PreviewKind) => {
-	if (
-		[
-			'vhs',
-			'fisheye',
-			'wet-glass',
-			'pulse',
-			'rooftop',
-			'cathedral',
-			'liquid',
-			'chrome',
-			'neuron',
-			'matrix',
-			'halo',
-			'ferrofluid',
-			'trip',
-			'space',
-			'synthwave',
-			'mushrooms',
-			'fractals',
-			'hyperloop',
-			'downfall',
-			'rail',
-			'rain',
-			'kaleidoscope',
-			'eye',
-			'flowers',
-			'moon',
-			'city',
-			'basic',
-		].includes(kind)
-	)
-		return HALO_AUDIO;
+	const category = catalog.find((entry) => entry.slug === kind)?.category;
+	if (category === 'shaders' || category === 'effects' || demoSongKinds.has(kind))
+		return DEMO_SONG_AUDIO;
 	if (kind === 'audio-particles' || kind === 'combined') return AUDIO_PARTICLES_AUDIO;
 	return DEFAULT_AUDIO;
 };

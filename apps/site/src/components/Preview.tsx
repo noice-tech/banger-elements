@@ -2,7 +2,7 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {Player, type PlayerRef} from '@remotion/player';
 import {createPortal} from 'react-dom';
 import StudioActions from './StudioActions';
-import {examples, type PreviewKind} from './preview/examples';
+import {examples, playbackAudio, type PreviewKind} from './preview/examples';
 import {PreviewRenderer, PREVIEW_WIDTH, PREVIEW_HEIGHT} from './preview/PreviewRenderer';
 import {PreviewControls} from './preview/PreviewControls';
 import {usePreviewAudio, usePreviewArtwork} from './preview/use-preview-assets';
@@ -100,7 +100,11 @@ export default function Preview({
 					className="preview-player"
 					key={selected}
 					component={PreviewRenderer}
-					inputProps={{...inputProps, previewKind: selected}}
+					inputProps={{
+						...inputProps,
+						audioSrc: playbackAudio(String(inputProps.audioSrc)),
+						previewKind: selected,
+					}}
 					compositionWidth={PREVIEW_WIDTH}
 					compositionHeight={PREVIEW_HEIGHT}
 					fps={60}

@@ -20,6 +20,9 @@
   Cache-Control: public, max-age=2592000
 /audio/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+# Element defaults point here, so Studio and other origins can analyze the demo song.
+/audio/tracks/banger-demo-song.mp3
+  Access-Control-Allow-Origin: *
 /previews/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 /posters/*
