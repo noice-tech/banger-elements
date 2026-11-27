@@ -17,6 +17,11 @@ const downloads = [
 		url: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
 	},
 	{
+		path: 'banger-elements/banger-demo-song.mp3',
+		type: 'url',
+		url: 'https://banger-elements.dev/audio/tracks/banger-demo-song.mp3',
+	},
+	{
 		path: 'banger-elements/rain.jpg',
 		type: 'url',
 		url: 'https://cdn.banger.show/assets/rain.jpg',

@@ -16,7 +16,7 @@ export const wetGlassPreviewDefaults = {
 export const WetGlassPreview = ({
 	width = 1280,
 	height = 720,
-	audioSrc = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
+	audioSrc = 'https://banger-elements.dev/audio/tracks/banger-demo-song.mp3',
 	audioOffsetInSeconds = 0,
 	playAudio = true,
 	...props

@@ -34,7 +34,7 @@ const cathedralSchema = {
 	audioSrc: {
 		type: 'asset',
 		assetType: 'audio',
-		default: 'https://remotion.media/elements/remotion-made-this-picture-move.mp3',
+		default: 'https://banger-elements.dev/audio/tracks/banger-demo-song.mp3',
 		description: 'Audio source',
 		keyframable: false,
 	},

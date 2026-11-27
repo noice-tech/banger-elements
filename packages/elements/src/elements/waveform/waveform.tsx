@@ -26,7 +26,7 @@ type WaveformOptions = {
 
 type WaveformProps = InteractiveTransformProps & WaveformOptions;
 
-const DEFAULT_AUDIO_SRC = 'https://remotion.media/elements/remotion-made-this-picture-move.mp3';
+const DEFAULT_AUDIO_SRC = 'https://banger-elements.dev/audio/tracks/banger-demo-song.mp3';
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 720;
 const DEFAULT_AUDIO_OFFSET = 0;
