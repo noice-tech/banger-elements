@@ -13,18 +13,16 @@ const links = [
 	...elementCategories.map((category) => ({
 		href: `/${category.id}`,
 		label: category.title,
-		count: elements.filter((entry) => entry.category === category.id).length,
 		active: activeCategory === category.id,
 	})),
-	{href: '/examples.html', label: 'Examples', count: undefined, active: current === '/examples'},
-	{href: '/getting-started.html', label: 'Docs', count: undefined, active: current === '/getting-started'},
+	{href: '/examples.html', label: 'Examples', active: current === '/examples'},
+	{href: '/getting-started.html', label: 'Docs', active: current === '/getting-started'},
 ];
 ---
 <nav class={Astro.props.class} aria-label={Astro.props.label}>
 	{links.map((link) => (
 		<a href={link.href} aria-current={link.active ? 'page' : undefined}>
 			{link.label}
-			{link.count ? <span class="site-nav-count">{link.count}</span> : null}
 		</a>
 	))}
 	<slot />

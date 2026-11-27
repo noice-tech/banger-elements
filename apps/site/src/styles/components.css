@@ -523,15 +523,28 @@ input[type='range']:focus-visible {
 	color: var(--text);
 	background: rgb(255 255 255 / 0.08);
 }
-.site-nav-count {
-	color: var(--text-3);
-	font: 0.7rem var(--font-mono);
-}
 .site-header-end {
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;
 	margin-left: auto;
+}
+.parent-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 0.45rem 0.75rem;
+	border-radius: 999px;
+	color: var(--text-2);
+	font-size: 0.875rem;
+	text-decoration: none;
+	transition:
+		color 150ms,
+		background 150ms;
+}
+.parent-link:hover {
+	color: var(--text);
+	background: rgb(255 255 255 / 0.05);
 }
 .icon-link {
 	display: grid;
@@ -576,6 +589,7 @@ input[type='range']:focus-visible {
 [data-studio] .site-foot,
 [data-studio] .site-footer,
 [data-studio] .icon-link,
+[data-studio] .parent-link,
 [data-studio] .mobile-menu-panel a[href^='https://'],
 [data-studio] .install-help,
 [data-studio] .page-home main > :not(#collection),

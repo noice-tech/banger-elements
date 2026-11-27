@@ -15,11 +15,11 @@ import {
 
 // EXTERNAL: These match the hero word in showcase.css; re-run `bun run hero-word` after changing either.
 const EM = 240;
-const WIDTH = 968;
+const WIDTH = 1014;
 const HEIGHT = 498;
 const ORIGIN_X = 144;
 const BASELINE = 317;
-const WORD = 'shape.';
+const WORD = 'visuals';
 const LETTER_SPACING = -0.055;
 
 const UNIT = 1.8 * EM;
