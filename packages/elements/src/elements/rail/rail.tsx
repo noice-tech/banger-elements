@@ -34,6 +34,8 @@ type RailOptions = {
 	readonly waves?: number;
 	readonly intensity?: number;
 	readonly stroke?: number;
+	readonly tintColor?: string;
+	readonly tint?: number;
 	readonly timeOffsetInSeconds?: number;
 };
 
@@ -181,6 +183,16 @@ const railSchema = {
 		description: 'Animation phase offset in seconds (independent of audio trim)',
 		hiddenFromList: false,
 		keyframable: false,
+	},
+	tintColor: {type: 'color', default: '#9333ea', description: 'Tint color'},
+	tint: {
+		type: 'number',
+		default: 0,
+		min: 0,
+		max: 1,
+		step: 0.01,
+		description: 'Tint amount (0 keeps the original colors)',
+		hiddenFromList: false,
 	},
 } as const satisfies InteractivitySchema;
 
@@ -372,6 +384,8 @@ type RailFrame = Pick<
 	| 'waves'
 	| 'intensity'
 	| 'stroke'
+	| 'tintColor'
+	| 'tint'
 > & {readonly time: number; readonly bands: readonly number[]};
 
 type RailState = {
@@ -387,6 +401,8 @@ type RailState = {
 		| 'iHighFreq'
 		| 'iSunAudio'
 		| 'iStartColor'
+		| 'iTintColor'
+		| 'iTint'
 		| 'iEndColor'
 		| 'iTexture'
 		| 'iTextureScale'
@@ -486,6 +502,8 @@ function setupRail(canvas: HTMLCanvasElement): RailState {
 				iHighFreq: gl.getUniformLocation(program, 'iHighFreq'),
 				iSunAudio: gl.getUniformLocation(program, 'iSunAudio'),
 				iStartColor: gl.getUniformLocation(program, 'iStartColor'),
+				iTintColor: gl.getUniformLocation(program, 'iTintColor'),
+				iTint: gl.getUniformLocation(program, 'iTint'),
 				iEndColor: gl.getUniformLocation(program, 'iEndColor'),
 				iTexture: gl.getUniformLocation(program, 'iTexture'),
 				iTextureScale: gl.getUniformLocation(program, 'iTextureScale'),
@@ -524,6 +542,8 @@ function drawRail({gl, program, uniforms, vertexCount}: RailState, frame: RailFr
 	gl.uniform1f(uniforms.iHighFreq, frame.bands[2] ?? 0);
 	gl.uniform1f(uniforms.iSunAudio, Uint8Array.of((frame.bands[3] ?? 0) * 255)[0] / 255);
 	gl.uniform3fv(uniforms.iStartColor, linearColor(frame.startColor));
+	gl.uniform3fv(uniforms.iTintColor, linearColor(frame.tintColor));
+	gl.uniform1f(uniforms.iTint, bounded(frame.tint, 0, 1, 0));
 	gl.uniform3fv(uniforms.iEndColor, linearColor(frame.endColor));
 	gl.uniform1f(uniforms.iTextureScale, bounded(frame.textureScale, 0.5, 20.0, 15.0));
 	gl.uniform1f(uniforms.iTextureSize, bounded(frame.textureSize, 0.1, 0.4, 0.15));
@@ -668,6 +688,17 @@ uniform float iStroke;
 uniform float iTextureRounded;
 uniform bool iTextureExists;
 uniform vec3 iStartColor;
+uniform vec3 iTintColor;
+uniform float iTint;
+vec3 applyTint(vec3 col) {
+  vec3 tc = pow(max(iTintColor, vec3(0.)), vec3(1. / 2.2));
+  vec3 w = vec3(0.2126, 0.7152, 0.0722);
+  vec3 tinted = tc * dot(col, w) / max(dot(tc, w), 1e-3);
+  float peak = max(max(tinted.r, tinted.g), tinted.b);
+  if (peak > 1.) tinted = mix(tinted / peak, vec3(1.), 1. - 1. / peak);
+  return mix(col, tinted, iTint);
+}
+
 uniform vec3 iEndColor;
 in vec2 vUv;
 out vec4 outColor;
@@ -859,7 +890,7 @@ void main()
 	#ifdef BORDER
 	color=mix(vec3(0.),color,pow(max(0.,.95-length(oriuv*oriuv*oriuv*vec2(1.05,1.1))),.3));
 	#endif
-	outColor = vec4(color,1.);
+	outColor = vec4(applyTint(color),1.);
 }
 `;
 
@@ -950,6 +981,8 @@ const RailInner: React.FC<RailProps> = ({
 	waves = railSchema.waves.default,
 	intensity = railSchema.intensity.default,
 	stroke = railSchema.stroke.default,
+	tintColor = railSchema.tintColor.default,
+	tint = railSchema.tint.default,
 	timeOffsetInSeconds = railSchema.timeOffsetInSeconds.default,
 }) => {
 	const {width, height} = useVideoConfig();
@@ -986,6 +1019,8 @@ const RailInner: React.FC<RailProps> = ({
 				waves={waves}
 				intensity={intensity}
 				stroke={stroke}
+				tintColor={tintColor}
+				tint={tint}
 				timeOffsetInSeconds={timeOffsetInSeconds}
 			/>
 		</div>

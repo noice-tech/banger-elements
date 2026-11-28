@@ -300,6 +300,11 @@ export const examples = {
 		controls: [
 			color('strokeColor', 'Stroke color'),
 			color('backgroundColor', 'Background color'),
+			select('colorMode', 'Flower colors', [
+				{value: 'rainbow', label: 'Rainbow'},
+				{value: 'solid', label: 'Solid'},
+			]),
+			color('color', 'Flower color'),
 			range('scale', 'Scale', 2, 30, 0.5),
 			range('pattern', 'Pattern', 0.1, 2, 0.1),
 			range('volume', 'Volume', 1, 4, 0.5),
@@ -413,6 +418,8 @@ export const examples = {
 		controls: [
 			color('startColor', 'Theme'),
 			color('endColor', 'Sky color'),
+			color('tintColor', 'Tint color'),
+			range('tint', 'Tint amount', 0, 1, 0.01),
 			range('sunPosition', 'Sun position', 0, 0.5, 0.01),
 			range('sunSize', 'Sun size', -4, 2, 0.25),
 			range('volume', 'Volume', 0.1, 0.5, 0.01),
@@ -433,6 +440,8 @@ export const examples = {
 			range('distancing', 'Distancing', 0, 3, 0.1),
 			range('blur', 'Blur', 0.2, 1, 0.1),
 			range('intensity', 'Thunderstorm', 0, 7, 0.5),
+			color('tintColor', 'Tint color'),
+			range('tint', 'Tint amount', 0, 1, 0.01),
 			gain,
 		],
 	} satisfies PreviewExample<typeof Rain>,
@@ -452,6 +461,8 @@ export const examples = {
 		},
 		controls: [
 			color('baseColor', 'Base color'),
+			color('tintColor', 'Tint color'),
+			range('tint', 'Tint amount', 0, 1, 0.01),
 			range('zoom', 'Zoom', 0.1, 3, 0.1),
 			range('stellarDensity', 'Stellar density', 5, 25, 1),
 			range('pattern', 'Pattern', 0.46, 0.58, 0.005),

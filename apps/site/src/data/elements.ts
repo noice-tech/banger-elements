@@ -122,6 +122,7 @@ const details = {
 			'A cartoon-shaded journey with dark outlines, rolling geometry and an audio-reactive sun.',
 		controls: [
 			'startColor / endColor — theme and sky',
+			'tintColor / tint — recolor the whole frame in one hue; tint 0 keeps the original colors',
 			'sunPosition / sunSize / intensity — sun placement and audio response',
 			'volume / sides / waves / stroke — landscape shape and outlines',
 			'textureSrc / textureScale / textureSize / textureRounded — optional flying image',
@@ -138,6 +139,7 @@ const details = {
 			'Animated droplets distort and blur a background image while thunderstorm flashes follow your audio.',
 		controls: [
 			'textureSrc / textureScale — background image and scale',
+			'tintColor / tint — recolor the whole frame in one hue; tint 0 keeps the original colors',
 			'distancing / blur — droplet scale and coverage; blur 0.8 animates coverage',
 			'intensity / inputGainDb — lightning response and visual gain',
 			'timeOffsetInSeconds — animation phase, independent of audio trim',
@@ -153,6 +155,7 @@ const details = {
 			'A full-frame fractal cosmos with glowing clouds and stars. Customize its color, density and drift speed, or layer a visualizer on top.',
 		controls: [
 			'baseColor — star field tint',
+			'tintColor / tint — recolor the whole frame in one hue; tint 0 keeps the original colors',
 			'zoom / stellarDensity / pattern — fractal structure; stellar density uses whole iterations',
 			'speed — animation speed; changing it changes phase rather than accumulating speed',
 			'responsive / inputGainDb — audio response and visual gain, without changing playback volume',
@@ -250,6 +253,7 @@ const details = {
 			'Layered flower forms repeat across a hexagonal field with animated petals and glowing edges.',
 		controls: [
 			'strokeColor / backgroundColor — palette',
+			'colorMode / color — rainbow petals, or one solid petal color',
 			'scale / pattern / volume — flower shape and repetition',
 			'rotationSpeed / flowersSpeed — field and petal motion',
 			'responsive / inputGainDb — audio response and visual gain',

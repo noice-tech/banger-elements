@@ -34,6 +34,14 @@ import {
 } from '../../../packages/elements/dist/components';
 import {compositions} from './fixtures/compositions';
 
+const NEUTRAL = '#ededed';
+const NEUTRAL_DIM = '#8a8a8a';
+const PURPLE = '#9333ea';
+const LILAC = '#c084fc';
+const LAVENDER = '#d8b4fe';
+const DEEP = '#3b0764';
+const NIGHT = '#0b0614';
+
 const components = {
 	Ferrofluid,
 	FerrofluidPreview: () => (
@@ -42,7 +50,7 @@ const components = {
 		</AbsoluteFill>
 	),
 	FerrofluidFluid: () => <Ferrofluid fluidity={0.8} mappingMode="voronoi" quality="high" />,
-	Waveform,
+	Waveform: () => <Waveform color={NEUTRAL} />,
 	WaveformFrequency: () => <Waveform colorMode="frequency" />,
 	WaveformHighResolution: () => <Waveform resolution={16} />,
 	WetGlassBypass: () => (
@@ -65,25 +73,34 @@ const components = {
 			/>
 		</WetGlass>
 	),
-	Pulse,
-	Rooftop,
-	Cathedral,
-	Liquid,
-	Chrome,
-	Neuron,
-	Matrix,
-	Spectre,
+	Pulse: () => <Pulse startColor={PURPLE} endColor={LAVENDER} />,
+	Rooftop: () => (
+		<Rooftop skyColor={NIGHT} buildingColor="#1e1030" streetColor="#120a1c" lightColor={LILAC} />
+	),
+	Cathedral: () => (
+		<Cathedral
+			stoneColor="#8b5cf6"
+			glassColor1="#4c3a5e"
+			glassColor2={PURPLE}
+			lightColor={LAVENDER}
+		/>
+	),
+	Liquid: () => <Liquid color1={PURPLE} color2={LILAC} glowColor={LAVENDER} />,
+	Chrome: () => <Chrome color1={LAVENDER} color2={PURPLE} color3={DEEP} />,
+	Neuron: () => <Neuron color1={PURPLE} color2={LILAC} glowColor={LAVENDER} />,
+	Matrix: () => <Matrix color1={PURPLE} color2={LILAC} glowColor="#ffffff" />,
+	Spectre: () => <Spectre startColor={NEUTRAL_DIM} endColor={NEUTRAL} />,
 	SpectreSegmented: () => <Spectre spectreVariant="segmented" />,
-	Oscilloscope,
+	Oscilloscope: () => <Oscilloscope lineColor={NEUTRAL} />,
 	OscilloscopeSingleCycle: () => <Oscilloscope displayMode="single-cycle" />,
 	OscilloscopeFree: () => <Oscilloscope displayMode="free" timeSpanMs={100} />,
-	Pulsar,
-	Circle,
+	Pulsar: () => <Pulsar startColor="#5c5c5c" endColor="#2a2a2a" />,
+	Circle: () => <Circle startColor={NEUTRAL_DIM} endColor={NEUTRAL} />,
 	CircleGlow: () => <Circle circleVariant="glow-ring" />,
 	CircleWaveform: () => <Circle circleVariant="waveform-ring" />,
 	CircleDotted: () => <Circle circleVariant="dotted-ring" count={48} lineWidth={1} />,
-	Halo,
-	AudioParticles,
+	Halo: () => <Halo colorMode="gradient" startColor={NEUTRAL} endColor={NEUTRAL_DIM} />,
+	AudioParticles: () => <AudioParticles color={NEUTRAL} />,
 	HaloAndParticles: () => (
 		<AbsoluteFill style={{backgroundColor: '#080a10'}}>
 			<AbsoluteFill>
@@ -102,21 +119,31 @@ const components = {
 			</AbsoluteFill>
 		</AbsoluteFill>
 	),
-	Fractals,
-	Hyperloop,
-	Downfall,
-	Rail,
-	Rain,
-	Kaleidoscope,
-	Eye,
-	Flowers,
-	Moon,
-	City,
-	Basic: () => <BasicElement enableStars />,
-	Space,
-	Synthwave,
-	Mushrooms,
-	Trip,
+	Fractals: () => <Fractals baseColor={PURPLE} mixColor={DEEP} />,
+	Hyperloop: () => <Hyperloop baseColor={PURPLE} />,
+	Downfall: () => <Downfall startColor={PURPLE} endColor={LILAC} />,
+	Rail: () => <Rail startColor={PURPLE} endColor={LILAC} tintColor={PURPLE} tint={1} />,
+	Rain: () => <Rain tintColor={PURPLE} tint={1} />,
+	Kaleidoscope: () => <Kaleidoscope startColor={PURPLE} />,
+	Eye: () => <Eye startColor={DEEP} endColor={PURPLE} />,
+	Flowers: () => <Flowers colorMode="solid" color={PURPLE} strokeColor={LAVENDER} />,
+	Moon: () => <Moon startColor={PURPLE} />,
+	City: () => (
+		<City
+			startColor="#3b2652"
+			endColor={DEEP}
+			lightsColor={LAVENDER}
+			groundColor={PURPLE}
+			shineColor="#c4b5fd"
+		/>
+	),
+	Basic: () => (
+		<BasicElement enableStars backgroundColor={NIGHT} intensifyColor={DEEP} starsColor={LAVENDER} />
+	),
+	Space: () => <Space baseColor={PURPLE} tintColor={PURPLE} tint={1} />,
+	Synthwave: () => <Synthwave startColor={PURPLE} endColor={LILAC} sphereColor={LAVENDER} />,
+	Mushrooms: () => <Mushrooms baseColor={PURPLE} mixColor={DEEP} />,
+	Trip: () => <Trip baseColor={PURPLE} intensifyColor={LILAC} />,
 	TripCustom: () => (
 		<Trip
 			baseColor="#00d9ff"
