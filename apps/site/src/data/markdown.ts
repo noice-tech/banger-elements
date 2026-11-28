@@ -1,8 +1,7 @@
 import fields from '../../../../packages/elements/dist/fields.json';
 import {elementTextureFile} from './element-payloads';
+import {SITE} from '../lib/site';
 import {elementCategories, elements} from './elements';
-
-const SITE = 'https://banger-elements.dev';
 
 type Field = {
 	name: string;
@@ -16,8 +15,8 @@ type Field = {
 };
 type Element = (typeof elements)[number];
 
-const pageUrl = (slug: string) => `${SITE}/${slug}`;
-const markdownUrl = (slug: string) => `${SITE}/${slug}.md`;
+const pageUrl = (slug: string) => `${SITE}/elements/${slug}`;
+const markdownUrl = (slug: string) => `${SITE}/elements/${slug}.md`;
 const fillsComposition = (element: Element) => element.category === 'shaders';
 const cell = (text: string) => text.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 const code = (value: string) => `\`${value}\``;
@@ -215,7 +214,7 @@ export function indexMarkdown() {
 		'Install one Element into a composition (Remotion 4.0.542 or later). Use the Element page URL, not the Markdown URL:',
 		'',
 		'```sh',
-		`npx remotion elements use ${SITE}/halo --composition <composition-id> --yes`,
+		`npx remotion elements use ${pageUrl('halo')} --composition <composition-id> --yes`,
 		'```',
 		'',
 		"Add the whole collection to Remotion Studio's Browse Elements panel (Remotion 4.0.547 or later):",

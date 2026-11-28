@@ -1,8 +1,16 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
-		"types": ["astro/client", "node"],
+		"types": ["vite/client", "node"],
+		"rootDirs": [".", "./.react-router/types"],
 		"paths": {"@banger/media-utils-original": ["../../node_modules/@remotion/media-utils"]}
 	},
-	"include": [".astro/types.d.ts", "src", "scripts", "tests", "../../packages/elements/dist"]
+	"include": [
+		".react-router/types/**/*",
+		"src",
+		"scripts",
+		"tests",
+		"*.ts",
+		"../../packages/elements/dist"
+	]
 }

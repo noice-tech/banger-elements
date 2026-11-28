@@ -3,7 +3,8 @@
 	"ignorePatterns": [
 		"**/dist/**",
 		"**/.turbo/**",
-		"**/.astro/**",
+		"**/.react-router/**",
+		"**/build/**",
 		"out/**",
 		"**/public/**",
 		"tools/oxlint/comments/fixtures/**"
@@ -123,6 +124,17 @@
 						]
 					}
 				]
+			}
+		},
+		{
+			"files": [
+				"apps/site/src/routes/**",
+				"apps/site/src/components/site/**",
+				"apps/site/src/root.tsx"
+			],
+			"rules": {
+				"@remotion/warn-native-media-tag": "off",
+				"@remotion/no-string-assets": "off"
 			}
 		},
 		{

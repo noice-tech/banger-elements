@@ -32,7 +32,7 @@ If the connection still fails, [install from the command line](#install-from-the
 With Remotion **4.0.542 or newer**, run [`npx remotion elements use`](https://www.remotion.dev/docs/cli/elements/use) from your Remotion project. You don't need to open Studio.
 
 ```bash
-npx remotion elements use https://banger-elements.dev/waveform --composition MyComposition
+npx remotion elements use https://banger-elements.dev/elements/waveform --composition MyComposition
 ```
 
 Replace the URL with any Element page and `MyComposition` with your composition ID. The CLI shows what it will change before asking for confirmation. Add `--dry-run` to see the plan without writing any files. The CLI installs the Element with its original defaults, not settings from the website preview.
@@ -57,7 +57,7 @@ The command adds the same `Config.addElementLibrary()` call. If the collection i
 
 ## Visualizers, shaders and effects
 
-Visualizers draw your audio as shapes, spectra and particles. Shaders are full-frame procedural backgrounds, such as [Pulse](/pulse.html), [Cathedral](/cathedral.html), [Liquid](/liquid.html) and [Trip](/trip.html). The [shaders page](/shaders.html) lists them all.
+Visualizers draw your audio as shapes, spectra and particles. Shaders are full-frame procedural backgrounds, such as [Pulse](/elements/pulse), [Cathedral](/elements/cathedral), [Liquid](/elements/liquid) and [Trip](/elements/trip). The [shaders page](/shaders) lists them all.
 
 - Every shader takes `timeOffsetInSeconds`, which sets the animation phase separately from the audio trim. Motion follows the Element's local frame, so use this offset to line up instances that start at different times.
 - Shaders with a `bpm` prop use it as the animation tempo, 120 by default. It does not detect beats, and you can't keyframe it as a speed ramp.
@@ -68,7 +68,7 @@ Visualizers draw your audio as shapes, spectra and particles. Shaders are full-f
 
 ### Effects wrap your content
 
-[VHS](/vhs.html), [Fisheye](/fisheye.html) and [Wet Glass](/wet-glass.html) are wrappers. They change only their children, not sibling layers. Install or download one, then move your existing Elements and text inside it in code. Installing does not wrap the layers you have selected in Studio, and the source does not include the site's demo children.
+[VHS](/elements/vhs), [Fisheye](/elements/fisheye) and [Wet Glass](/elements/wet-glass) are wrappers. They change only their children, not sibling layers. Install or download one, then move your existing Elements and text inside it in code. Installing does not wrap the layers you have selected in Studio, and the source does not include the site's demo children.
 
 ```tsx
 import {Fisheye} from './fisheye.element';
@@ -134,7 +134,7 @@ The downloaded file imports only React, Remotion, `@remotion/media` and `@remoti
 
 ## Use with coding agents
 
-Every page on this site has a Markdown version for coding agents such as Claude Code, Codex and Cursor. Add `.md` to the page URL, for example [/halo.md](/halo.md). [/llms.txt](/llms.txt) lists the whole collection, with a one-line description and a link to each Element's Markdown page.
+Every page on this site has a Markdown version for coding agents such as Claude Code, Codex and Cursor. Add `.md` to the page URL, for example [/halo.md](/elements/halo.md). [/llms.txt](/llms.txt) lists the whole collection, with a one-line description and a link to each Element's Markdown page.
 
 Each Element's Markdown page lists its install command, its props with defaults and ranges, and what to check before you render. Remotion's [`/remotion-elements` skill](https://www.remotion.dev/docs/agents) reads these pages to pick an Element and install it with `npx remotion elements use`.
 

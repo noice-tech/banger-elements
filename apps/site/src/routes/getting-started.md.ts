@@ -1,8 +1,7 @@
-import type {APIRoute} from 'astro';
 import guide from '../content/docs/getting-started.mdx?raw';
 import {absoluteLinks} from '../data/markdown';
 
-export const GET: APIRoute = () => {
+export const loader = () => {
 	const [, frontmatter = '', body = ''] = guide.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/) ?? [];
 	const title = frontmatter.match(/^title:\s*(.+)$/m)?.[1] ?? 'Getting started';
 	return new Response(`# ${title}\n${absoluteLinks(body)}`, {

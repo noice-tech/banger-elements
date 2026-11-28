@@ -2,7 +2,8 @@ node_modules/
 dist/
 tmp/
 .turbo/
-.astro/
+.react-router/
+build/
 out/
 # Local user media; never included in the static library build.
 public/

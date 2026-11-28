@@ -1,6 +1,6 @@
 # Banger Elements Site
 
-Astro + Starlight showcase for audio-reactive Remotion elements from [banger.show](https://banger.show).
+React Router showcase for audio-reactive Remotion elements from [banger.show](https://banger.show).
 
 ## Development
 
@@ -15,12 +15,13 @@ Open http://localhost:3300.
 
 ## Structure
 
-- `src/pages/` — home, collection, element and example pages
+- `src/routes.ts` and `src/routes/` — React Router routes: home, collections, `/elements/:slug`, examples, docs, plus the Markdown and `llms.txt` resource routes. `react-router.config.ts` prerenders all of them (`ssr: false`), and `scripts/build.ts` copies the static output to `dist/` with each Element's source (`/elements/<slug>.tsx`), payload (`/elements/<slug>.json`), `_redirects` from the old flat URLs and `sitemap.xml`.
+- `src/root.tsx` — document shell, head tags and Studio mode
 - `src/components/` — previews, controls, navigation, and Studio integration
 - `src/components/recipes/` — example compositions and their render settings; `bun run --filter @banger-elements/site recipes episode-clip` refreshes the audiogram's video and poster.
 - `src/components/scenes/` — the home page scenes: data the live player renders and prints as code. `scripts/scenes.mjs` refreshes their posters and waveforms. The first two scenes use [“Rocket” by Kevin MacLeod](https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100568) ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)), credited under the stage and in the copied code
 - `src/components/wrap/` — the "Wrap anything" demos: each effect over plain children, rendered stacked on the unwrapped children so the page can split them. `scripts/wrap.mjs` renders them to `static/wrap/`
-- `src/content/docs/` — Getting started
+- `src/content/docs/` — Getting started, in MDX
 - `static/` — branding, fonts, posters, and preview videos
 
 `bun run --filter @banger-elements/site posters` converts the `bun run smoke` renders in `out/` into `static/posters/`, so run smoke first. Those fixtures use only the hosted demo audio and no artwork; never make these posters from local media.

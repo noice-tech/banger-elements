@@ -1,4 +1,4 @@
-// EXTERNAL: astro.config.mjs aliases @remotion/media-utils to this file to cache visualizeAudio.
+// EXTERNAL: vite.config.ts aliases @remotion/media-utils to this file to cache visualizeAudio.
 import {visualizeAudio as original} from '@banger/media-utils-original';
 import {cacheVisualizer} from './visualizer-cache';
 
