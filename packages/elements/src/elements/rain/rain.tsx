@@ -26,6 +26,8 @@ type RainOptions = {
 	readonly distancing?: number;
 	readonly blur?: number;
 	readonly intensity?: number;
+	readonly tintColor?: string;
+	readonly tint?: number;
 	readonly timeOffsetInSeconds?: number;
 };
 
@@ -106,6 +108,16 @@ const rainSchema = {
 		min: 0.0,
 		max: 7.0,
 		step: 0.5,
+		hiddenFromList: false,
+	},
+	tintColor: {type: 'color', default: '#9333ea', description: 'Tint color'},
+	tint: {
+		type: 'number',
+		default: 0,
+		min: 0,
+		max: 1,
+		step: 0.01,
+		description: 'Tint amount (0 keeps the original colors)',
 		hiddenFromList: false,
 	},
 	timeOffsetInSeconds: {
@@ -293,7 +305,15 @@ void main() {
 
 type RainFrame = Pick<
 	Required<RainOptions>,
-	'width' | 'height' | 'textureSrc' | 'textureScale' | 'distancing' | 'blur' | 'intensity'
+	| 'width'
+	| 'height'
+	| 'textureSrc'
+	| 'textureScale'
+	| 'distancing'
+	| 'blur'
+	| 'intensity'
+	| 'tintColor'
+	| 'tint'
 > & {readonly time: number; readonly bands: readonly number[]};
 
 type RainState = {
@@ -313,6 +333,8 @@ type RainState = {
 		| 'iBlur'
 		| 'iIntensity'
 		| 'iTextureExists'
+		| 'iTintColor'
+		| 'iTint'
 		| 'iAspect',
 		WebGLUniformLocation | null
 	>;
@@ -403,6 +425,8 @@ function setupRain(canvas: HTMLCanvasElement): RainState {
 				iBlur: gl.getUniformLocation(program, 'iBlur'),
 				iIntensity: gl.getUniformLocation(program, 'iIntensity'),
 				iTextureExists: gl.getUniformLocation(program, 'iTextureExists'),
+				iTintColor: gl.getUniformLocation(program, 'iTintColor'),
+				iTint: gl.getUniformLocation(program, 'iTint'),
 				iAspect: gl.getUniformLocation(program, 'iAspect'),
 			},
 		};
@@ -414,6 +438,39 @@ function setupRain(canvas: HTMLCanvasElement): RainState {
 	} finally {
 		for (const shader of shaders) gl.deleteShader(shader);
 	}
+}
+
+const colorCache = new Map<string, number[]>();
+let colorParser: CanvasRenderingContext2D | null = null;
+function linearColor(color: string) {
+	const cached = colorCache.get(color);
+	if (cached) return cached;
+	let bytes: number[];
+	const hex = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(color)?.[1];
+	if (hex) {
+		const expanded =
+			hex.length === 3 ? [...hex].map((character) => character + character).join('') : hex;
+		bytes = [0, 2, 4].map((index) => parseInt(expanded.slice(index, index + 2), 16));
+	} else {
+		if (!CSS.supports('color', color)) throw new Error(`Invalid Rain color: ${color}`);
+		if (!colorParser) {
+			const canvas = document.createElement('canvas');
+			canvas.width = 1;
+			canvas.height = 1;
+			colorParser = canvas.getContext('2d', {willReadFrequently: true})!;
+		}
+		colorParser.clearRect(0, 0, 1, 1);
+		colorParser.fillStyle = color;
+		colorParser.fillRect(0, 0, 1, 1);
+		bytes = Array.from(colorParser.getImageData(0, 0, 1, 1).data).slice(0, 3);
+	}
+	const result = bytes.map((byte) => {
+		const value = byte / 255;
+		return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+	});
+	if (colorCache.size >= 64) colorCache.clear();
+	colorCache.set(color, result);
+	return result;
 }
 
 function drawRain({gl, program, uniforms, vertexCount}: RainState, frame: RainFrame) {
@@ -430,6 +487,8 @@ function drawRain({gl, program, uniforms, vertexCount}: RainState, frame: RainFr
 	gl.uniform1f(uniforms.iDistancing, bounded(frame.distancing, 0.0, 3.0, 2.5));
 	gl.uniform1f(uniforms.iBlur, bounded(frame.blur, 0.2, 1.0, 0.9));
 	gl.uniform1f(uniforms.iIntensity, bounded(frame.intensity, 0.0, 7.0, 3.0));
+	gl.uniform3fv(uniforms.iTintColor, linearColor(frame.tintColor));
+	gl.uniform1f(uniforms.iTint, bounded(frame.tint, 0, 1, 0));
 	gl.disable(gl.BLEND);
 	gl.disable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
@@ -557,8 +616,16 @@ uniform float iRainAmount;
 uniform float iBlur;
 uniform float iIntensity;
 uniform bool iTextureExists;
-uniform vec3 iStartColor;
-uniform vec3 iEndColor;
+uniform vec3 iTintColor;
+uniform float iTint;
+vec3 applyTint(vec3 col) {
+  vec3 tc = pow(max(iTintColor, vec3(0.)), vec3(1. / 2.2));
+  vec3 w = vec3(0.2126, 0.7152, 0.0722);
+  vec3 tinted = tc * dot(col, w) / max(dot(tc, w), 1e-3);
+  float peak = max(max(tinted.r, tinted.g), tinted.b);
+  if (peak > 1.) tinted = mix(tinted / peak, vec3(1.), 1. - 1. / peak);
+  return mix(col, tinted, iTint);
+}
 in vec2 vUv;
 out vec4 outColor;
 vec3 iResolution = vec3(1920.0, 1080.0, 1.0);
@@ -713,7 +780,7 @@ void main()
     	fade *= S(102., 97., T);
     #endif
     #endif
-    outColor = vec4(col, 1.);
+    outColor = vec4(applyTint(col), 1.);
 }
 `;
 
@@ -762,6 +829,8 @@ const RainInner: React.FC<RainProps> = ({
 	distancing = rainSchema.distancing.default,
 	blur = rainSchema.blur.default,
 	intensity = rainSchema.intensity.default,
+	tintColor = rainSchema.tintColor.default,
+	tint = rainSchema.tint.default,
 	timeOffsetInSeconds = rainSchema.timeOffsetInSeconds.default,
 }) => {
 	const {width, height} = useVideoConfig();
@@ -790,6 +859,8 @@ const RainInner: React.FC<RainProps> = ({
 				distancing={distancing}
 				blur={blur}
 				intensity={intensity}
+				tintColor={tintColor}
+				tint={tint}
 				timeOffsetInSeconds={timeOffsetInSeconds}
 			/>
 		</div>

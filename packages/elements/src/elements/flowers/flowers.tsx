@@ -19,6 +19,8 @@ type FlowersOptions = {
 	readonly inputGainDb?: number;
 	readonly strokeColor?: string;
 	readonly backgroundColor?: string;
+	readonly colorMode?: 'rainbow' | 'solid';
+	readonly color?: string;
 	readonly scale?: number;
 	readonly responsive?: number;
 	readonly rotationSpeed?: number;
@@ -71,6 +73,21 @@ const flowersSchema = {
 		type: 'color',
 		default: '#000000',
 		description: 'Background color',
+	},
+	colorMode: {
+		type: 'enum',
+		default: 'rainbow',
+		description: 'Flower colors',
+		variants: {
+			rainbow: {},
+			solid: {
+				color: {
+					type: 'color',
+					default: '#9333ea',
+					description: 'Flower color',
+				},
+			},
+		},
 	},
 	scale: {
 		type: 'number',
@@ -357,6 +374,8 @@ uniform bool iDark;
 
 uniform vec3 iStartColor;
 uniform vec3 iEndColor;
+uniform bool iSolid;
+uniform vec3 iFlowerColor;
 
 in vec2 vUv;
 out vec4 outColor;
@@ -583,8 +602,9 @@ vec4 clogo(vec2 p, float z, out float d) {
   s = merge(s, s2);
 
   d = s.w;
-  vec3 hsv = vec3(fract(s.z/PI+TIME*0.5), 0.9, 1.0);
-  return vec4(hsv2rgb(hsv)*s.x, s.y);
+  float hue = fract(s.z/PI+TIME*0.5);
+  vec3 petal = iSolid ? iFlowerColor*(0.45 + 0.55*hue) : hsv2rgb(vec3(hue, 0.9, 1.0));
+  return vec4(petal*s.x, s.y);
 }
 
 vec3 effect(vec2 p, vec2 q) {
@@ -607,7 +627,7 @@ vec3 effect(vec2 p, vec2 q) {
 
   float pulse = hh < 0.7 ? g_bass : g_mid;
   vec4 ccol = clogo(cp, 0.6 * (1.0 + 0.07 * pulse), d);
-  vec3 gcol = hsv2rgb(vec3(h, 0.8, 4.0));
+  vec3 gcol = iSolid ? iFlowerColor*4.0*(0.5 + 0.5*h) : hsv2rgb(vec3(h, 0.8, 4.0));
   vec3 col  = vec3(iEndColor);
   col += gcol*(1.0 + 0.6 * pulse)*exp(-50.0 / (1.0 + 0.5 * pulse)*max(d, 0.0));
   col = mix(col, iStartColor, smoothstep(aa, -aa, hd));
@@ -669,6 +689,8 @@ type FlowersFrame = Pick<
 	Required<FlowersOptions>,
 	| 'strokeColor'
 	| 'backgroundColor'
+	| 'colorMode'
+	| 'color'
 	| 'scale'
 	| 'responsive'
 	| 'rotationSpeed'
@@ -695,6 +717,8 @@ type FlowersState = {
 		| 'iAspect'
 		| 'iStartColor'
 		| 'iEndColor'
+		| 'iSolid'
+		| 'iFlowerColor'
 		| 'iScale'
 		| 'iIntensity'
 		| 'iSpeed'
@@ -763,6 +787,8 @@ function setupFlowers(canvas: HTMLCanvasElement): FlowersState {
 				iAspect: gl.getUniformLocation(program, 'iAspect'),
 				iStartColor: gl.getUniformLocation(program, 'iStartColor'),
 				iEndColor: gl.getUniformLocation(program, 'iEndColor'),
+				iSolid: gl.getUniformLocation(program, 'iSolid'),
+				iFlowerColor: gl.getUniformLocation(program, 'iFlowerColor'),
 				iScale: gl.getUniformLocation(program, 'iScale'),
 				iIntensity: gl.getUniformLocation(program, 'iIntensity'),
 				iSpeed: gl.getUniformLocation(program, 'iSpeed'),
@@ -792,6 +818,8 @@ function drawFlowers(state: FlowersState, frame: FlowersFrame) {
 	gl.uniform1f(uniforms.iHighFreq, frame.bands[2] ?? 0);
 	gl.uniform3fv(uniforms.iStartColor, linearColor(frame.strokeColor));
 	gl.uniform3fv(uniforms.iEndColor, linearColor(frame.backgroundColor));
+	gl.uniform1i(uniforms.iSolid, Number(frame.colorMode === 'solid'));
+	gl.uniform3fv(uniforms.iFlowerColor, linearColor(frame.color));
 	gl.uniform1f(uniforms.iScale, bounded(frame.scale, 2, 30, 15));
 	gl.uniform1f(uniforms.iIntensity, bounded(frame.responsive, 0, 3, 1));
 	gl.uniform1f(uniforms.iSpeed, bounded(frame.rotationSpeed, 0.1, 10, 1));
@@ -890,6 +918,8 @@ const FlowersInner: React.FC<FlowersProps> = ({
 	inputGainDb = flowersSchema.inputGainDb.default,
 	strokeColor = flowersSchema.strokeColor.default,
 	backgroundColor = flowersSchema.backgroundColor.default,
+	colorMode = flowersSchema.colorMode.default,
+	color = flowersSchema.colorMode.variants.solid.color.default,
 	scale = flowersSchema.scale.default,
 	responsive = flowersSchema.responsive.default,
 	rotationSpeed = flowersSchema.rotationSpeed.default,
@@ -921,6 +951,8 @@ const FlowersInner: React.FC<FlowersProps> = ({
 				inputGainDb={inputGainDb}
 				strokeColor={strokeColor}
 				backgroundColor={backgroundColor}
+				colorMode={colorMode}
+				color={color}
 				scale={scale}
 				responsive={responsive}
 				rotationSpeed={rotationSpeed}

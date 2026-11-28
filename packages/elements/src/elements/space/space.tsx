@@ -27,6 +27,8 @@ type SpaceOptions = {
 	readonly pattern?: number;
 	readonly speed?: number;
 	readonly responsive?: number;
+	readonly tintColor?: string;
+	readonly tint?: number;
 	readonly timeOffsetInSeconds?: number;
 };
 
@@ -122,6 +124,16 @@ const spaceSchema = {
 		description: 'Animation phase offset in seconds (independent of audio trim)',
 		hiddenFromList: false,
 		keyframable: false,
+	},
+	tintColor: {type: 'color', default: '#9333ea', description: 'Tint color'},
+	tint: {
+		type: 'number',
+		default: 0,
+		min: 0,
+		max: 1,
+		step: 0.01,
+		description: 'Tint amount (0 keeps the original colors)',
+		hiddenFromList: false,
 	},
 } as const satisfies InteractivitySchema;
 
@@ -296,7 +308,16 @@ void main() {
 
 type SpaceFrame = Pick<
 	Required<SpaceOptions>,
-	'width' | 'height' | 'baseColor' | 'zoom' | 'stellarDensity' | 'pattern' | 'speed' | 'responsive'
+	| 'width'
+	| 'height'
+	| 'baseColor'
+	| 'zoom'
+	| 'stellarDensity'
+	| 'pattern'
+	| 'speed'
+	| 'responsive'
+	| 'tintColor'
+	| 'tint'
 > & {readonly time: number; readonly bands: readonly number[]};
 
 type SpaceState = {
@@ -310,6 +331,8 @@ type SpaceState = {
 		| 'iMidFreq'
 		| 'iHighFreq'
 		| 'iBaseColor'
+		| 'iTintColor'
+		| 'iTint'
 		| 'iZoom'
 		| 'iStellarDensity'
 		| 'iPattern'
@@ -379,6 +402,8 @@ function setupSpace(canvas: HTMLCanvasElement): SpaceState {
 				iMidFreq: gl.getUniformLocation(program, 'iMidFreq'),
 				iHighFreq: gl.getUniformLocation(program, 'iHighFreq'),
 				iBaseColor: gl.getUniformLocation(program, 'iBaseColor'),
+				iTintColor: gl.getUniformLocation(program, 'iTintColor'),
+				iTint: gl.getUniformLocation(program, 'iTint'),
 				iZoom: gl.getUniformLocation(program, 'iZoom'),
 				iStellarDensity: gl.getUniformLocation(program, 'iStellarDensity'),
 				iPattern: gl.getUniformLocation(program, 'iPattern'),
@@ -407,6 +432,8 @@ function drawSpace({gl, program, uniforms, vertexCount}: SpaceState, frame: Spac
 	gl.uniform1f(uniforms.iMidFreq, frame.bands[1] ?? 0);
 	gl.uniform1f(uniforms.iHighFreq, frame.bands[2] ?? 0);
 	gl.uniform3fv(uniforms.iBaseColor, linearColor(frame.baseColor));
+	gl.uniform3fv(uniforms.iTintColor, linearColor(frame.tintColor));
+	gl.uniform1f(uniforms.iTint, bounded(frame.tint, 0, 1, 0));
 	gl.uniform1f(uniforms.iZoom, bounded(frame.zoom, 0.1, 3, 0.8));
 	gl.uniform1f(uniforms.iStellarDensity, Math.trunc(bounded(frame.stellarDensity, 5, 25, 17)));
 	gl.uniform1f(uniforms.iPattern, bounded(frame.pattern, 0.46, 0.58, 0.54));
@@ -482,6 +509,17 @@ uniform float iGlobalTime;
 
 
 uniform vec3 iBaseColor;
+uniform vec3 iTintColor;
+uniform float iTint;
+vec3 applyTint(vec3 col) {
+  vec3 tc = pow(max(iTintColor, vec3(0.)), vec3(1. / 2.2));
+  vec3 w = vec3(0.2126, 0.7152, 0.0722);
+  vec3 tinted = tc * dot(col, w) / max(dot(tc, w), 1e-3);
+  float peak = max(max(tinted.r, tinted.g), tinted.b);
+  if (peak > 1.) tinted = mix(tinted / peak, vec3(1.), 1. - 1. / peak);
+  return mix(col, tinted, iTint);
+}
+
 
 
 uniform float iLowFreq;
@@ -562,7 +600,7 @@ void main()
 
 	vec3 col = v*.01;
 
-	outColor = vec4(col, 1.0);
+	outColor = vec4(applyTint(col), 1.0);
 }
 
 `;
@@ -647,6 +685,8 @@ const SpaceInner: React.FC<SpaceProps> = ({
 	pattern = spaceSchema.pattern.default,
 	speed = spaceSchema.speed.default,
 	responsive = spaceSchema.responsive.default,
+	tintColor = spaceSchema.tintColor.default,
+	tint = spaceSchema.tint.default,
 	timeOffsetInSeconds = spaceSchema.timeOffsetInSeconds.default,
 }) => {
 	const {width, height} = useVideoConfig();
@@ -676,6 +716,8 @@ const SpaceInner: React.FC<SpaceProps> = ({
 				pattern={pattern}
 				speed={speed}
 				responsive={responsive}
+				tintColor={tintColor}
+				tint={tint}
 				timeOffsetInSeconds={timeOffsetInSeconds}
 			/>
 		</div>
