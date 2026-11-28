@@ -7,7 +7,6 @@ import {PreviewRenderer, PREVIEW_WIDTH, PREVIEW_HEIGHT} from './preview/PreviewR
 import {PreviewControls} from './preview/PreviewControls';
 import {usePreviewAudio, usePreviewArtwork} from './preview/use-preview-assets';
 import type {PreviewProps} from './preview/types';
-import {isWrapper as isWrapperElement} from './preview-config';
 import {previewDurationInSeconds, usePlayerReady} from './preview/player';
 
 export type {PreviewKind} from './preview/examples';
@@ -30,7 +29,6 @@ export default function Preview({
 	const playerRef = useRef<PlayerRef>(null);
 	const ready = usePlayerReady(playerRef, selected);
 	const example = examples[selected];
-	const isWrapper = isWrapperElement(selected);
 	const durationInSeconds = previewDurationInSeconds(selected);
 	const initialProps = useMemo<PreviewProps>(
 		() => ({...example.props, width: example.width, height: example.height}),
@@ -125,14 +123,6 @@ export default function Preview({
 						</p>
 					)}
 				/>
-			</div>
-			<div className="preview-caption">
-				<span>60 FPS · {durationInSeconds} seconds · Press play to hear audio</span>
-				<span>
-					{isWrapper
-						? 'Demo children are not included. Wrap your own JSX after installation.'
-						: 'Studio uses your preview settings. Download TSX uses the original defaults.'}
-				</span>
 			</div>
 			{editable && controlsTarget
 				? createPortal(
