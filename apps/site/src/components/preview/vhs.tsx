@@ -1,5 +1,5 @@
-import {useCurrentFrame, useVideoConfig} from 'remotion';
-import {Halo, Space, Vhs} from '../../../../../packages/elements/dist/components';
+import {Vhs} from '../../../../../packages/elements/dist/components';
+import {EffectScene} from './effect-scene';
 import type {PreviewProps} from './types';
 
 export const vhsPreviewDefaults = {
@@ -19,44 +19,18 @@ export const VhsPreview = ({
 	playAudio = true,
 	...props
 }: PreviewProps) => {
-	const frame = useCurrentFrame();
-	const {fps} = useVideoConfig();
 	const w = Number(width);
 	const h = Number(height);
-	const audio = {audioSrc: String(audioSrc), audioOffsetInSeconds: Number(audioOffsetInSeconds)};
 	return (
 		<Vhs {...vhsPreviewDefaults} {...props} width={w} height={h}>
-			<Space
-				{...audio}
+			<EffectScene
 				width={w}
 				height={h}
-				playAudio={false}
-				style={{position: 'absolute', inset: 0}}
-			/>
-			<Halo
-				{...audio}
-				width={w}
-				height={h}
+				audioSrc={String(audioSrc)}
+				audioOffsetInSeconds={Number(audioOffsetInSeconds)}
 				playAudio={Boolean(playAudio)}
-				radius={0.09}
-				intensity={0.6}
-				centerMode="transparent"
-				style={{position: 'absolute', inset: 0}}
+				label="VHS"
 			/>
-			<div
-				style={{
-					position: 'absolute',
-					left: w * 0.05,
-					top: h * 0.07,
-					color: '#fff4dc',
-					fontFamily: 'sans-serif',
-					transform: `translateX(${Math.sin((frame / fps) * 1.5) * w * 0.009}px)`,
-				}}
-			>
-				<div style={{fontSize: w * 0.014, letterSpacing: w * 0.004}}>
-					BANGER ELEMENTS / TAPE 001
-				</div>
-			</div>
 		</Vhs>
 	);
 };
