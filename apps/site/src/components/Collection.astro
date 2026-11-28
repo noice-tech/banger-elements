@@ -63,8 +63,71 @@ const tabs = [
 		<p>Try another word, or browse a different category.</p>
 		<button class="button" type="button">Clear filter</button>
 	</div>
+	<p class="studio-toast" role="status" aria-live="polite" hidden></p>
 </div>
 <script>
+	import {installInStudio, setStudioDragData, type StudioElementPayload} from '@remotion/studio-protocol';
+	import {nextStep} from './studio-messages';
+
+	const payloads = new Map<string, Promise<StudioElementPayload>>();
+	const loaded = new Map<string, StudioElementPayload>();
+	const payloadFor = (slug: string) => {
+		let request = payloads.get(slug);
+		if (!request) {
+			request = fetch(`/elements/${slug}.json`).then(async (response) => {
+				if (!response.ok) throw new Error(`Could not load ${slug} (${response.status}). Reload to retry.`);
+				const {type, version, element} = (await response.json()) as StudioElementPayload;
+				const payload = {type, version, element} as StudioElementPayload;
+				loaded.set(slug, payload);
+				return payload;
+			});
+			request.catch(() => payloads.delete(slug));
+			payloads.set(slug, request);
+		}
+		return request;
+	};
+	const toast = document.querySelector<HTMLElement>('.studio-toast');
+	let toastTimer = 0;
+	const announce = (message: string) => {
+		if (!toast) return;
+		toast.textContent = message;
+		toast.hidden = false;
+		clearTimeout(toastTimer);
+		toastTimer = window.setTimeout(() => (toast.hidden = true), 6000);
+	};
+	for (const item of document.querySelectorAll<HTMLElement>('.tile-item')) {
+		const slug = item.dataset.slug!;
+		const title = item.querySelector('.tile-title')!.textContent;
+		const use = item.querySelector<HTMLButtonElement>('.tile-use')!;
+		const tile = item.querySelector<HTMLAnchorElement>('.tile')!;
+		item.addEventListener('pointerenter', () => void payloadFor(slug).catch(() => {}));
+		item.addEventListener('focusin', () => void payloadFor(slug).catch(() => {}));
+		tile.addEventListener('dragstart', (event) => {
+			const payload = loaded.get(slug);
+			if (!payload || !event.dataTransfer) return;
+			setStudioDragData({dataTransfer: event.dataTransfer, payload});
+		});
+		use.addEventListener('click', async () => {
+			use.disabled = true;
+			use.setAttribute('aria-busy', 'true');
+			announce(`Sending ${title} to Remotion Studio…`);
+			try {
+				const result = await installInStudio({payload: await payloadFor(slug)});
+				use.textContent = result.success ? 'Sent' : 'Use';
+				announce(
+					result.success
+						? `Confirm ${title} in ${result.target.studioOrigin} to finish installing it.`
+						: (nextStep[result.code] ?? `${result.message} Try again, or open the element to download its TSX.`),
+				);
+			} catch (error) {
+				announce(error instanceof Error ? error.message : String(error));
+			} finally {
+				use.disabled = false;
+				use.removeAttribute('aria-busy');
+			}
+		});
+	}
+
 	const root = document.querySelector<HTMLElement>('.collection');
 	const search = root?.querySelector<HTMLInputElement>('.collection-search input');
 	if (root && search) {
@@ -76,7 +139,7 @@ const tabs = [
 			let count = 0;
 			for (const grid of grids) {
 				let matches = 0;
-				for (const tile of grid.querySelectorAll<HTMLElement>('.tile')) {
+				for (const tile of grid.querySelectorAll<HTMLElement>('.tile-item')) {
 					tile.hidden = !(tile.dataset.search ?? '').includes(query);
 					if (!tile.hidden) matches++;
 				}
