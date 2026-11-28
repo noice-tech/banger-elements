@@ -2067,6 +2067,22 @@ body.showcase {
 	top: calc(var(--header-height) + 1rem);
 	min-width: 0;
 }
+.element-credit {
+	grid-column: 1 / -1;
+	margin-top: 0.75rem;
+	color: var(--text-3);
+	font-size: 0.75rem;
+	line-height: 1.5;
+	opacity: 0.75;
+}
+.element-credit a {
+	color: inherit;
+	text-decoration-color: currentColor;
+	text-underline-offset: 2px;
+}
+.element-credit a:hover {
+	color: var(--text-2);
+}
 .preview-install {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto;
