@@ -37,7 +37,6 @@ const texture = elementTextureFile(entry.slug);
 	<link slot="head" rel="alternate" type="application/vnd.remotion.element+json" href={`/elements/${entry.slug}.json`} />
 	<div class="wrap wrap-wide">
 		<header class="element-head">
-			<nav class="kicker" aria-label="Breadcrumb"><a href="/#collection">Collection</a><span aria-hidden="true">/</span><a href={`/${category.id}`}>{category.title}</a><span aria-hidden="true">/</span><span aria-current="page">{entry.title}</span></nav>
 			<div class="element-head-row">
 				<div>
 					<h1 id="_top">{entry.title}</h1>
@@ -98,7 +97,7 @@ const texture = elementTextureFile(entry.slug);
 
 	<section class="wrap element-next" aria-labelledby="next-title">
 		<a class="next-card" href={`/${next.slug}.html`}>
-			<video muted loop playsinline preload="none" poster={`/posters/${next.slug}.webp`} aria-hidden="true" data-play-visible>
+			<video muted loop playsinline preload="none" poster={`/posters/${next.slug}.webp`} aria-hidden="true" data-play-hover>
 				<source src={`/previews/${next.slug}.webm`} type="video/webm" />
 			</video>
 			<span class="tile-shade" aria-hidden="true"></span>

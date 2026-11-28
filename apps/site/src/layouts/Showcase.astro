@@ -109,6 +109,25 @@ const fullTitle = title.includes('Banger Elements') ? title : `${title} | Banger
 			document.addEventListener('visibilitychange', sync);
 			document.addEventListener('showcase:sync-media', sync);
 
+			for (const video of document.querySelectorAll<HTMLVideoElement>('video[data-play-hover]')) {
+				const card = video.closest<HTMLElement>('.tile-item, a') ?? video;
+				const start = () => {
+					if (!motion.matches) void video.play().catch(() => {});
+				};
+				const stop = () => {
+					video.pause();
+					video.currentTime = 0;
+				};
+				card.addEventListener('pointerenter', (event) => {
+					if (event.pointerType !== 'touch') start();
+				});
+				card.addEventListener('pointerleave', stop);
+				card.addEventListener('focusin', start);
+				card.addEventListener('focusout', (event) => {
+					if (!card.contains(event.relatedTarget as Node | null)) stop();
+				});
+			}
+
 			const menu = document.querySelector<HTMLDetailsElement>('.mobile-menu');
 			document.addEventListener('click', (event) => {
 				if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
