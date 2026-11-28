@@ -10,6 +10,7 @@ import {
 	elementPayloadMimeType,
 	elementTextureFile,
 } from '../data/element-payloads';
+import type {Credit, CreditSource} from '../data/credits';
 import {elementCategories, elements} from '../data/elements';
 import {GITHUB, elementPath, pageMeta, type PageHandle} from '../lib/site';
 import type {Route} from './+types/element';
@@ -68,6 +69,27 @@ const NextCard = ({next}: {next: (typeof elements)[number]}) => {
 		</Link>
 	);
 };
+
+const SourceLink = ({source}: {source: CreditSource}) => (
+	<>
+		<a href={source.url} target="_blank" rel="noreferrer">
+			{source.work ? `"${source.work}"` : 'a shader'}
+		</a>
+		, © {source.author}
+	</>
+);
+
+const Credits = ({credit}: {credit: Credit}) => (
+	<p className="element-credit">
+		Remixed from <SourceLink source={credit.original} />.
+		{credit.includes?.map((source) => (
+			<span key={source.url}>
+				{' '}
+				Also uses <SourceLink source={source} />.
+			</span>
+		))}
+	</p>
+);
 
 export default function ElementPage({params}: Route.ComponentProps) {
 	const {payloadHtml, texture} = useLoaderData<typeof loader>();
@@ -161,6 +183,7 @@ import {Halo} from './halo.element';
 									.
 								</p>
 							</details>
+							{entry.credit && <Credits credit={entry.credit} />}
 						</section>
 					</div>
 					<aside className="element-config" aria-label={`${entry.title} preview settings`}>

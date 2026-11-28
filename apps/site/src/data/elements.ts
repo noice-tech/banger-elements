@@ -1,4 +1,5 @@
 import catalog from '../../../../packages/elements/dist/catalog.json';
+import {credits} from './credits';
 import {shaderDetails} from './shader-updates';
 
 export const elementCategories = [
@@ -441,4 +442,5 @@ const details = {
 export const elements = catalog.map((entry) => ({
 	...entry,
 	...details[entry.slug as keyof typeof details],
+	credit: credits[entry.slug],
 }));
