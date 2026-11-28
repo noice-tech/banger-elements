@@ -6,7 +6,8 @@ const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.
 const generated = [
 	'packages/elements/dist',
 	'apps/site/dist',
-	'apps/site/.astro',
+	'apps/site/.react-router',
+	'apps/site/build',
 	'.turbo',
 	'packages/elements/.turbo',
 	'apps/site/.turbo',

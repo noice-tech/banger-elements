@@ -71,7 +71,7 @@ This serves the site at [localhost:3300](http://localhost:3300) and starts Remot
 ## Development
 
 - `packages/elements` has the element source and the collection build.
-- `apps/site` is the Astro site with the showcase, examples and docs. Its [README](apps/site/README.md) explains the home page scenes and the "Wrap anything" demos.
+- `apps/site` is the React Router site (prerendered to static files) with the showcase, examples and docs. Its [README](apps/site/README.md) explains the home page scenes and the "Wrap anything" demos.
 - `apps/studio` has the Remotion compositions used for smoke tests and renders.
 
 `bun run check` runs the format check, lint, type checks and tests. `bun run smoke` renders each Studio fixture to `out/`.

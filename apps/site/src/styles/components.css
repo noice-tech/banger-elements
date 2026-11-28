@@ -37,8 +37,7 @@ summary {
 	align-items: center;
 	gap: 0.5rem;
 }
-.actions > *,
-.sl-markdown-content .actions > * {
+.actions > * {
 	margin: 0;
 }
 .actions button,
@@ -587,7 +586,6 @@ input[type='range']:focus-visible {
 
 /* Inside Remotion Studio's Browse Elements ------------------------------- */
 [data-studio] .site-foot,
-[data-studio] .site-footer,
 [data-studio] .icon-link,
 [data-studio] .parent-link,
 [data-studio] .mobile-menu-panel a[href^='https://'],

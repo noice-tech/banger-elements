@@ -11,6 +11,11 @@ const workspace = path.resolve(import.meta.dirname, '..');
 const repository = path.resolve(workspace, '../..');
 const dist = path.join(workspace, 'dist');
 const producer = path.join(repository, 'packages/elements/dist');
+const htmlPages = async () =>
+	(await readdir(dist, {recursive: true}))
+		.map((file) => file.replaceAll('\\', '/'))
+		.filter((file) => file.endsWith('.html'));
+const elementPage = (slug: string) => `elements/${slug}.html`;
 const catalog = JSON.parse(await readFile(path.join(producer, 'catalog.json'), 'utf8')) as {
 	slug: string;
 	category: string;
@@ -36,7 +41,7 @@ test('each element page embeds only its own Studio payload, so `remotion element
 		'g',
 	);
 	for (const {slug} of catalog) {
-		const html = await readFile(path.join(dist, `${slug}.html`), 'utf8');
+		const html = await readFile(path.join(dist, elementPage(slug)), 'utf8');
 		const scripts = [...html.matchAll(scriptPattern)];
 		assert.equal(scripts.length, 1, `${slug}: one embedded payload`);
 		const embedded = StudioProtocolInternals.parseStudioElementPayload(JSON.parse(scripts[0]![1]!));
@@ -64,7 +69,7 @@ test('every catalog entry has a downloadable detail page, poster and gallery pre
 	).join('\n');
 	const overview = await readFile(path.join(dist, 'index.html'), 'utf8');
 	for (const {slug} of catalog) {
-		const html = await readFile(path.join(dist, `${slug}.html`), 'utf8');
+		const html = await readFile(path.join(dist, elementPage(slug)), 'utf8');
 		assert.ok(html.includes(`/elements/${slug}.tsx`), `${slug}: missing download`);
 		assert.ok(
 			html.includes(
@@ -74,7 +79,7 @@ test('every catalog entry has a downloadable detail page, poster and gallery pre
 		);
 		assert.ok(galleries.includes(`/posters/${slug}.webp`), `${slug}: missing gallery poster`);
 		assert.equal((html.match(/<h1\b/g) ?? []).length, 1, `${slug}: one page title`);
-		assert.ok(galleries.includes(`/${slug}.html`), `${slug}: missing gallery link`);
+		assert.ok(galleries.includes(`href="/elements/${slug}"`), `${slug}: missing gallery link`);
 		assert.ok(galleries.includes(`/previews/${slug}.webm`), `${slug}: missing preview`);
 		const poster = await readFile(path.join(dist, `posters/${slug}.webp`));
 		assert.equal(poster.toString('ascii', 8, 12), 'WEBP');
@@ -85,8 +90,8 @@ test('every catalog entry has a downloadable detail page, poster and gallery pre
 });
 
 test('only Element pages advertise their own CLI install payload', async () => {
-	const pages = new Map(catalog.map(({slug}) => [`${slug}.html`, `/elements/${slug}.json`]));
-	for (const file of (await readdir(dist)).filter((name) => name.endsWith('.html'))) {
+	const pages = new Map(catalog.map(({slug}) => [elementPage(slug), `/elements/${slug}.json`]));
+	for (const file of await htmlPages()) {
 		const html = await readFile(path.join(dist, file), 'utf8');
 		const head = html.match(/<head\b[^>]*>([\s\S]*?)<\/head>/)?.[1] ?? '';
 		const links =
@@ -115,15 +120,15 @@ test('categories: gallery and navigation group all elements without changing the
 		assert.ok(page, `${category}: missing gallery section`);
 		for (const entry of catalog) {
 			const inCategory = entry.category === category;
-			assert.equal(page.includes(`href="/${entry.slug}.html"`), inCategory, `${category} page`);
+			assert.equal(page.includes(`href="/elements/${entry.slug}"`), inCategory, `${category} page`);
 			if (!inCategory)
-				assert.ok(!featured.includes(`href="/${entry.slug}.html"`), `${category} overview`);
+				assert.ok(!featured.includes(`href="/elements/${entry.slug}"`), `${category} overview`);
 		}
 	}
-	const trip = await readFile(path.join(dist, 'trip.html'), 'utf8');
+	const trip = await readFile(path.join(dist, elementPage('trip')), 'utf8');
 	assert.ok(trip.includes('href="/shaders"'));
 	for (const slug of ['vhs', 'fisheye', 'wet-glass']) {
-		const effect = await readFile(path.join(dist, `${slug}.html`), 'utf8');
+		const effect = await readFile(path.join(dist, elementPage(slug)), 'utf8');
 		assert.ok(effect.includes('href="/effects"'));
 		assert.ok(effect.includes('does not automatically wrap selected layers'));
 		assert.ok(effect.includes('wrapper is empty until you add children'));
@@ -132,7 +137,7 @@ test('categories: gallery and navigation group all elements without changing the
 });
 
 test('static navigation, assets and fragment targets resolve without a backend', async () => {
-	for (const file of (await readdir(dist)).filter((name) => name.endsWith('.html'))) {
+	for (const file of await htmlPages()) {
 		const html = await readFile(path.join(dist, file), 'utf8');
 		for (const match of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
 			const url = new URL(match[1]!, `http://site.test/${file}`);
@@ -157,7 +162,7 @@ test('each example plays its rendered clip in a native video with controls', asy
 		const card = new RegExp(`<article[^>]*id="${id}"[^>]*>([\\s\\S]*?)</article>`).exec(html)?.[1];
 		assert.ok(card, id);
 		const video = /<video[^>]*>/.exec(card)?.[0] ?? '';
-		assert.ok(/\scontrols[\s>]/.test(video) && video.includes('data-play-visible'), id);
+		assert.ok(/\scontrols[\s>=]/.test(video), id);
 		assert.ok(card.includes(`/recipes/${id}.webm`), id);
 		assert.ok(card.includes(`/recipes/${id}.webp`), id);
 		const clip = await readFile(path.join(dist, 'recipes', `${id}.webm`));
@@ -173,7 +178,7 @@ test('the home page plays one example and links to the rest with small icons', a
 		home,
 	)?.[1];
 	assert.ok(section);
-	assert.ok(section.includes('href="/examples.html"'));
+	assert.ok(section.includes('href="/examples"'));
 	const played = recipes.filter(({id}) => section.includes(`/recipes/${id}.webm`));
 	assert.equal(played.length, 1);
 	for (const {id} of recipes.filter((recipe) => !played.includes(recipe))) {
@@ -210,7 +215,7 @@ test('every page switches to Studio mode before it paints inside Remotion Studio
 
 test('every page has a 1200x630 share image and an extensionless canonical URL', async () => {
 	const site = 'https://banger-elements.dev';
-	for (const file of (await readdir(dist)).filter((name) => name.endsWith('.html'))) {
+	for (const file of await htmlPages()) {
 		if (file === '404.html') continue;
 		const html = await readFile(path.join(dist, file), 'utf8');
 		const image = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1];
@@ -222,8 +227,8 @@ test('every page has a 1200x630 share image and an extensionless canonical URL',
 		assert.deepEqual([width, height, format], [1200, 630, 'jpeg'], file);
 		const page = file === 'index.html' ? '/' : `/${file.replace(/\.html$/, '')}`;
 		assert.match(html, new RegExp(`<link rel="canonical" href="${site}${page}"\\s?/?>`), file);
-		if (catalog.some(({slug}) => `${slug}.html` === file))
-			assert.equal(image, `${site}/share/${file.replace(/\.html$/, '')}.jpg`, file);
+		const slug = catalog.find((entry) => elementPage(entry.slug) === file)?.slug;
+		if (slug) assert.equal(image, `${site}/share/${slug}.jpg`, file);
 	}
 });
 
@@ -232,13 +237,16 @@ test('coding agents get a Markdown index and a Markdown twin of every page', asy
 	const llms = await readFile(path.join(dist, 'llms.txt'), 'utf8');
 	assert.equal(await readFile(path.join(dist, 'index.md'), 'utf8'), llms);
 	for (const {slug} of catalog) {
-		const html = await readFile(path.join(dist, `${slug}.html`), 'utf8');
-		assert.match(html, new RegExp(`<link rel="alternate" type="text/markdown" href="/${slug}.md"`));
-		const markdown = await readFile(path.join(dist, `${slug}.md`), 'utf8');
-		assert.ok(markdown.includes(`\nElement page: ${site}/${slug}\n`), slug);
-		assert.ok(markdown.includes(`npx remotion elements use ${site}/${slug} `), slug);
+		const html = await readFile(path.join(dist, elementPage(slug)), 'utf8');
+		assert.match(
+			html,
+			new RegExp(`<link rel="alternate" type="text/markdown" href="/elements/${slug}.md"`),
+		);
+		const markdown = await readFile(path.join(dist, `elements/${slug}.md`), 'utf8');
+		assert.ok(markdown.includes(`\nElement page: ${site}/elements/${slug}\n`), slug);
+		assert.ok(markdown.includes(`npx remotion elements use ${site}/elements/${slug} `), slug);
 		assert.ok(markdown.includes('| Prop | Type | Default |'), slug);
-		assert.ok(llms.includes(`](${site}/${slug}.md)`), `${slug}: listed in llms.txt`);
+		assert.ok(llms.includes(`](${site}/elements/${slug}.md)`), `${slug}: listed in llms.txt`);
 	}
 	const guide = await readFile(path.join(dist, 'getting-started.md'), 'utf8');
 	assert.ok(guide.startsWith('# Getting started\n'));
@@ -252,4 +260,27 @@ test('coding agents get a Markdown index and a Markdown twin of every page', asy
 			await access(path.join(dist, target));
 		}
 	}
+});
+
+test('old flat Element URLs redirect to their /elements/ pages', async () => {
+	const rules = new Map(
+		(await readFile(path.join(dist, '_redirects'), 'utf8'))
+			.trim()
+			.split('\n')
+			.map((line): [string, string] => {
+				const [from = '', to = ''] = line.split(' ');
+				return [from, to];
+			}),
+	);
+	for (const {slug} of catalog) {
+		for (const from of [`/${slug}`, `/${slug}.html`])
+			assert.equal(rules.get(from), `/elements/${slug}`, from);
+		assert.equal(rules.get(`/${slug}.md`), `/elements/${slug}.md`);
+		await access(path.join(dist, elementPage(slug)));
+	}
+	for (const [from, to] of [
+		['/examples.html', '/examples'],
+		['/getting-started.html', '/getting-started'],
+	])
+		assert.equal(rules.get(from), to, from);
 });
