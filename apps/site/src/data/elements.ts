@@ -29,7 +29,7 @@ const details = {
 		renderer: 'WebGL2',
 		tagline: 'A rain-soaked lens over your existing content.',
 		description:
-			'Wrap text, visualizers and backgrounds in sliding droplets, refraction and wet-glass defocus. Unlike the Rain background shader, this effect filters its children and preserves their transparency. The city demo is not included in the installed source.',
+			'Wrap text, visualizers and backgrounds in sliding droplets, refraction and wet-glass defocus. Unlike the Rain background shader, this effect filters its children and preserves their transparency. The preview wraps the same Space, Halo, grid and label scene as the other effects; the installed source is only the reusable wrapper.',
 		controls: [
 			'amount / effectOpacity — rain coverage and effect mix; either at zero bypasses capture',
 			'dropSize / speed / seed — droplet shape, motion and deterministic layout',
@@ -44,7 +44,7 @@ const details = {
 		renderer: 'WebGL2',
 		tagline: 'Bend everything inside the frame through a wide-angle lens.',
 		description:
-			'Wrap text, visualizers and backgrounds in adjustable barrel distortion with perspective compensation. The preview combines Space, Halo, a grid and text, while the downloaded source is only the reusable wrapper.',
+			'Wrap text, visualizers and backgrounds in adjustable barrel distortion with perspective compensation. The preview wraps the same Space, Halo, grid and label scene as the other effects; the installed source is only the reusable wrapper.',
 		controls: [
 			'strength — barrel distortion amount; zero bypasses capture and distortion',
 			'perspectiveFactor — compensates the apparent zoom as distortion increases',
@@ -57,7 +57,7 @@ const details = {
 		renderer: 'WebGL2',
 		tagline: 'Tape distortion for everything inside the frame.',
 		description:
-			'Wrap text, visualizers and backgrounds in horizontal distortion, tracking tears, grain and color treatment. Supported Chromium captures the whole group into the shader; other browsers use an SVG approximation. The preview combines Space, Halo and text, while the downloaded source is just the reusable wrapper.',
+			'Wrap text, visualizers and backgrounds in horizontal distortion, tracking tears, grain and color treatment. Supported Chromium captures the whole group into the shader; other browsers use an SVG approximation. The preview wraps the same Space, Halo, grid and label scene as the other effects; the installed source is only the reusable wrapper.',
 		controls: [
 			'strength — overall treatment; zero bypasses the filter and tracking overlays',
 			'horizontalDistortion / glitch — broad horizontal displacement and fine tape jitter',

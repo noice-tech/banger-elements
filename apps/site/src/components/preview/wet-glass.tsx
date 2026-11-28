@@ -1,4 +1,5 @@
-import {City, WetGlass} from '../../../../../packages/elements/dist/components';
+import {WetGlass} from '../../../../../packages/elements/dist/components';
+import {EffectScene} from './effect-scene';
 import type {PreviewProps} from './types';
 
 export const wetGlassPreviewDefaults = {
@@ -21,38 +22,18 @@ export const WetGlassPreview = ({
 	playAudio = true,
 	...props
 }: PreviewProps) => {
-	const w = Number(width),
-		h = Number(height);
+	const w = Number(width);
+	const h = Number(height);
 	return (
 		<WetGlass {...wetGlassPreviewDefaults} {...props} width={w} height={h}>
-			<City
+			<EffectScene
 				width={w}
 				height={h}
 				audioSrc={String(audioSrc)}
 				audioOffsetInSeconds={Number(audioOffsetInSeconds)}
 				playAudio={Boolean(playAudio)}
-				lightsColor="#ffbb88"
-				startColor="#465269"
-				style={{position: 'absolute', inset: 0}}
+				label="WET GLASS"
 			/>
-			<div
-				style={{
-					position: 'absolute',
-					left: w * 0.08,
-					top: h * 0.14,
-					color: '#ffffff',
-					fontFamily: 'sans-serif',
-				}}
-			>
-				<div style={{fontSize: w * 0.014, letterSpacing: w * 0.005}}>
-					BANGER ELEMENTS / WET GLASS
-				</div>
-				<div style={{fontSize: w * 0.07, fontWeight: 800, lineHeight: 1.1, marginTop: h * 0.03}}>
-					AFTER
-					<br />
-					THE RAIN
-				</div>
-			</div>
 		</WetGlass>
 	);
 };
