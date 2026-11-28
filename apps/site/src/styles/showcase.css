@@ -2045,13 +2045,6 @@ body.showcase {
 .element-head {
 	padding-block: clamp(2rem, 4vw, 3rem) 1.75rem;
 }
-.element-head-row {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
-	justify-content: space-between;
-	gap: 1.25rem 2rem;
-}
 .element-head h1 {
 	font-size: clamp(2.5rem, 5.5vw, 4.5rem);
 	line-height: 0.98;
@@ -2062,21 +2055,6 @@ body.showcase {
 	color: var(--tone);
 	font-size: clamp(1.05rem, 1.6vw, 1.3rem);
 	letter-spacing: -0.01em;
-}
-.tags {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.35rem;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-.tags li {
-	padding: 0.32rem 0.7rem;
-	border: 1px solid var(--line-strong);
-	border-radius: 999px;
-	color: var(--text-2);
-	font: 0.72rem/1.2 var(--font-mono);
 }
 .element-workbench {
 	display: grid;
@@ -2094,8 +2072,7 @@ body.showcase {
 	grid-template-columns: minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 0.25rem 1rem;
-	padding-top: 1rem;
-	border-top: 1px solid var(--line);
+	padding-top: 1.25rem;
 }
 .preview-install .actions button {
 	min-height: 42px;

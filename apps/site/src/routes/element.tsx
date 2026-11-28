@@ -3,7 +3,6 @@ import {Link, data, useLoaderData, type MetaArgs} from 'react-router';
 import {ClientOnly} from '../components/ClientOnly';
 import {highlightCode} from '../components/highlight';
 import type {PreviewKind} from '../components/preview/examples';
-import {previewDurationInSeconds} from '../components/preview/player';
 import {GitHubIcon} from '../components/site/GitHubIcon';
 import {useHoverPlay} from '../components/site/media';
 import {
@@ -98,19 +97,10 @@ import {Halo} from './halo.element';
 		siblings.length > 1
 			? siblings[(position + 1) % siblings.length]!
 			: elements.find((element) => element.slug !== entry.slug)!;
-	const duration = previewDurationInSeconds(entry.slug as PreviewKind);
 	const fallback = (
 		<div className="preview-block">
 			<div className="preview-stage">
 				<div className="preview-placeholder" role="status" aria-label="Loading preview"></div>
-			</div>
-			<div className="preview-caption" aria-hidden="true">
-				<span>60 FPS · {duration} seconds · Press play to hear audio</span>
-				<span>
-					{isWrapper
-						? 'Demo children are not included. Wrap your own JSX after installation.'
-						: 'Studio uses your preview settings. Download TSX uses the original defaults.'}
-				</span>
 			</div>
 		</div>
 	);
@@ -119,17 +109,8 @@ import {Halo} from './halo.element';
 		<>
 			<div className="wrap wrap-wide">
 				<header className="element-head">
-					<div className="element-head-row">
-						<div>
-							<h1 id="_top">{entry.title}</h1>
-							<p className="element-tagline">{entry.tagline}</p>
-						</div>
-						<ul className="tags" aria-label="Details">
-							<li>{category.title}</li>
-							<li>{entry.renderer}</li>
-							<li>60 fps</li>
-						</ul>
-					</div>
+					<h1 id="_top">{entry.title}</h1>
+					<p className="element-tagline">{entry.tagline}</p>
 				</header>
 				<div className="element-workbench">
 					<div className="element-preview">
